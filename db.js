@@ -46,6 +46,15 @@ db.exec(`
     product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
     PRIMARY KEY (user_id, product_id)
   );
+
+  CREATE TABLE IF NOT EXISTS reviews (
+    product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    stars      INTEGER NOT NULL CHECK (stars BETWEEN 1 AND 5),
+    comment    TEXT NOT NULL DEFAULT '',
+    created_at INTEGER NOT NULL,
+    PRIMARY KEY (product_id, user_id)
+  );
 `);
 
 /* ---------- สินค้าตัวอย่าง (ใส่ให้ครั้งแรกที่ฐานข้อมูลยังว่าง) ---------- */
@@ -53,26 +62,31 @@ const SAMPLE_PRODUCTS = [
   { title: "หนังสือวิทยาการคอมพิวเตอร์", price: 150, type: "sell", category: "book",
     condition: "ดีมาก", pickup: "มหาวิทยาลัยศรีปทุม ขอนแก่น", contact: "081-234-5573 (Line)",
     desc: "หนังสือวิทยาการคอมพิวเตอร์ ม.6 สภาพดี มีรอยขีดเล็กน้อย แต่ใช้งานได้ปกติครับ",
-    img: "https://picsum.photos/seed/book1/400/300" },
+    img: "images/book1.svg" },
   { title: "เสื้อฮู้ด Oversize", price: 200, type: "sell", category: "clothes",
     condition: "ดี", pickup: "โรงอาหารกลาง", contact: "Line: pom_sp",
-    desc: "ใส่ไม่กี่ครั้ง ซักสะอาดแล้ว", img: "https://picsum.photos/seed/hoodie/400/300" },
+    desc: "ใส่ไม่กี่ครั้ง ซักสะอาดแล้ว", img: "images/hoodie.svg" },
   { title: "โน้ตบุ๊ก", price: 6500, type: "sell", category: "electronic",
     condition: "ดี", pickup: "อาคารเรียนรวม", contact: "Line: nb_sell",
-    desc: "ใช้งานปกติ แบตอยู่ได้ประมาณ 3 ชม.", img: "https://picsum.photos/seed/laptop/400/300" },
+    desc: "ใช้งานปกติ แบตอยู่ได้ประมาณ 3 ชม.", img: "images/laptop.svg" },
   { title: "กระเป๋าเป้", price: 350, type: "swap", category: "dorm",
     condition: "ดีมาก", pickup: "หอพักนักศึกษา", contact: "Line: bag_swap",
-    desc: "อยากแลกกับกระเป๋าใบเล็กกว่า", img: "https://picsum.photos/seed/bag/400/300" },
+    desc: "อยากแลกกับกระเป๋าใบเล็กกว่า", img: "images/bag.svg" },
   { title: "โคมไฟตั้งโต๊ะ", price: 120, type: "sell", category: "dorm",
     condition: "ดี", pickup: "หอพักนักศึกษา", contact: "Line: lamp01",
-    desc: "ไฟ LED ปรับความสว่างได้", img: "https://picsum.photos/seed/lamp/400/300" },
+    desc: "ไฟ LED ปรับความสว่างได้", img: "images/lamp.svg" },
   { title: "หูฟังไร้สาย", price: 890, type: "sell", category: "electronic",
     condition: "ดีมาก", pickup: "ห้องสมุด", contact: "Line: hp_sell",
-    desc: "ใช้งานได้ปกติ มีกล่องครบ", img: "https://picsum.photos/seed/headphone/400/300" },
+    desc: "ใช้งานได้ปกติ มีกล่องครบ", img: "images/headphone.svg" },
   { title: "หนังสือภาษาอังกฤษ", price: 0, type: "free", category: "book",
     condition: "ดี", pickup: "ห้องสมุด", contact: "Line: free_book",
-    desc: "แจกฟรี มารับได้เลย", img: "https://picsum.photos/seed/book2/400/300" }
+    desc: "แจกฟรี มารับได้เลย", img: "images/book2.svg" }
 ];
+
+/* ฐานข้อมูลรุ่นเก่า: เปลี่ยนรูปสุ่มของสินค้าตัวอย่างเป็นรูปประกอบ */
+const fixSampleImg = db.prepare(
+  "UPDATE products SET img = ? WHERE user_id IS NULL AND title = ? AND img LIKE 'https://picsum%'");
+SAMPLE_PRODUCTS.forEach(p => fixSampleImg.run(p.img, p.title));
 
 if (db.prepare("SELECT COUNT(*) AS n FROM products").get().n === 0) {
   const insert = db.prepare(`

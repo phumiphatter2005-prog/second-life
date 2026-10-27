@@ -78,13 +78,24 @@ function toProduct(row, user) {
     sellerName: row.seller_name || "Second Life",
     isOwner: !!user && row.user_id === user.id,
     isFav: !!row.is_fav,
+    rating: row.rating_avg,
+    ratingCount: row.rating_count,
+    sellerRating: row.seller_avg,
+    sellerRatingCount: row.seller_count,
     createdAt: row.created_at
   };
 }
 
+/* คะแนนดาวของสินค้า และคะแนนรวมของผู้ขาย (จากทุกประกาศของเขา) */
 const PRODUCT_SELECT = `
   SELECT p.*, u.name AS seller_name,
-         EXISTS (SELECT 1 FROM favorites f WHERE f.product_id = p.id AND f.user_id = ?) AS is_fav
+         EXISTS (SELECT 1 FROM favorites f WHERE f.product_id = p.id AND f.user_id = ?) AS is_fav,
+         (SELECT AVG(stars) FROM reviews r WHERE r.product_id = p.id) AS rating_avg,
+         (SELECT COUNT(*) FROM reviews r WHERE r.product_id = p.id) AS rating_count,
+         (SELECT AVG(r.stars) FROM reviews r JOIN products p2 ON p2.id = r.product_id
+           WHERE p2.user_id = p.user_id) AS seller_avg,
+         (SELECT COUNT(*) FROM reviews r JOIN products p2 ON p2.id = r.product_id
+           WHERE p2.user_id = p.user_id) AS seller_count
   FROM products p LEFT JOIN users u ON u.id = p.user_id`;
 
 function cleanText(v, max) {
@@ -186,7 +197,7 @@ app.post("/api/products", requireLogin, (req, res) => {
   if (!item.pickup) return res.status(400).json({ error: "กรุณาระบุจุดนัดรับ" });
   if (!item.contact) return res.status(400).json({ error: "กรุณาระบุช่องทางติดต่อ" });
 
-  let img = `https://picsum.photos/seed/sl${Date.now()}/400/300`;
+  let img = `images/cat-${item.category}.svg`;
   if (b.img) {
     img = saveImage(b.img);
     if (!img) return res.status(400).json({ error: "รูปภาพไม่ถูกต้องหรือใหญ่เกินไป" });
@@ -251,6 +262,37 @@ app.post("/api/favorites/:id", requireLogin, (req, res) => {
     db.prepare("INSERT INTO favorites (user_id, product_id) VALUES (?, ?)").run(req.user.id, pid);
   }
   res.json({ fav: del.changes === 0 });
+});
+
+/* ---------- รีวิวและให้ดาว ---------- */
+app.get("/api/products/:id/reviews", (req, res) => {
+  const rows = db.prepare(`
+    SELECT r.*, u.name FROM reviews r JOIN users u ON u.id = r.user_id
+    WHERE r.product_id = ? ORDER BY r.created_at DESC`).all(Number(req.params.id));
+  res.json(rows.map(r => ({
+    name: r.name,
+    stars: r.stars,
+    comment: r.comment,
+    createdAt: r.created_at,
+    mine: !!req.user && r.user_id === req.user.id
+  })));
+});
+
+/* ให้ดาวได้คนละ 1 ครั้งต่อสินค้า (ส่งใหม่ = แก้รีวิวเดิม) */
+app.post("/api/products/:id/reviews", requireLogin, (req, res) => {
+  const product = db.prepare("SELECT user_id FROM products WHERE id = ?").get(Number(req.params.id));
+  if (!product) return res.status(404).json({ error: "ไม่พบสินค้านี้" });
+  if (product.user_id === req.user.id) return res.status(403).json({ error: "ให้ดาวประกาศของตัวเองไม่ได้" });
+
+  const stars = Number(req.body.stars);
+  if (!Number.isInteger(stars) || stars < 1 || stars > 5) return res.status(400).json({ error: "กรุณาเลือกดาว 1–5 ดวง" });
+
+  db.prepare(`
+    INSERT INTO reviews (product_id, user_id, stars, comment, created_at) VALUES (?, ?, ?, ?, ?)
+    ON CONFLICT (product_id, user_id) DO UPDATE SET stars = excluded.stars, comment = excluded.comment,
+      created_at = excluded.created_at`
+  ).run(Number(req.params.id), req.user.id, stars, cleanText(req.body.comment, 300), Date.now());
+  res.json({ ok: true });
 });
 
 /* ---------- ตัวนับผลกระทบ ---------- */

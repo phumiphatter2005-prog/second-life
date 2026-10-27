@@ -22,11 +22,12 @@
 
   <section class="hero">
     <div class="container">
+      <span class="hero-pill">🌱 ตลาดสินค้ามือสองในมหาวิทยาลัย</span>
       <h1>Second Life</h1>
-      <p>ซื้อ ขาย แลกเปลี่ยน แจกฟรี ในชุมชนมหาวิทยาลัย</p>
+      <p>ซื้อ ขาย แลกเปลี่ยน แจกฟรี ในชุมชนมหาวิทยาลัย<br><em>ให้สิ่งของ...ได้มีชีวิตที่สอง</em></p>
       <form id="hero-search" class="search-box">
         <input id="hero-q" type="text" placeholder="ค้นหาสินค้าที่ต้องการ...">
-        <button type="submit">🔍</button>
+        <button type="submit" aria-label="ค้นหา">ค้นหา</button>
       </form>
     </div>
   </section>
@@ -39,15 +40,19 @@
       <a href="search.html">ดูทั้งหมด →</a>
     </div>
     <div id="popular" class="grid"></div>
-        <section class="about">
-      <h2>เกี่ยวกับโครงการ</h2>
-      <p>ร่วมส่งต่อสิ่งของ ลดขยะ สร้างสังคมที่ยั่งยืนไปด้วยกัน</p>
-      <div class="stats">
-        <div class="stat"><strong id="stat-passed">0</strong><span>ชิ้นที่ส่งต่อแล้ว</span></div>
-        <div class="stat"><strong id="stat-items">0</strong><span>สินค้าในระบบ</span></div>
-        <div class="stat"><strong id="stat-users">0</strong><span>ผู้ใช้งาน</span></div>
+
+    <section class="about">
+      <div class="about-text">
+        <span class="hero-pill">เกี่ยวกับโครงการ</span>
+        <h2>ร่วมส่งต่อสิ่งของ<br>ลดขยะ สร้างสังคมที่ยั่งยืน<br><span>ไปด้วยกัน</span></h2>
+        <p>ทุกชิ้นที่ส่งต่อ คือการให้ชีวิตที่สองและลดขยะ ตอบโจทย์ SDG 12 และ SDG 11</p>
       </div>
-      <p class="sdg-note">♻️ ทุกชิ้นที่ส่งต่อ คือการให้ชีวิตที่สองและลดขยะ ตอบโจทย์ SDG 12 และ SDG 11</p>
+      <div class="about-earth" aria-hidden="true">🌍</div>
+      <div class="stats">
+        <div class="stat"><span class="stat-ic">♻️</span><strong id="stat-passed">0</strong><span>ชิ้นที่ส่งต่อแล้ว</span></div>
+        <div class="stat"><span class="stat-ic">📦</span><strong id="stat-items">0</strong><span>สินค้าในระบบ</span></div>
+        <div class="stat"><span class="stat-ic">👥</span><strong id="stat-users">0</strong><span>ผู้ใช้งาน</span></div>
+      </div>
     </section>
   </main>
 
