@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ลงประกาศสินค้า | Second Life</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="navbar">
+    <div class="container">
+      <a href="index.html" class="logo">♻️ Second Life</a>
+      <nav class="nav-links">
+        <a href="index.html">หน้าแรก</a>
+        <a href="search.html">หมวดหมู่</a>
+        <a href="post.html" class="active">ลงประกาศ</a>
+        <a href="favorites.html">รายการโปรด</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container post-page">
+    <h1 class="page-h1">ลงประกาศสินค้า</h1>
+
+    <div class="steps">
+      <div class="step active" data-step="1"><span>1</span>ข้อมูลสินค้า</div>
+      <div class="step" data-step="2"><span>2</span>รายละเอียด</div>
+      <div class="step" data-step="3"><span>3</span>ยืนยัน</div>
+    </div>
+
+    <div class="post-card">
+
+      <!-- ขั้น 1 -->
+      <section class="step-panel" data-panel="1">
+        <label class="photo-box" for="p-photo">
+          <img id="photo-preview" alt="" hidden>
+          <div id="photo-hint">📷<br>เพิ่มรูปภาพ<br><small>(ไม่บังคับ)</small></div>
+        </label>
+        <input id="p-photo" type="file" accept="image/*" hidden>
+
+        <label class="field-label">ชื่อสินค้า *</label>
+        <input id="p-title" type="text" placeholder="เช่น เสื้อฮู้ด Oversize">
+
+        <label class="field-label">หมวดหมู่ *</label>
+        <select id="p-cat"></select>
+
+        <label class="field-label">ประเภทประกาศ *</label>
+        <div id="p-type" class="chips">
+          <button type="button" class="chip active" data-value="sell">ขาย</button>
+          <button type="button" class="chip" data-value="swap">แลกเปลี่ยน</button>
+          <button type="button" class="chip" data-value="free">แจกฟรี</button>
+        </div>
+
+        <label class="field-label" id="price-label">ราคา (บาท)</label>
+        <input id="p-price" type="number" min="0" placeholder="เช่น 150">
+
+        <p class="form-error" hidden></p>
+        <div class="btn-row">
+          <button type="button" class="btn-primary" data-next>ถัดไป →</button>
+        </div>
+      </section>
+
+      <!-- ขั้น 2 -->
+      <section class="step-panel" data-panel="2" hidden>
+        <label class="field-label">สภาพสินค้า *</label>
+        <select id="p-cond">
+          <option value="ดีมาก">ดีมาก</option>
+          <option value="ดี" selected>ดี</option>
+          <option value="พอใช้">พอใช้</option>
+        </select>
+
+        <label class="field-label">รายละเอียดสินค้า</label>
+        <textarea id="p-desc" rows="4" placeholder="เช่น ใช้งานน้อย มีรอยขีดเล็กน้อย"></textarea>
+
+        <label class="field-label">จุดนัดรับในมหาวิทยาลัย *</label>
+        <input id="p-pickup" type="text" placeholder="เช่น โรงอาหารกลาง">
+
+        <label class="field-label">ช่องทางติดต่อ *</label>
+        <input id="p-contact" type="text" placeholder="เช่น Line: yourid หรือเบอร์โทร">
+
+        <p class="form-error" hidden></p>
+        <div class="btn-row">
+          <button type="button" class="btn-outline" data-prev>← ย้อนกลับ</button>
+          <button type="button" class="btn-primary" data-next>ถัดไป →</button>
+        </div>
+      </section>
+
+      <!-- ขั้น 3 -->
+      <section class="step-panel" data-panel="3" hidden>
+        <h3>ตรวจสอบข้อมูลก่อนลงประกาศ</h3>
+        <div id="summary"></div>
+        <p class="form-error" hidden></p>
+        <div class="btn-row">
+          <button type="button" class="btn-outline" data-prev>← ย้อนกลับ</button>
+          <button type="button" class="btn-primary" id="btn-publish">ลงประกาศ</button>
+        </div>
+      </section>
+
+      <!-- สำเร็จ -->
+      <section class="step-panel success" data-panel="4" hidden>
+        <div class="success-icon">🎉</div>
+        <h3>ลงประกาศเรียบร้อยแล้ว</h3>
+        <p class="muted">สินค้าของคุณได้ชีวิตที่สองแล้ว</p>
+        <div class="btn-row center">
+          <a id="link-product" class="btn-primary inline" href="#">ดูประกาศของฉัน</a>
+          <a class="btn-outline inline" href="index.html">กลับหน้าแรก</a>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <script src="js/demo.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/post.js"></script>
+</body>
+</html>

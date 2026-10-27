@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>รายการโปรด | Second Life</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="navbar">
+    <div class="container">
+      <a href="index.html" class="logo">♻️ Second Life</a>
+      <nav class="nav-links">
+        <a href="index.html">หน้าแรก</a>
+        <a href="search.html">หมวดหมู่</a>
+        <a href="post.html">ลงประกาศ</a>
+        <a href="favorites.html" class="active">รายการโปรด</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <h1 class="page-h1 page-title">รายการโปรด</h1>
+
+    <div id="fav-tabs" class="chips tabs">
+      <button class="chip active" data-tab="favs">สินค้าที่ชอบ</button>
+      <button class="chip" data-tab="mine">ประกาศของฉัน</button>
+    </div>
+
+    <p id="fav-count" class="muted"></p>
+    <div id="fav-list" class="grid"></div>
+  </main>
+
+  <script src="js/demo.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/favorites.js"></script>
+</body>
+</html>

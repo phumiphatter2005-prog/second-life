@@ -1,0 +1,159 @@
+const $ = id => document.getElementById(id);
+let step = 1;
+let imgData = "";
+let type = "sell";
+
+/* ---------- ต้องเข้าสู่ระบบก่อนลงประกาศ ---------- */
+userReady.then(() => { if (!currentUser) goLogin(); });
+
+/* ---------- ตั้งค่าเริ่มต้น ---------- */
+$("p-cat").innerHTML = CATEGORIES
+  .filter(c => c.id !== "all")
+  .map(c => `<option value="${c.id}">${c.name}</option>`)
+  .join("");
+
+/* ---------- แสดงขั้นตอน ---------- */
+function showStep(n) {
+  step = n;
+  document.querySelectorAll(".step-panel").forEach(p => {
+    p.hidden = Number(p.dataset.panel) !== n;
+  });
+  document.querySelectorAll(".step").forEach(s => {
+    const k = Number(s.dataset.step);
+    s.classList.toggle("active", k === n);
+    s.classList.toggle("done", k < n);
+  });
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function setError(msg) {
+  const el = document.querySelector(`[data-panel="${step}"] .form-error`);
+  if (!el) return;
+  el.textContent = msg;
+  el.hidden = !msg;
+}
+
+/* ---------- เลือกประเภทประกาศ ---------- */
+document.querySelectorAll("#p-type .chip").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll("#p-type .chip").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    type = btn.dataset.value;
+
+    const price = $("p-price");
+    const isFree = type === "free";
+    price.disabled = isFree;
+    if (isFree) price.value = "";
+    $("price-label").textContent =
+      type === "swap" ? "มูลค่าโดยประมาณ (บาท)" : "ราคา (บาท)";
+  });
+});
+
+/* ---------- อัปโหลดรูป (ย่อขนาดก่อนเก็บ) ---------- */
+$("p-photo").addEventListener("change", e => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const maxW = 600;
+      const scale = Math.min(1, maxW / img.width);
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      imgData = canvas.toDataURL("image/jpeg", 0.7);
+      $("photo-preview").src = imgData;
+      $("photo-preview").hidden = false;
+      $("photo-hint").hidden = true;
+    };
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+/* ---------- ตรวจข้อมูลแต่ละขั้น ---------- */
+function validate() {
+  if (step === 1) {
+    if ($("p-title").value.trim() === "") return "กรุณากรอกชื่อสินค้า";
+    if (type !== "free") {
+      const v = $("p-price").value;
+      if (v === "" || Number(v) < 0) return "กรุณากรอกราคาให้ถูกต้อง";
+    }
+  }
+  if (step === 2) {
+    if ($("p-pickup").value.trim() === "") return "กรุณาระบุจุดนัดรับ";
+    if ($("p-contact").value.trim() === "") return "กรุณาระบุช่องทางติดต่อ";
+  }
+  return "";
+}
+
+function buildItem() {
+  return {
+    title: $("p-title").value.trim(),
+    price: type === "free" ? 0 : Number($("p-price").value),
+    type: type,
+    category: $("p-cat").value,
+    condition: $("p-cond").value,
+    pickup: $("p-pickup").value.trim(),
+    contact: $("p-contact").value.trim(),
+    desc: $("p-desc").value.trim(),
+    img: imgData
+  };
+}
+
+function renderSummary() {
+  const item = buildItem();
+  $("summary").innerHTML = `
+    <div class="summary">
+      ${item.img ? `<img src="${item.img}" alt="">` : ""}
+      <ul class="detail-list">
+        <li><span>ชื่อสินค้า</span>${esc(item.title)}</li>
+        <li><span>ประเภท</span>${TYPE_LABEL[item.type]}</li>
+        <li><span>ราคา</span>${formatPrice(item)}</li>
+        <li><span>หมวดหมู่</span>${categoryName(item.category)}</li>
+        <li><span>สภาพสินค้า</span>${esc(item.condition)}</li>
+        <li><span>จุดนัดรับ</span>${esc(item.pickup)}</li>
+        <li><span>ติดต่อ</span>${esc(item.contact)}</li>
+      </ul>
+    </div>`;
+}
+
+/* ---------- ปุ่มถัดไป / ย้อนกลับ ---------- */
+document.querySelectorAll("[data-next]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const err = validate();
+    if (err) return setError(err);
+    setError("");
+    if (step === 2) renderSummary();
+    showStep(step + 1);
+  });
+});
+
+document.querySelectorAll("[data-prev]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    setError("");
+    showStep(step - 1);
+  });
+});
+
+/* ---------- ลงประกาศ ---------- */
+$("btn-publish").addEventListener("click", async () => {
+  const btn = $("btn-publish");
+  btn.disabled = true;
+  btn.textContent = "กำลังลงประกาศ...";
+  try {
+    const { id } = await api("/products", { method: "POST", body: buildItem() });
+    $("link-product").href = "product.html?id=" + id;
+    showStep(4);
+  } catch (e) {
+    if (e.status === 401) return goLogin();
+    setError(e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "ลงประกาศ";
+  }
+});

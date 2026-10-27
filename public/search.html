@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ค้นหาสินค้า | Second Life</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="navbar">
+    <div class="container">
+      <a href="index.html" class="logo">♻️ Second Life</a>
+      <nav class="nav-links">
+        <a href="index.html">หน้าแรก</a>
+        <a href="search.html" class="active">หมวดหมู่</a>
+        <a href="post.html">ลงประกาศ</a>
+        <a href="favorites.html">รายการโปรด</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container search-layout">
+    <aside class="filters">
+      <input id="f-q" type="text" placeholder="ค้นหาสินค้า...">
+
+      <label>ประเภทประกาศ</label>
+      <div id="f-type" class="chips">
+        <button class="chip active" data-value="all">ทั้งหมด</button>
+        <button class="chip" data-value="sell">ขาย</button>
+        <button class="chip" data-value="swap">แลกเปลี่ยน</button>
+        <button class="chip" data-value="free">แจกฟรี</button>
+      </div>
+
+      <label>หมวดหมู่</label>
+      <select id="f-cat"></select>
+
+      <label>สภาพสินค้า</label>
+      <select id="f-cond">
+        <option value="all">ทั้งหมด</option>
+        <option value="ดีมาก">ดีมาก</option>
+        <option value="ดี">ดี</option>
+        <option value="พอใช้">พอใช้</option>
+      </select>
+
+      <button id="f-reset" class="btn-outline">ล้างตัวกรอง</button>
+    </aside>
+
+    <section class="results">
+      <p id="result-count" class="result-count"></p>
+      <div id="results" class="grid"></div>
+    </section>
+  </main>
+
+  <script src="js/demo.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/search.js"></script>
+</body>
+</html>

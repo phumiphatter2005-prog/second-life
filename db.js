@@ -1,0 +1,85 @@
+/* ---------- ฐานข้อมูล SQLite (มีมาในตัว Node.js) ---------- */
+const fs = require("fs");
+const path = require("path");
+const { DatabaseSync } = require("node:sqlite");
+
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "data");
+fs.mkdirSync(DATA_DIR, { recursive: true });
+
+const db = new DatabaseSync(path.join(DATA_DIR, "secondlife.db"));
+db.exec("PRAGMA foreign_keys = ON");
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS users (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    student_id TEXT UNIQUE NOT NULL,
+    name       TEXT NOT NULL,
+    pass_hash  TEXT NOT NULL,
+    salt       TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS sessions (
+    token      TEXT PRIMARY KEY,
+    user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at INTEGER NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS products (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id    INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    title      TEXT NOT NULL,
+    price      INTEGER NOT NULL DEFAULT 0,
+    type       TEXT NOT NULL,
+    category   TEXT NOT NULL,
+    condition  TEXT NOT NULL,
+    pickup     TEXT NOT NULL,
+    contact    TEXT NOT NULL,
+    description TEXT NOT NULL,
+    img        TEXT NOT NULL,
+    passed     INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS favorites (
+    user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    PRIMARY KEY (user_id, product_id)
+  );
+`);
+
+/* ---------- สินค้าตัวอย่าง (ใส่ให้ครั้งแรกที่ฐานข้อมูลยังว่าง) ---------- */
+const SAMPLE_PRODUCTS = [
+  { title: "หนังสือวิทยาการคอมพิวเตอร์", price: 150, type: "sell", category: "book",
+    condition: "ดีมาก", pickup: "มหาวิทยาลัยศรีปทุม ขอนแก่น", contact: "081-234-5573 (Line)",
+    desc: "หนังสือวิทยาการคอมพิวเตอร์ ม.6 สภาพดี มีรอยขีดเล็กน้อย แต่ใช้งานได้ปกติครับ",
+    img: "https://picsum.photos/seed/book1/400/300" },
+  { title: "เสื้อฮู้ด Oversize", price: 200, type: "sell", category: "clothes",
+    condition: "ดี", pickup: "โรงอาหารกลาง", contact: "Line: pom_sp",
+    desc: "ใส่ไม่กี่ครั้ง ซักสะอาดแล้ว", img: "https://picsum.photos/seed/hoodie/400/300" },
+  { title: "โน้ตบุ๊ก", price: 6500, type: "sell", category: "electronic",
+    condition: "ดี", pickup: "อาคารเรียนรวม", contact: "Line: nb_sell",
+    desc: "ใช้งานปกติ แบตอยู่ได้ประมาณ 3 ชม.", img: "https://picsum.photos/seed/laptop/400/300" },
+  { title: "กระเป๋าเป้", price: 350, type: "swap", category: "dorm",
+    condition: "ดีมาก", pickup: "หอพักนักศึกษา", contact: "Line: bag_swap",
+    desc: "อยากแลกกับกระเป๋าใบเล็กกว่า", img: "https://picsum.photos/seed/bag/400/300" },
+  { title: "โคมไฟตั้งโต๊ะ", price: 120, type: "sell", category: "dorm",
+    condition: "ดี", pickup: "หอพักนักศึกษา", contact: "Line: lamp01",
+    desc: "ไฟ LED ปรับความสว่างได้", img: "https://picsum.photos/seed/lamp/400/300" },
+  { title: "หูฟังไร้สาย", price: 890, type: "sell", category: "electronic",
+    condition: "ดีมาก", pickup: "ห้องสมุด", contact: "Line: hp_sell",
+    desc: "ใช้งานได้ปกติ มีกล่องครบ", img: "https://picsum.photos/seed/headphone/400/300" },
+  { title: "หนังสือภาษาอังกฤษ", price: 0, type: "free", category: "book",
+    condition: "ดี", pickup: "ห้องสมุด", contact: "Line: free_book",
+    desc: "แจกฟรี มารับได้เลย", img: "https://picsum.photos/seed/book2/400/300" }
+];
+
+if (db.prepare("SELECT COUNT(*) AS n FROM products").get().n === 0) {
+  const insert = db.prepare(`
+    INSERT INTO products (user_id, title, price, type, category, condition, pickup, contact, description, img, created_at)
+    VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+  SAMPLE_PRODUCTS.forEach((p, i) => insert.run(
+    p.title, p.price, p.type, p.category, p.condition, p.pickup, p.contact, p.desc, p.img, Date.now() - i * 1000));
+}
+
+module.exports = { db, DATA_DIR };

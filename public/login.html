@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>เข้าสู่ระบบ | Second Life</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="navbar">
+    <div class="container">
+      <a href="index.html" class="logo">♻️ Second Life</a>
+      <nav class="nav-links">
+        <a href="index.html">หน้าแรก</a>
+        <a href="search.html">หมวดหมู่</a>
+        <a href="post.html">ลงประกาศ</a>
+        <a href="favorites.html">รายการโปรด</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container post-page auth-page">
+    <h1 class="page-h1">ยินดีต้อนรับสู่ Second Life</h1>
+
+    <div id="auth-tabs" class="chips tabs">
+      <button type="button" class="chip active" data-mode="login">เข้าสู่ระบบ</button>
+      <button type="button" class="chip" data-mode="register">สมัครสมาชิก</button>
+    </div>
+
+    <form id="auth-form" class="post-card">
+      <label class="field-label" for="a-sid">รหัสนักศึกษา *</label>
+      <input id="a-sid" type="text" inputmode="numeric" autocomplete="username" placeholder="เช่น 67402711">
+
+      <div id="name-field" hidden>
+        <label class="field-label" for="a-name">ชื่อที่จะแสดง *</label>
+        <input id="a-name" type="text" autocomplete="nickname" placeholder="เช่น ภูมิ">
+      </div>
+
+      <label class="field-label" for="a-pass">รหัสผ่าน *</label>
+      <input id="a-pass" type="password" autocomplete="current-password" placeholder="อย่างน้อย 6 ตัวอักษร">
+
+      <p class="form-error" hidden></p>
+      <div class="btn-row">
+        <button type="submit" id="a-submit" class="btn-primary">เข้าสู่ระบบ</button>
+      </div>
+    </form>
+  </main>
+
+  <script src="js/demo.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/login.js"></script>
+</body>
+</html>
