@@ -20,7 +20,7 @@ function setupFilterControls() {
   catSelect.value = filters.cat;
 
   qInput.addEventListener("input", () => { filters.q = qInput.value; renderResults(); });
-  catSelect.addEventListener("change", () => { filters.cat = catSelect.value; renderResults(); });
+  catSelect.addEventListener("change", () => setCategory(catSelect.value));
   condSelect.addEventListener("change", () => { filters.cond = condSelect.value; renderResults(); });
 
   document.querySelectorAll("#f-type .chip").forEach(btn => {
@@ -42,12 +42,55 @@ function setupFilterControls() {
   document.getElementById("f-reset").addEventListener("click", () => {
     filters.q = ""; filters.type = "all"; filters.cat = "all"; filters.cond = "all";
     qInput.value = "";
-    catSelect.value = "all";
     condSelect.value = "all";
     document.querySelectorAll("#f-type .chip").forEach(b =>
       b.classList.toggle("active", b.dataset.value === "all"));
-    renderResults();
+    setCategory("all");
   });
+}
+
+/* ---------- แถบหมวดหมู่: แถบสีม่วงเลื่อนตามหมวดที่เลือก ---------- */
+function setupCategoryTabs() {
+  const bar = document.getElementById("cat-tabs");
+  bar.innerHTML = CATEGORIES.map(c =>
+    `<button type="button" role="tab" data-cat="${c.id}">${c.name}</button>`).join("") +
+    `<span class="cat-ink" aria-hidden="true"></span>`;
+  bar.addEventListener("click", e => {
+    const btn = e.target.closest("[data-cat]");
+    if (btn) setCategory(btn.dataset.cat);
+  });
+  addEventListener("resize", moveCatInk);
+  if (document.fonts) document.fonts.ready.then(moveCatInk);
+  syncCategoryTabs();
+}
+
+function moveCatInk() {
+  const bar = document.getElementById("cat-tabs");
+  const btn = bar.querySelector("button.active");
+  const ink = bar.querySelector(".cat-ink");
+  if (!btn) return;
+  ink.style.setProperty("--x", btn.offsetLeft + "px");
+  ink.style.setProperty("--w", btn.offsetWidth);
+}
+
+function syncCategoryTabs() {
+  document.querySelectorAll("#cat-tabs [data-cat]").forEach(b => {
+    const on = b.dataset.cat === filters.cat;
+    b.classList.toggle("active", on);
+    b.setAttribute("aria-selected", on);
+  });
+  /* เลื่อนเฉพาะแถบแนวนอนให้เห็นหมวดที่เลือก (ไม่เลื่อนทั้งหน้า) */
+  const bar = document.getElementById("cat-tabs");
+  const active = bar.querySelector("button.active");
+  if (active) bar.scrollLeft = Math.max(0, active.offsetLeft - 16);
+  moveCatInk();
+}
+
+function setCategory(cat) {
+  filters.cat = cat;
+  document.getElementById("f-cat").value = cat;
+  syncCategoryTabs();
+  renderResults();
 }
 
 function renderResults() {
@@ -70,6 +113,7 @@ function renderResults() {
 
 async function loadProducts() {
   document.getElementById("result-count").textContent = "กำลังโหลด...";
+  document.getElementById("results").innerHTML = skeletonCards(6);
   try {
     await userReady;
     PRODUCTS = await api("/products");
@@ -81,4 +125,5 @@ async function loadProducts() {
 
 readUrlParams();
 setupFilterControls();
+setupCategoryTabs();
 loadProducts();

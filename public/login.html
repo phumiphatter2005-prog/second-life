@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600&family=IBM+Plex+Sans+Thai:wght@400;600&family=JetBrains+Mono&display=swap">
-  <link rel="stylesheet" href="css/style.css?v=6">
+  <link rel="stylesheet" href="css/style.css?v=7">
 </head>
 <body>
 
@@ -24,38 +24,75 @@
     </div>
   </header>
 
-  <main class="container post-page auth-page">
-    <h1 class="page-h1">ยินดีต้อนรับสู่ Second Life</h1>
-
-    <div id="auth-tabs" class="chips tabs">
-      <button type="button" class="chip active" data-mode="login">เข้าสู่ระบบ</button>
-      <button type="button" class="chip" data-mode="register">สมัครสมาชิก</button>
-    </div>
-
-    <form id="auth-form" class="post-card">
-      <label class="field-label" for="a-sid">รหัสนักศึกษา *</label>
-      <input id="a-sid" type="text" inputmode="numeric" autocomplete="username" placeholder="เช่น 67402711">
-
-      <div id="name-field" hidden>
-        <label class="field-label" for="a-name">ชื่อที่จะแสดง *</label>
-        <input id="a-name" type="text" autocomplete="nickname" placeholder="เช่น ภูมิ">
+  <main class="auth-split">
+    <!-- ซ้าย (มือถือ: แถบบน): แผงม่วง รูปสินค้าจริงลอยขยับช้าๆ -->
+    <aside class="auth-art">
+      <div class="auth-floats" aria-hidden="true">
+        <img class="f1" src="images/sample-headphones.jpg" alt="">
+        <img class="f2" src="images/sample-hoodie.jpg" alt="">
+        <img class="f3" src="images/sample-cs-book.jpg" alt="">
+        <img class="f4" src="images/sample-lamp.jpg" alt="">
+        <img class="f5" src="images/sample-backpack.jpg" alt="">
       </div>
-
-      <label class="field-label" for="a-pass">รหัสผ่าน *</label>
-      <input id="a-pass" type="password" autocomplete="current-password" placeholder="อย่างน้อย 6 ตัวอักษร">
-
-      <p class="form-error" hidden></p>
-      <div class="btn-row">
-        <button type="submit" id="a-submit" class="btn-primary">เข้าสู่ระบบ</button>
+      <div class="auth-copy">
+        <span class="overline">Second Life</span>
+        <h1>ให้ของได้มี<br>ชีวิตที่สอง</h1>
+        <p>ซื้อ ขาย แลกเปลี่ยน และแจกฟรี ภายในชุมชนมหาวิทยาลัย</p>
       </div>
-    </form>
+    </aside>
+
+    <!-- ขวา (มือถือ: ด้านล่าง): ฟอร์ม -->
+    <section class="auth-panel">
+      <div class="auth-box">
+        <h2 id="auth-heading">ยินดีต้อนรับกลับมา</h2>
+        <p class="muted" id="auth-sub">เข้าสู่ระบบด้วยรหัสนักศึกษา</p>
+
+        <div id="auth-tabs" class="seg" role="tablist" data-mode="login">
+          <span class="seg-pill" aria-hidden="true"></span>
+          <button type="button" role="tab" class="active" aria-selected="true" data-mode="login">เข้าสู่ระบบ</button>
+          <button type="button" role="tab" aria-selected="false" data-mode="register">สมัครสมาชิก</button>
+        </div>
+
+        <form id="auth-form" class="auth-form" novalidate>
+          <div class="float-field">
+            <input id="a-sid" type="text" inputmode="numeric" maxlength="8" autocomplete="username"
+              placeholder=" " aria-describedby="sid-msg">
+            <label for="a-sid">รหัสนักศึกษา 8 หลัก</label>
+            <p class="field-msg" id="sid-msg" aria-live="polite"></p>
+          </div>
+
+          <div class="float-field" id="name-field" hidden>
+            <input id="a-name" type="text" autocomplete="nickname" maxlength="60" placeholder=" ">
+            <label for="a-name">ชื่อที่จะแสดง</label>
+          </div>
+
+          <div class="float-field has-eye">
+            <input id="a-pass" type="password" autocomplete="current-password" placeholder=" ">
+            <label for="a-pass">รหัสผ่าน</label>
+            <button type="button" class="eye-btn" id="a-eye" aria-label="แสดงรหัสผ่าน" title="แสดงรหัสผ่าน"></button>
+          </div>
+
+          <div class="strength" id="strength" data-level="0" hidden>
+            <div class="strength-bar"><span></span></div>
+            <span class="strength-label" aria-live="polite"></span>
+          </div>
+
+          <p class="form-error" role="alert" hidden></p>
+          <button type="submit" id="a-submit" class="btn-primary auth-submit" disabled>
+            <span class="btn-label">เข้าสู่ระบบ</span>
+            <span class="spinner" aria-hidden="true"></span>
+            <svg class="done-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>
+          </button>
+        </form>
+      </div>
+    </section>
   </main>
 
-  <script src="js/config.js?v=6"></script>
-  <script src="js/supabase.js?v=6"></script>
-  <script src="js/demo.js?v=6"></script>
-  <script src="js/data.js?v=6"></script>
-  <script src="js/app.js?v=6"></script>
-  <script src="js/login.js?v=6"></script>
+  <script src="js/config.js?v=7"></script>
+  <script src="js/supabase.js?v=7"></script>
+  <script src="js/demo.js?v=7"></script>
+  <script src="js/data.js?v=7"></script>
+  <script src="js/app.js?v=7"></script>
+  <script src="js/login.js?v=7"></script>
 </body>
 </html>

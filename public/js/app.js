@@ -20,6 +20,8 @@ const ICONS = {
   camera: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3Z"/><circle cx="12" cy="13" r="3.5"/>',
   filter: '<path d="M3 5h18M6 12h12M10 19h4"/>',
   menu:   '<path d="M4 6h16M4 12h16M4 18h16"/>',
+  eye:    '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
+  eyeOff: '<path d="M10.6 5.1A10.5 10.5 0 0 1 12 5c6.5 0 10 7 10 7a17.6 17.6 0 0 1-2.4 3.4M6.6 6.6C3.7 8.4 2 12 2 12s3.5 7 10 7a9.7 9.7 0 0 0 5.4-1.6M9.9 9.9a3 3 0 0 0 4.2 4.2M3 3l18 18"/>',
   close:  '<path d="M6 6l12 12M18 6 6 18"/>',
   alert:  '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/>',
   flag:   '<path d="M4 22V4a1 1 0 0 1 1-1h11l-2 4 2 4H5"/>',
@@ -99,27 +101,15 @@ function decorateNav() {
       if (name) a.innerHTML = icon(name) + `<span>${a.textContent}</span>`;
     });
 
-    /* มือถือ: ปุ่มเปิดเมนูแบบลิ้นชัก · ขวา: ปุ่มค้นหา + บัญชีผู้ใช้ */
-    logo.insertAdjacentHTML("beforebegin", `
-      <button class="nav-toggle" type="button" aria-label="เมนู" title="เมนู" aria-expanded="false" aria-controls="nav-links">${icon("menu")}</button>`);
+    /* มือถือ: แคปซูลพื้นหลังของแถบเมนูล่าง · ขวา: ปุ่มค้นหา + บัญชีผู้ใช้ */
+    nav.insertAdjacentHTML("afterbegin", `<span class="nav-pill" aria-hidden="true"></span>`);
     nav.insertAdjacentHTML("afterend", `
       <div class="nav-right">
         <button class="nav-search" type="button" title="ค้นหา (${SHORTCUT})" aria-label="ค้นหา">${icon("search")}<span>ค้นหา</span><kbd>${SHORTCUT}</kbd></button>
         <span class="nav-user"></span>
       </div>`);
-
-    const toggle = document.querySelector(".nav-toggle");
-    const setOpen = open => {
-      document.body.classList.toggle("nav-open", open);
-      toggle.setAttribute("aria-expanded", open);
-      toggle.innerHTML = icon(open ? "close" : "menu");
-    };
-    toggle.addEventListener("click", () => setOpen(!document.body.classList.contains("nav-open")));
-    document.addEventListener("click", e => {
-      if (!e.target.closest(".navbar")) setOpen(false);
-    });
-    document.addEventListener("keydown", e => { if (e.key === "Escape") setOpen(false); });
     document.querySelector(".nav-search").addEventListener("click", openSearch);
+    placeNavPill();
   }
 
   document.body.insertAdjacentHTML("beforeend", `
@@ -142,6 +132,153 @@ function decorateNav() {
     </footer>`);
 }
 
+/* แคปซูลของแถบเมนูล่าง (มือถือ): เลื่อนจากเมนูของหน้าก่อนหน้าไปยังเมนูปัจจุบัน */
+function placeNavPill() {
+  const nav = document.querySelector(".nav-links");
+  const pill = nav && nav.querySelector(".nav-pill");
+  if (!pill) return;
+  const links = [...nav.querySelectorAll(":scope > a")];
+  const i = links.findIndex(a => a.classList.contains("active"));
+  nav.style.setProperty("--n", links.length);
+  pill.hidden = i < 0;
+  if (i < 0) return;
+  let prev = -1;
+  try { prev = Number(sessionStorage.getItem("nav-i") ?? -1); sessionStorage.setItem("nav-i", i); } catch (e) { /* ไม่มี storage ก็ไม่เลื่อน */ }
+  if (prev >= 0 && prev < links.length && prev !== i) {
+    pill.classList.add("no-anim");
+    pill.style.setProperty("--i", prev);
+    pill.getBoundingClientRect();   // บังคับให้วาดตำแหน่งเดิมก่อน แล้วค่อยเลื่อน
+    pill.classList.remove("no-anim");
+    requestAnimationFrame(() => pill.style.setProperty("--i", i));
+  } else {
+    pill.style.setProperty("--i", i);
+  }
+  /* กดเมนูแล้วแคปซูลเลื่อนไปทันทีระหว่างรอหน้าใหม่ */
+  links.forEach((a, k) => {
+    a.onclick = () => {
+      pill.hidden = false;
+      pill.style.setProperty("--i", k);
+      try { sessionStorage.setItem("nav-i", k); } catch (e) { /* ข้าม */ }
+    };
+  });
+}
+
+/* ---------- ข้อความเด้งมุมจอ ---------- */
+function toast(message, kind = "") {
+  let box = document.querySelector(".toasts");
+  if (!box) {
+    box = document.createElement("div");
+    box.className = "toasts";
+    box.setAttribute("role", "status");
+    box.setAttribute("aria-live", "polite");
+    document.body.appendChild(box);
+  }
+  const ic = { heart: "heart", leaf: "leaf" }[kind] || "check";
+  const el = document.createElement("div");
+  el.className = "toast" + (kind ? " toast-" + kind : "");
+  el.innerHTML = `${icon(ic)}<span>${esc(message)}</span>`;
+  box.appendChild(el);
+  setTimeout(() => {
+    el.classList.add("out");
+    setTimeout(() => el.remove(), 300);
+  }, 2600);
+}
+
+/* ---------- ใบไม้กระจายออกจากปุ่ม ---------- */
+const LEAF_SVG = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.5 19 2c1 2 2 4.2 2 8 0 5.5-4.8 10-10 10Z"/></svg>';
+
+function leafBurst(el, count = 16) {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const r = el.getBoundingClientRect();
+  const burst = document.createElement("div");
+  burst.className = "leaf-burst";
+  burst.style.transform = `translate(${r.left + r.width / 2}px, ${r.top + r.height / 2}px)`;
+  for (let k = 0; k < count; k++) {
+    const angle = (Math.PI * 2 * k) / count + Math.random() * .4;
+    const dist = 60 + Math.random() * 90;
+    burst.insertAdjacentHTML("beforeend", LEAF_SVG);
+    const leaf = burst.lastElementChild;
+    leaf.style.setProperty("--dx", `${Math.cos(angle) * dist}px`);
+    leaf.style.setProperty("--dy", `${Math.sin(angle) * dist - 40}px`);
+    leaf.style.setProperty("--r", `${Math.round(Math.random() * 540 - 270)}deg`);
+    leaf.style.setProperty("--t", `${.7 + Math.random() * .5}s`);
+  }
+  document.body.appendChild(burst);
+  setTimeout(() => burst.remove(), 1400);
+}
+
+/* "ส่งต่อแล้ว" สำเร็จ: ใบไม้ + ข้อความขอบคุณ */
+function celebratePassed(btn) {
+  leafBurst(btn);
+  toast("ขอบคุณที่ให้ของได้มีชีวิตที่สอง", "leaf");
+}
+
+/* ---------- ทุกส่วนค่อยๆ เลื่อนขึ้นและชัดขึ้นเมื่อเลื่อนมาถึง ---------- */
+const REVEAL_SELECTOR = [
+  "main > .section-head", "main > .grid", ".how", ".about", ".conveyor-section", ".categories",
+  ".detail", ".reviews", ".post-card", ".steps", ".search-layout", ".page-head", ".kpis", ".admin-split",
+  "#fav-list", ".empty-state"
+].join(",");
+const revealObserver = "IntersectionObserver" in window && !matchMedia("(prefers-reduced-motion: reduce)").matches
+  ? new IntersectionObserver(entries => entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add("in"); revealObserver.unobserve(e.target); }
+    }), { rootMargin: "0px 0px -8% 0px", threshold: .05 })
+  : null;
+
+function revealOnScroll(root = document) {
+  if (!revealObserver) return;
+  root.querySelectorAll(REVEAL_SELECTOR).forEach(el => {
+    if (el.classList.contains("reveal")) return;
+    el.classList.add("reveal");
+    revealObserver.observe(el);
+  });
+}
+
+/* ---------- ตัวเลขนับขึ้นจาก 0 เมื่อเลื่อนมาเห็น ---------- */
+function countUp(el, target) {
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduce || !("IntersectionObserver" in window) || !target) {
+    el.textContent = Number(target || 0).toLocaleString();
+    return;
+  }
+  el.textContent = "0";
+  const io = new IntersectionObserver(entries => {
+    if (!entries[0].isIntersecting) return;
+    io.disconnect();
+    const start = performance.now();
+    const dur = Math.min(1800, 700 + target * 20);
+    const step = now => {
+      const t = Math.min(1, (now - start) / dur);
+      const eased = 1 - Math.pow(1 - t, 3);
+      el.textContent = Math.round(target * eased).toLocaleString();
+      if (t < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }, { threshold: .6 });
+  io.observe(el);
+}
+
+/* ---------- กล่องเทาระหว่างโหลด ---------- */
+function skeletonCards(n = 4) {
+  return Array.from({ length: n }, () => `
+    <div class="card-wrap sk-card" aria-hidden="true">
+      <div class="sk sk-img"></div>
+      <div class="card-body">
+        <div class="sk sk-line w-80"></div>
+        <div class="sk sk-line w-30"></div>
+        <div class="sk sk-line w-50"></div>
+      </div>
+    </div>`).join("");
+}
+
+function skeletonRows(n = 5) {
+  return `<div class="panel" aria-hidden="true">${Array.from({ length: n }, () => `
+    <div class="sk-row">
+      <div class="sk sk-thumb"></div>
+      <div style="flex:1"><div class="sk sk-line w-50" style="margin-top:0"></div><div class="sk sk-line w-80"></div></div>
+    </div>`).join("")}</div>`;
+}
+
 /* ---------- ผู้ใช้ที่เข้าสู่ระบบ ---------- */
 let currentUser = null;
 decorateNav();
@@ -162,6 +299,7 @@ function renderNavUser() {
     const onAdmin = location.pathname.endsWith("admin.html");
     nav.insertAdjacentHTML("beforeend",
       `<a href="admin.html" class="${onAdmin ? "active" : ""}">${icon("shield")}<span>หลังบ้าน</span></a>`);
+    placeNavPill();
   }
 
   if (!currentUser) {
@@ -238,15 +376,46 @@ function renderCategories() {
 async function renderPopular() {
   const el = document.getElementById("popular");
   if (!el) return;
+  el.innerHTML = skeletonCards(4);
+  renderConveyorSkeleton();
   try {
     await userReady;
     const list = (await api("/products")).filter(p => !p.passed);
     el.innerHTML = list.length
       ? list.slice(0, 10).map(productCard).join("")
       : `<p class="empty">ยังไม่มีสินค้า มาเป็นคนแรกที่ <a href="post.html">ลงประกาศ</a></p>`;
+    renderConveyor(list);
   } catch (e) {
     el.innerHTML = `<p class="empty">โหลดสินค้าไม่สำเร็จ: ${esc(e.message)}</p>`;
+    renderConveyor([]);
   }
+}
+
+/* ---------- สายพานส่งต่อ: การ์ดรูปจริงเลื่อนวนช้าๆ ชี้แล้วหยุด ---------- */
+function renderConveyorSkeleton() {
+  const track = document.getElementById("conveyor-track");
+  if (track) track.innerHTML = Array.from({ length: 6 }, () =>
+    `<div class="belt-card sk-card" aria-hidden="true"><div class="sk" style="height:140px;border-radius:0"></div>
+     <div><div class="sk sk-line w-80" style="margin-top:0"></div><div class="sk sk-line w-30"></div></div></div>`).join("");
+}
+
+function renderConveyor(list) {
+  const section = document.getElementById("conveyor-section");
+  const track = document.getElementById("conveyor-track");
+  if (!track) return;
+  /* เฉพาะสินค้าที่มีรูปถ่าย (ไม่ใช่รูปแทนหมวดหมู่) */
+  const items = list.filter(p => p.img && !/images\/cat-/.test(p.img));
+  if (items.length < 3) { section.hidden = true; return; }
+  const card = (p, hidden) => `
+    <a class="belt-card" href="product.html?id=${p.id}" ${hidden ? 'aria-hidden="true" tabindex="-1"' : ""}>
+      <img src="${esc(p.img)}" alt="${hidden ? "" : esc(p.title)}" loading="lazy">
+      <div><strong>${esc(p.title)}</strong><span class="price">${formatPrice(p)}</span></div>
+    </a>`;
+  /* ต่อรายการให้ยาวพอเต็มจอ แล้วซ้ำอีกชุดเพื่อให้วนต่อเนื่องไม่สะดุด */
+  let row = [...items];
+  while (row.length < 10) row = row.concat(items);
+  track.innerHTML = row.map(p => card(p, false)).join("") + row.map(p => card(p, true)).join("");
+  track.style.setProperty("--dur", `${row.length * 5}s`);
 }
 
 async function renderStats() {
@@ -259,8 +428,8 @@ async function renderStats() {
     let shown = 0;
     Object.entries(values).forEach(([id, n]) => {
       const el = document.getElementById(id);
-      el.textContent = Number(n || 0).toLocaleString();
       el.closest(".stat").hidden = !n;
+      countUp(el, Number(n || 0));
       if (n) shown++;
     });
     document.getElementById("stats").hidden = !shown;
@@ -284,7 +453,15 @@ async function toggleFav(id) {
   if (!currentUser) { goLogin(); return null; }
   const { fav } = await api("/favorites/" + id, { method: "POST" });
   document.dispatchEvent(new CustomEvent("favchange", { detail: { id, fav } }));
+  toast(fav ? "เพิ่มในรายการโปรดแล้ว" : "นำออกจากรายการโปรดแล้ว", fav ? "heart" : "");
   return fav;
+}
+
+/* หัวใจเด้ง (เล่นซ้ำได้ทุกครั้งที่กด) */
+function popHeart(btn) {
+  btn.classList.remove("pop");
+  btn.getBoundingClientRect();
+  btn.classList.add("pop");
 }
 
 function setupFavButtons() {
@@ -295,7 +472,10 @@ function setupFavButtons() {
     btn.disabled = true;
     try {
       const on = await toggleFav(Number(btn.dataset.id));
-      if (on !== null) btn.classList.toggle("on", on);
+      if (on !== null) {
+        btn.classList.toggle("on", on);
+        if (on) popHeart(btn);
+      }
     } catch (err) {
       alert(err.message);
     } finally {
@@ -356,6 +536,12 @@ function resizeImage(file, maxW = 800) {
 }
 
 applySettings();
+revealOnScroll();
+/* ส่วนที่หน้าเว็บสร้างทีหลัง (รายละเอียดสินค้า หลังบ้าน ฯลฯ) ก็ค่อยๆ โผล่เช่นกัน */
+if (revealObserver) {
+  new MutationObserver(() => revealOnScroll())
+    .observe(document.querySelector("main") || document.body, { childList: true, subtree: true });
+}
 renderCategories();
 renderPopular();
 renderStats();

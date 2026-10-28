@@ -20,6 +20,7 @@ async function renderFavs() {
   }
 
   try {
+    listEl.innerHTML = skeletonCards(4);
     const list = await api(tab === "favs" ? "/favorites" : "/my-products");
     countEl.textContent = list.length ? `ทั้งหมด ${list.length} รายการ` : "";
     listEl.innerHTML = list.length

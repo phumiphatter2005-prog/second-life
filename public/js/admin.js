@@ -122,7 +122,7 @@ let editImages = [];
 async function openEditor(id) {
   adminError("");
   document.getElementById("admin-toolbar").hidden = true;
-  adminBody.innerHTML = `<p class="muted">กำลังโหลด...</p>`;
+  adminBody.innerHTML = skeletonRows(5);
   history.replaceState(null, "", `?tab=products&edit=${id}`);
   try {
     const [p, settings] = await Promise.all([api("/admin/products/" + id), settingsReady]);
@@ -507,7 +507,7 @@ async function loadTab() {
   adminFilter.hidden = !conf.filter;
   adminFilter.querySelector("span").textContent = conf.filter || "";
   adminError("");
-  adminBody.innerHTML = `<p class="muted">กำลังโหลด...</p>`;
+  adminBody.innerHTML = skeletonRows(5);
   try {
     adminRows = await api(conf.load);
     conf.render(adminRows);
@@ -542,7 +542,8 @@ adminBody.addEventListener("click", async e => {
   }
   try {
     if (act === "passed") {
-      await api(`/products/${row.dataset.id}/passed`, { method: "POST" });
+      const { passed } = await api(`/products/${row.dataset.id}/passed`, { method: "POST" });
+      if (passed) celebratePassed(btn);
     } else if (act === "delete") {
       if (!confirmed(btn, "ยืนยันลบ?")) return;
       await api("/products/" + row.dataset.id, { method: "DELETE" });

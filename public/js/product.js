@@ -130,6 +130,7 @@ function render(p) {
       try {
         const { passed } = await api(`/products/${p.id}/passed`, { method: "POST" });
         passedBtn.textContent = passedText(passed);
+        if (passed) celebratePassed(passedBtn);
       } catch (err) { showError(err.message); }
     });
 
@@ -154,6 +155,7 @@ function render(p) {
         if (on !== null) {
           favBtn.innerHTML = favButtonText(on);
           favBtn.classList.toggle("on", on);
+          if (on) popHeart(favBtn);
         }
       } catch (err) { showError(err.message); }
     });
@@ -229,6 +231,7 @@ function renderReportForm(p) {
 /* ---------- รีวิว ---------- */
 async function renderReviews(p) {
   const listEl = document.getElementById("review-list");
+  listEl.innerHTML = `<div aria-hidden="true">${'<div class="sk-row" style="padding:12px 0"><div class="sk" style="width:32px;height:32px;border-radius:50%"></div><div style="flex:1"><div class="sk sk-line w-30" style="margin-top:0"></div><div class="sk sk-line w-80"></div></div></div>'.repeat(2)}</div>`;
   let reviews = [];
   try {
     reviews = await api(`/products/${p.id}/reviews`);
@@ -272,7 +275,7 @@ function renderReviewForm(p, mine) {
       <strong>${mine ? "แก้ไขรีวิวของคุณ" : "ให้คะแนนสินค้านี้"}</strong>
       <div class="star-input" role="radiogroup" aria-label="เลือกจำนวนดาว">
         ${[1, 2, 3, 4, 5].map(n =>
-          `<button type="button" role="radio" data-star="${n}" aria-label="${n} ดาว">★</button>`).join("")}
+          `<button type="button" role="radio" data-star="${n}" aria-label="${n} ดาว" style="--d:${(n - 1) * 45}ms">★</button>`).join("")}
         <span class="star-label"></span>
       </div>
       <textarea rows="2" maxlength="300" placeholder="เล่าประสบการณ์ เช่น สภาพตรงปก นัดรับตรงเวลา (ไม่บังคับ)">${mine ? esc(mine.comment) : ""}</textarea>
@@ -294,7 +297,16 @@ function renderReviewForm(p, mine) {
   form.querySelectorAll("[data-star]").forEach(b => {
     b.addEventListener("mouseenter", () => paint(Number(b.dataset.star)));
     b.addEventListener("mouseleave", () => paint(stars));
-    b.addEventListener("click", () => { stars = Number(b.dataset.star); paint(stars); });
+    b.addEventListener("click", () => {
+      stars = Number(b.dataset.star);
+      paint(stars);
+      /* ดาวที่เลือกเด้งทีละดวง */
+      form.querySelectorAll("[data-star]").forEach(s => {
+        s.classList.remove("pop");
+        s.getBoundingClientRect();
+        if (Number(s.dataset.star) <= stars) s.classList.add("pop");
+      });
+    });
   });
 
   form.addEventListener("submit", async e => {
@@ -319,6 +331,18 @@ function renderReviewForm(p, mine) {
 }
 
 (async () => {
+  /* กล่องเทาระหว่างโหลด */
+  detail.innerHTML = `
+    <div class="detail sk-detail" aria-hidden="true">
+      <div class="sk sk-hero"></div>
+      <div>
+        <div class="sk sk-line w-30"></div>
+        <div class="sk sk-line w-80" style="height:28px;margin-top:16px"></div>
+        <div class="sk sk-line w-30" style="height:32px;margin-top:16px"></div>
+        ${'<div class="sk sk-line w-80" style="margin-top:20px"></div>'.repeat(4)}
+        <div class="sk sk-line" style="height:44px;margin-top:24px"></div>
+      </div>
+    </div>`;
   try {
     await userReady;
     render(await api("/products/" + id));
