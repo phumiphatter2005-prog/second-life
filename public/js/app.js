@@ -107,8 +107,18 @@ function decorateNav() {
       favLink.insertAdjacentHTML("beforebegin", `<a href="messages.html" class="${onMessages ? "active" : ""}">ข้อความ</a>`);
     }
     nav.querySelectorAll("a").forEach(a => {
-      const name = NAV_ICONS[a.getAttribute("href")];
-      if (name) a.innerHTML = icon(name) + `<span>${a.textContent}</span>`;
+      const href = a.getAttribute("href");
+      /* ชื่อเมนูไว้ใช้เป็น tooltip และสำหรับโปรแกรมอ่านหน้าจอ เมื่อจอแคบแสดงแค่ไอคอน */
+      a.title = a.textContent.trim();
+      a.setAttribute("aria-label", a.title);
+      const name = NAV_ICONS[href];
+      if (href === "search.html") {
+        /* แถบล่างบนมือถือเรียกปุ่มนี้ว่า "ค้นหา" (คอมยังเป็น "หมวดหมู่") */
+        a.innerHTML = icon("grid", "ic only-desk") + icon("search", "ic only-mob") +
+          `<span class="only-desk">${a.textContent}</span><span class="only-mob">ค้นหา</span>`;
+      } else if (name) {
+        a.innerHTML = icon(name) + `<span>${a.textContent}</span>`;
+      }
     });
     const chatLink = nav.querySelector('a[href="messages.html"]');
     if (chatLink) {
@@ -125,6 +135,7 @@ function decorateNav() {
       </div>`);
     document.querySelector(".nav-search").addEventListener("click", openSearch);
     placeNavPill();
+    setupDrawer(logo);
   }
 
   document.body.insertAdjacentHTML("beforeend", `
@@ -140,6 +151,124 @@ function decorateNav() {
         <p class="footer-tag">Second Life for a Better Tomorrow</p>
       </div>
     </footer>`);
+}
+
+/* ---------- เมนูลิ้นชักด้านซ้าย (มือถือ ≤ 820px) ---------- */
+const DRAWER_MQ = matchMedia("(max-width: 820px)");
+let drawerReturnFocus = null;
+
+function drawerLinks() {
+  const page = location.pathname.split("/").pop() || "index.html";
+  const mine = new URLSearchParams(location.search).get("tab") === "mine";
+  const isAdmin = currentUser && currentUser.role === "admin";
+  const items = [
+    ["index.html", "home", "หน้าแรก", page === "index.html"],
+    ["search.html", "grid", "หมวดหมู่", page === "search.html"],
+    ["post.html", "plus", "ลงประกาศ", page === "post.html"],
+    CHAT_ENABLED && ["messages.html", "chat", "ข้อความ", page === "messages.html", true],
+    ["favorites.html", "heart", "รายการโปรด", page === "favorites.html" && !mine],
+    ["favorites.html?tab=mine", "box", "ประกาศของฉัน", page === "favorites.html" && mine],
+    isAdmin && ["admin.html", "shield", "หลังบ้าน", page === "admin.html"],
+    ["index.html#about", "leaf", "เกี่ยวกับโครงการ", false]
+  ].filter(Boolean);
+  return items.map(([href, ic, label, active, badge]) => `
+    <a href="${href}" class="${active ? "active" : ""}" ${active ? 'aria-current="page"' : ""}>
+      ${icon(ic)}<span>${label}</span>
+      ${badge ? `<span class="drawer-badge" hidden aria-label="ข้อความที่ยังไม่อ่าน"></span>` : ""}
+    </a>`).join("");
+}
+
+function setupDrawer(logo) {
+  logo.insertAdjacentHTML("beforebegin", `
+    <button class="nav-burger" type="button" aria-label="เปิดเมนู" title="เมนู" aria-haspopup="dialog"
+      aria-expanded="false" aria-controls="drawer">${icon("menu")}</button>`);
+  document.body.insertAdjacentHTML("beforeend", `
+    <div class="drawer-backdrop" hidden></div>
+    <aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title" tabindex="-1" hidden>
+      <div class="drawer-head">
+        <a href="index.html" class="logo" id="drawer-title"><span class="logo-mark">${icon("leaf")}</span><span>Second Life</span></a>
+        <button class="drawer-close" type="button" aria-label="ปิดเมนู" title="ปิด">${icon("close")}</button>
+      </div>
+      <div class="drawer-user" id="drawer-user"></div>
+      <nav class="drawer-nav" aria-label="เมนูหลัก">${drawerLinks()}</nav>
+      <div class="drawer-foot" id="drawer-foot" hidden></div>
+    </aside>`);
+
+  const burger = document.querySelector(".nav-burger");
+  const drawer = document.getElementById("drawer");
+  const backdrop = document.querySelector(".drawer-backdrop");
+  burger.addEventListener("click", openDrawer);
+  drawer.querySelector(".drawer-close").addEventListener("click", closeDrawer);
+  backdrop.addEventListener("click", closeDrawer);
+  /* แตะลิงก์ในหน้าเดียวกัน (เช่น #about) → ปิดเมนูก่อนเลื่อนไป */
+  drawer.addEventListener("click", e => { if (e.target.closest(".drawer-nav a")) closeDrawer(false); });
+  drawer.addEventListener("keydown", e => {
+    if (e.key === "Escape") { e.preventDefault(); closeDrawer(); }
+    if (e.key !== "Tab") return;
+    /* วนโฟกัสอยู่ในเมนูระหว่างเปิด */
+    const items = [...drawer.querySelectorAll("a[href], button:not([disabled])")].filter(el => el.offsetParent);
+    const first = items[0], last = items[items.length - 1];
+    if (e.shiftKey && (document.activeElement === first || document.activeElement === drawer)) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  });
+  /* หมุนจอ/ขยายจอจนเกิน 820px ระหว่างเปิด → ปิดเมนู */
+  DRAWER_MQ.addEventListener("change", e => { if (!e.matches) closeDrawer(false); });
+  renderDrawerUser();
+}
+
+function renderDrawerUser() {
+  const box = document.getElementById("drawer-user");
+  const foot = document.getElementById("drawer-foot");
+  if (!box) return;
+  document.querySelector(".drawer-nav").innerHTML = drawerLinks();
+  if (currentUser) {
+    box.innerHTML = `
+      <span class="avatar avatar-lg">${esc(currentUser.name.slice(0, 1))}</span>
+      <span class="drawer-user-text"><strong>${esc(currentUser.name)}</strong><code>${esc(currentUser.studentId)}</code></span>`;
+    foot.hidden = false;
+    foot.innerHTML = `<button type="button" class="btn btn-danger drawer-logout">${icon("logout")}ออกจากระบบ</button>`;
+    foot.querySelector("button").addEventListener("click", async () => {
+      await api("/logout", { method: "POST" }).catch(() => {});
+      location.href = "index.html";
+    });
+  } else {
+    box.innerHTML = `
+      <span class="avatar avatar-lg">${icon("user")}</span>
+      <span class="drawer-user-text"><strong>ยินดีต้อนรับ</strong><a href="login.html">เข้าสู่ระบบ / สมัครสมาชิก</a></span>`;
+    foot.hidden = true;
+    foot.innerHTML = "";
+  }
+  refreshUnread();
+}
+
+function openDrawer() {
+  const drawer = document.getElementById("drawer");
+  const backdrop = document.querySelector(".drawer-backdrop");
+  const burger = document.querySelector(".nav-burger");
+  drawerReturnFocus = burger;
+  drawer.hidden = false;
+  backdrop.hidden = false;
+  drawer.getBoundingClientRect();   // ให้เบราว์เซอร์วาดตำแหน่งเริ่มก่อน แล้วค่อยเลื่อนเข้า
+  document.documentElement.classList.add("drawer-lock");
+  document.body.classList.add("drawer-open");
+  burger.setAttribute("aria-expanded", "true");
+  /* ส่วนอื่นของหน้ากดหรือโฟกัสไม่ได้ระหว่างเปิด */
+  document.querySelectorAll("body > header, body > main, body > section, body > footer").forEach(el => { el.inert = true; });
+  drawer.querySelector(".drawer-close").focus();
+}
+
+function closeDrawer(restoreFocus = true) {
+  const drawer = document.getElementById("drawer");
+  if (!drawer || drawer.hidden) return;
+  const backdrop = document.querySelector(".drawer-backdrop");
+  document.body.classList.remove("drawer-open");
+  document.documentElement.classList.remove("drawer-lock");
+  document.querySelector(".nav-burger").setAttribute("aria-expanded", "false");
+  document.querySelectorAll("[inert]").forEach(el => { el.inert = false; });
+  const hide = () => { if (!document.body.classList.contains("drawer-open")) { drawer.hidden = true; backdrop.hidden = true; } };
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) hide();
+  else setTimeout(hide, 320);
+  if (restoreFocus && drawerReturnFocus) drawerReturnFocus.focus();
 }
 
 /* แคปซูลของแถบเมนูล่าง (มือถือ): เลื่อนจากเมนูของหน้าก่อนหน้าไปยังเมนูปัจจุบัน */
@@ -306,10 +435,11 @@ function renderNavUser() {
   const slot = document.querySelector(".nav-user");
   if (!nav || !slot) return;
   const isAdmin = currentUser && currentUser.role === "admin";
+  renderDrawerUser();
   if (isAdmin) {
     const onAdmin = location.pathname.endsWith("admin.html");
     nav.insertAdjacentHTML("beforeend",
-      `<a href="admin.html" class="${onAdmin ? "active" : ""}">${icon("shield")}<span>หลังบ้าน</span></a>`);
+      `<a href="admin.html" title="หลังบ้าน" aria-label="หลังบ้าน" class="${onAdmin ? "active" : ""}">${icon("shield")}<span>หลังบ้าน</span></a>`);
     placeNavPill();
   }
 
@@ -573,7 +703,7 @@ async function refreshUnread() {
   if (!currentUser || !CHAT_ENABLED) return;
   try {
     const { count } = await api("/chats/unread");
-    document.querySelectorAll(".nav-badge").forEach(b => {
+    document.querySelectorAll(".nav-badge, .drawer-badge").forEach(b => {
       b.textContent = count > 99 ? "99+" : count;
       b.hidden = !count;
     });

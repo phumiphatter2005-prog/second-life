@@ -49,7 +49,7 @@ Minimal shadows. Cards rest flat with a 1px border and gain a subtle shadow on h
 - **Lists**: Stacked rows, 1px dividers, 12px × 16px padding, hover background.
 - **Checkboxes**: 20px, rounded-full, purple when checked.
 - **Tooltips**: Native `title` attributes only.
-- **Navigation**: Sticky, 56px, backdrop-blur, 1px bottom border. Logo left, links centered (desktop) or hamburger drawer (mobile), avatar dropdown right.
+- **Navigation**: Sticky, 56px, backdrop-blur, 1px bottom border. Logo left, links centered, avatar dropdown right (> 1100px with labels; 821–1100px icons only with tooltips). Phones (≤ 820px): 44px rounded ☰ button top-left opens a left drawer (80% width, max 320px; logo + ×, user box, icon links with the current page in light purple, logout at the bottom; dimmed + blurred backdrop; closes with ×, backdrop or Esc; focus moves in and returns to ☰). A bottom tab bar keeps 4 buttons: หน้าแรก, ค้นหา, ลงประกาศ, ข้อความ.
 - **Search**: Global search on ⌘K / Ctrl K. Rounded-xl bar with magnifier icon and shortcut badge.
 
 ## Spacing
