@@ -16,6 +16,7 @@ function setupFilterControls() {
     `<option value="${c.id}">${c.name}</option>`).join("");
 
   qInput.value = filters.q;
+  if (new URLSearchParams(location.search).has("focus")) qInput.focus();
   catSelect.value = filters.cat;
 
   qInput.addEventListener("input", () => { filters.q = qInput.value; renderResults(); });

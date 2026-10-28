@@ -19,6 +19,14 @@ const ICONS = {
   check:  '<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',
   camera: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3Z"/><circle cx="12" cy="13" r="3.5"/>',
   filter: '<path d="M3 5h18M6 12h12M10 19h4"/>',
+  menu:   '<path d="M4 6h16M4 12h16M4 18h16"/>',
+  close:  '<path d="M6 6l12 12M18 6 6 18"/>',
+  alert:  '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/>',
+  flag:   '<path d="M4 22V4a1 1 0 0 1 1-1h11l-2 4 2 4H5"/>',
+  chat:   '<path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12Z"/>',
+  edit:   '<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+  image:  '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/>',
+  settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/>',
   trash:  '<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>',
   recycle:'<path d="M7 19H4.8a1.8 1.8 0 0 1-1.6-2.7L7.2 9.5M11 19h8.2a1.8 1.8 0 0 0 1.6-2.7l-1.2-2.1M14 16l-3 3 3 3M8.3 13.6 7.2 9.5 3.1 10.6M14.8 6.8 13.4 4.5a1.8 1.8 0 0 0-3.1 0L9.1 6.6M16.7 10.9l3.1-1.1 1.1 4.1"/>'
 };
@@ -64,8 +72,11 @@ function productCard(p) {
             <span class="price">${formatPrice(p)}</span>
             <span class="badge badge-${p.type}">${TYPE_LABEL[p.type]}</span>
           </div>
-          ${p.ratingCount ? ratingLine(p.rating, p.ratingCount) : ""}
           <div class="card-pickup">${icon("pin")}${esc(p.pickup)}</div>
+          <div class="card-foot">
+            <span class="card-seller"><span class="avatar avatar-xs">${esc(p.sellerName.slice(0, 1))}</span><span>${esc(p.sellerName)}</span></span>
+            ${p.ratingCount ? ratingLine(p.rating, p.ratingCount) : ""}
+          </div>
         </div>
       </a>
     </div>`;
@@ -74,14 +85,42 @@ function productCard(p) {
 /* ---------- แถบเมนู + ส่วนท้าย (เหมือนกันทุกหน้า) ---------- */
 const NAV_ICONS = { "index.html": "home", "search.html": "grid", "post.html": "plus", "favorites.html": "heart" };
 
+const SHORTCUT = /Mac|iPhone|iPad/.test(navigator.platform) ? "⌘K" : "Ctrl K";
+
 function decorateNav() {
   const logo = document.querySelector(".logo");
-  if (logo) logo.innerHTML = `<span class="logo-mark">${icon("leaf")}</span><span>Second <em>Life</em></span>`;
+  if (logo) logo.innerHTML = `<span class="logo-mark">${icon("leaf")}</span><span>Second Life</span>`;
 
-  document.querySelectorAll(".nav-links a").forEach(a => {
-    const name = NAV_ICONS[a.getAttribute("href")];
-    if (name) a.innerHTML = icon(name) + `<span>${a.textContent}</span>`;
-  });
+  const nav = document.querySelector(".nav-links");
+  if (nav) {
+    nav.id = "nav-links";
+    nav.querySelectorAll("a").forEach(a => {
+      const name = NAV_ICONS[a.getAttribute("href")];
+      if (name) a.innerHTML = icon(name) + `<span>${a.textContent}</span>`;
+    });
+
+    /* มือถือ: ปุ่มเปิดเมนูแบบลิ้นชัก · ขวา: ปุ่มค้นหา + บัญชีผู้ใช้ */
+    logo.insertAdjacentHTML("beforebegin", `
+      <button class="nav-toggle" type="button" aria-label="เมนู" title="เมนู" aria-expanded="false" aria-controls="nav-links">${icon("menu")}</button>`);
+    nav.insertAdjacentHTML("afterend", `
+      <div class="nav-right">
+        <button class="nav-search" type="button" title="ค้นหา (${SHORTCUT})" aria-label="ค้นหา">${icon("search")}<span>ค้นหา</span><kbd>${SHORTCUT}</kbd></button>
+        <span class="nav-user"></span>
+      </div>`);
+
+    const toggle = document.querySelector(".nav-toggle");
+    const setOpen = open => {
+      document.body.classList.toggle("nav-open", open);
+      toggle.setAttribute("aria-expanded", open);
+      toggle.innerHTML = icon(open ? "close" : "menu");
+    };
+    toggle.addEventListener("click", () => setOpen(!document.body.classList.contains("nav-open")));
+    document.addEventListener("click", e => {
+      if (!e.target.closest(".navbar")) setOpen(false);
+    });
+    document.addEventListener("keydown", e => { if (e.key === "Escape") setOpen(false); });
+    document.querySelector(".nav-search").addEventListener("click", openSearch);
+  }
 
   document.body.insertAdjacentHTML("beforeend", `
     <footer class="site-footer">
@@ -113,28 +152,73 @@ const userReady = api("/me")
 
 function renderNavUser() {
   const nav = document.querySelector(".nav-links");
-  if (!nav) return;
-  if (currentUser && currentUser.role === "admin") {
+  const slot = document.querySelector(".nav-user");
+  if (!nav || !slot) return;
+  const isAdmin = currentUser && currentUser.role === "admin";
+  if (isAdmin) {
     const onAdmin = location.pathname.endsWith("admin.html");
     nav.insertAdjacentHTML("beforeend",
       `<a href="admin.html" class="${onAdmin ? "active" : ""}">${icon("shield")}<span>หลังบ้าน</span></a>`);
   }
 
-  const slot = document.createElement("span");
-  slot.className = "nav-user";
-  if (currentUser) {
-    slot.innerHTML = `
-      <span class="avatar" title="${esc(currentUser.name)}">${esc(currentUser.name.slice(0, 1))}</span>
-      <span class="nav-name">${esc(currentUser.name)}</span>
-      <button id="btn-logout" class="nav-btn" aria-label="ออกจากระบบ">${icon("logout")}<span>ออก</span></button>`;
-    slot.querySelector("#btn-logout").addEventListener("click", async () => {
-      await api("/logout", { method: "POST" }).catch(() => {});
-      location.href = "index.html";
-    });
-  } else {
-    slot.innerHTML = `<a href="login.html" class="nav-btn nav-login">${icon("user")}<span>เข้าสู่ระบบ</span></a>`;
+  if (!currentUser) {
+    slot.innerHTML = `<a href="login.html" class="btn btn-primary btn-sm">เข้าสู่ระบบ</a>`;
+    return;
   }
-  nav.appendChild(slot);
+
+  /* เมนูบัญชีแบบ dropdown จากรูปโปรไฟล์ */
+  slot.innerHTML = `
+    <button class="avatar-btn" type="button" aria-haspopup="menu" aria-expanded="false" title="${esc(currentUser.name)}">
+      <span class="avatar">${esc(currentUser.name.slice(0, 1))}</span>
+    </button>
+    <div class="user-menu" role="menu" hidden>
+      <div class="user-menu-head"><strong>${esc(currentUser.name)}</strong><code>${esc(currentUser.studentId)}</code></div>
+      <a role="menuitem" href="favorites.html?tab=mine">${icon("box")}ประกาศของฉัน</a>
+      <a role="menuitem" href="favorites.html">${icon("heart")}รายการโปรด</a>
+      ${isAdmin ? `<a role="menuitem" href="admin.html">${icon("shield")}ระบบหลังบ้าน</a>` : ""}
+      <button role="menuitem" type="button" class="danger-item" id="btn-logout">${icon("logout")}ออกจากระบบ</button>
+    </div>`;
+  const btn = slot.querySelector(".avatar-btn");
+  const menu = slot.querySelector(".user-menu");
+  const setOpen = open => { menu.hidden = !open; btn.setAttribute("aria-expanded", open); };
+  btn.addEventListener("click", () => setOpen(menu.hidden));
+  document.addEventListener("click", e => { if (!e.target.closest(".nav-user")) setOpen(false); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") setOpen(false); });
+  slot.querySelector("#btn-logout").addEventListener("click", async () => {
+    await api("/logout", { method: "POST" }).catch(() => {});
+    location.href = "index.html";
+  });
+}
+
+/* ---------- ค้นหาทั่วเว็บ (⌘K / Ctrl K) ---------- */
+function openSearch() {
+  const input = [...document.querySelectorAll("#hero-q, #f-q, #admin-q")].find(el => el.offsetParent);
+  if (input) {
+    input.focus();
+    input.select();
+  } else {
+    location.href = "search.html?focus=1";
+  }
+}
+
+document.addEventListener("keydown", e => {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+    e.preventDefault();
+    openSearch();
+  }
+});
+
+/* ---------- ลายจุดบนหน้าแรกที่ขยับตามเมาส์ ---------- */
+function setupDotGrid() {
+  const hero = document.querySelector(".hero");
+  if (!hero || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  hero.addEventListener("pointermove", e => {
+    const r = hero.getBoundingClientRect();
+    hero.style.setProperty("--mx", e.clientX - r.left + "px");
+    hero.style.setProperty("--my", e.clientY - r.top + "px");
+    hero.classList.add("dots-on");
+  });
+  hero.addEventListener("pointerleave", () => hero.classList.remove("dots-on"));
 }
 
 /* ---------- หน้าแรก ---------- */
@@ -176,6 +260,7 @@ async function renderStats() {
 function setupHeroSearch() {
   const form = document.getElementById("hero-search");
   if (!form) return;
+  document.getElementById("hero-kbd").textContent = SHORTCUT;
   form.addEventListener("submit", e => {
     e.preventDefault();
     const q = document.getElementById("hero-q").value.trim();
@@ -213,3 +298,4 @@ renderPopular();
 renderStats();
 setupHeroSearch();
 setupFavButtons();
+setupDotGrid();
