@@ -28,6 +28,8 @@ const DEMO_PRODUCTS = [
     desc: "แจกฟรี มารับได้เลย", img: "images/book2.svg" }
 ];
 
+const DEMO_ADMIN = { studentId: "00000", name: "ผู้ดูแลระบบ", password: "admin123", role: "admin" };
+
 function demoLoad() {
   let s = null;
   try { s = JSON.parse(localStorage.getItem("sl-demo")); } catch (e) { /* ใช้ค่าเริ่มต้น */ }
@@ -37,6 +39,10 @@ function demoLoad() {
       { ...p, id: s.nextId++, userId: null, passed: false, createdAt: Date.now() - i * 1000 }));
   }
   s.reviews = s.reviews || [];
+  /* บัญชีผู้ดูแลระบบสำหรับทดลองระบบหลังบ้าน */
+  if (!s.users.some(u => u.role === "admin")) {
+    s.users.push({ ...DEMO_ADMIN, id: s.nextId++, createdAt: Date.now() });
+  }
   /* ข้อมูลรุ่นเก่า: เปลี่ยนรูปสุ่มของสินค้าตัวอย่างเป็นรูปประกอบ */
   s.products.forEach(p => {
     const sample = p.userId === null && DEMO_PRODUCTS.find(d => d.title === p.title);
@@ -63,8 +69,9 @@ async function demoApi(path, options = {}) {
   const method = options.method || "GET";
   const b = options.body || {};
   const s = demoLoad();
-  const user = s.users.find(u => u.id === s.session) || null;
-  const pub = u => ({ id: u.id, studentId: u.studentId, name: u.name });
+  const user = s.users.find(u => u.id === s.session && !u.banned) || null;
+  const isAdmin = !!user && user.role === "admin";
+  const pub = u => ({ id: u.id, studentId: u.studentId, name: u.name, role: u.role || "user" });
   const avg = list => list.length ? list.reduce((t, r) => t + r.stars, 0) / list.length : null;
   const view = p => {
     const seller = s.users.find(u => u.id === p.userId);
@@ -87,7 +94,7 @@ async function demoApi(path, options = {}) {
   const findOwn = id => {
     const p = s.products.find(p => p.id === id);
     if (!p) throw demoError(404, "ไม่พบสินค้านี้");
-    if (p.userId !== user.id) throw demoError(403, "แก้ไขได้เฉพาะประกาศของตัวเอง");
+    if (p.userId !== user.id && !isAdmin) throw demoError(403, "แก้ไขได้เฉพาะประกาศของตัวเอง");
     return p;
   };
   const byNewest = (a, b) => b.createdAt - a.createdAt;
@@ -102,7 +109,7 @@ async function demoApi(path, options = {}) {
     if (!name) throw demoError(400, "กรุณากรอกชื่อที่จะแสดง");
     if (String(b.password || "").length < 6) throw demoError(400, "รหัสผ่านต้องยาวอย่างน้อย 6 ตัวอักษร");
     if (s.users.some(u => u.studentId === studentId)) throw demoError(409, "รหัสนักศึกษานี้สมัครไว้แล้ว");
-    const u = { id: s.nextId++, studentId, name, password: b.password };
+    const u = { id: s.nextId++, studentId, name, password: b.password, role: "user", createdAt: Date.now() };
     s.users.push(u);
     s.session = u.id;
     demoSave(s);
@@ -112,6 +119,7 @@ async function demoApi(path, options = {}) {
   if (path === "/login" && method === "POST") {
     const u = s.users.find(u => u.studentId === String(b.studentId || "").trim() && u.password === b.password);
     if (!u) throw demoError(401, "รหัสนักศึกษาหรือรหัสผ่านไม่ถูกต้อง");
+    if (u.banned) throw demoError(403, "บัญชีนี้ถูกระงับโดยผู้ดูแลระบบ");
     s.session = u.id;
     demoSave(s);
     return { user: pub(u) };
@@ -227,6 +235,75 @@ async function demoApi(path, options = {}) {
       : [...s.favorites, { userId: user.id, productId: pid }];
     demoSave(s);
     return { fav: !had };
+  }
+
+  /* ---------- ระบบหลังบ้าน ---------- */
+  if (path.startsWith("/admin/")) {
+    if (!user) throw demoError(401, "กรุณาเข้าสู่ระบบก่อน");
+    if (!isAdmin) throw demoError(403, "เฉพาะผู้ดูแลระบบเท่านั้น");
+  }
+  const countBy = (list, key) => list.reduce((o, x) => ({ ...o, [x[key]]: (o[x[key]] || 0) + 1 }), {});
+
+  if (path === "/admin/overview") {
+    return {
+      users: s.users.length,
+      admins: s.users.filter(u => u.role === "admin").length,
+      banned: s.users.filter(u => u.banned).length,
+      items: s.products.length,
+      passed: s.products.filter(p => p.passed).length,
+      reviews: s.reviews.length,
+      byCategory: countBy(s.products, "category"),
+      byType: countBy(s.products, "type")
+    };
+  }
+
+  if (path === "/admin/products") {
+    return [...s.products].sort(byNewest).map(p => {
+      const seller = s.users.find(u => u.id === p.userId);
+      return {
+        id: p.id, title: p.title, price: p.price, type: p.type, category: p.category,
+        img: p.img, passed: p.passed, pickup: p.pickup, contact: p.contact,
+        sellerName: seller ? seller.name : "Second Life", sellerStudentId: seller ? seller.studentId : null,
+        reviewCount: s.reviews.filter(r => r.productId === p.id).length, createdAt: p.createdAt
+      };
+    });
+  }
+
+  if (path === "/admin/users") {
+    return [...s.users].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).map(u => ({
+      ...pub(u), banned: !!u.banned, createdAt: u.createdAt || 0,
+      products: s.products.filter(p => p.userId === u.id).length
+    }));
+  }
+
+  if ((m = /^\/admin\/users\/(\d+)$/.exec(path))) {
+    const u = s.users.find(u => u.id === Number(m[1]));
+    if (!u) throw demoError(404, "ไม่พบผู้ใช้นี้");
+    if (u.id === user.id) throw demoError(400, "แก้ไขสิทธิ์บัญชีของตัวเองไม่ได้");
+    if (b.role !== undefined) {
+      if (!["user", "admin"].includes(b.role)) throw demoError(400, "สิทธิ์ไม่ถูกต้อง");
+      u.role = b.role;
+    }
+    if (b.banned !== undefined) u.banned = !!b.banned;
+    demoSave(s);
+    return { ok: true };
+  }
+
+  if (path === "/admin/reviews") {
+    return [...s.reviews].sort(byNewest).map(r => {
+      const u = s.users.find(u => u.id === r.userId);
+      const p = s.products.find(p => p.id === r.productId);
+      return { productId: r.productId, productTitle: p ? p.title : "-", userId: r.userId,
+               name: u ? u.name : "ผู้ใช้", stars: r.stars, comment: r.comment, createdAt: r.createdAt };
+    });
+  }
+
+  if ((m = /^\/admin\/reviews\/(\d+)\/(\d+)$/.exec(path))) {
+    const before = s.reviews.length;
+    s.reviews = s.reviews.filter(r => !(r.productId === Number(m[1]) && r.userId === Number(m[2])));
+    if (s.reviews.length === before) throw demoError(404, "ไม่พบรีวิวนี้");
+    demoSave(s);
+    return { ok: true };
   }
 
   throw demoError(404, "ไม่พบ API นี้");

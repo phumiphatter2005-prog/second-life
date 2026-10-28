@@ -6,7 +6,7 @@ function favButtonText(on) {
 }
 
 function passedText(on) {
-  return on ? "✅ ส่งต่อแล้ว (กดเพื่อยกเลิก)" : "♻️ ยืนยันว่าส่งต่อแล้ว";
+  return on ? "ส่งต่อแล้ว (กดเพื่อยกเลิก)" : "ยืนยันว่าส่งต่อแล้ว";
 }
 
 function formatDate(ms) {
@@ -19,12 +19,12 @@ function actionButtons(p) {
     return `
       <p class="owner-note">นี่คือประกาศของคุณ</p>
       <button id="btn-passed" class="btn-primary">${passedText(p.passed)}</button>
-      <button id="btn-delete" class="btn-outline danger">🗑️ ลบประกาศ</button>`;
+      <button id="btn-delete" class="btn-outline danger">ลบประกาศ</button>`;
   }
   return `
     <button id="btn-fav" class="btn-primary btn-fav ${p.isFav ? "on" : ""}">${favButtonText(p.isFav)}</button>
     <button id="btn-contact" class="btn-outline">ติดต่อผู้ขาย</button>
-    <p id="contact-box" class="contact-box" hidden>📞 ช่องทางติดต่อ: ${esc(p.contact)}</p>`;
+    <p id="contact-box" class="contact-box" hidden>ช่องทางติดต่อ: ${esc(p.contact)}</p>`;
 }
 
 function render(p) {
@@ -38,7 +38,7 @@ function render(p) {
       <div class="detail-info">
         <div class="detail-badges">
           <span class="badge badge-${p.type}">${TYPE_LABEL[p.type]}</span>
-          ${p.passed ? `<span class="badge badge-free">♻️ ส่งต่อแล้ว</span>` : ""}
+          ${p.passed ? `<span class="status status-ok">ส่งต่อแล้ว</span>` : ""}
         </div>
         <h1>${esc(p.title)}</h1>
         ${ratingLine(p.rating, p.ratingCount)}

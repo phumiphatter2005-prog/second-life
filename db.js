@@ -57,6 +57,15 @@ db.exec(`
   );
 `);
 
+/* ฐานข้อมูลรุ่นเก่า: เพิ่มคอลัมน์สิทธิ์ผู้ดูแลระบบและการระงับบัญชี */
+const userCols = db.prepare("PRAGMA table_info(users)").all().map(c => c.name);
+if (!userCols.includes("role")) db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'");
+if (!userCols.includes("banned")) db.exec("ALTER TABLE users ADD COLUMN banned INTEGER NOT NULL DEFAULT 0");
+
+/* ผู้ดูแลระบบจากตัวแปร ADMIN_STUDENT_IDS (คั่นด้วยจุลภาค) */
+(process.env.ADMIN_STUDENT_IDS || "").split(",").map(s => s.trim()).filter(Boolean).forEach(sid =>
+  db.prepare("UPDATE users SET role = 'admin' WHERE student_id = ?").run(sid));
+
 /* ---------- สินค้าตัวอย่าง (ใส่ให้ครั้งแรกที่ฐานข้อมูลยังว่าง) ---------- */
 const SAMPLE_PRODUCTS = [
   { title: "หนังสือวิทยาการคอมพิวเตอร์", price: 150, type: "sell", category: "book",

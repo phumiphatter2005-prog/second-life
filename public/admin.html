@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#7E2A8C">
+  <title>ระบบหลังบ้าน | Second Life</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=general-sans@500,700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500&family=IBM+Plex+Sans+Thai:wght@400;500;700&family=JetBrains+Mono&display=swap">
+  <link rel="stylesheet" href="css/style.css?v=4">
+</head>
+<body>
+
+  <header class="navbar">
+    <div class="container">
+      <a href="index.html" class="logo">Second Life</a>
+      <nav class="nav-links">
+        <a href="index.html">หน้าแรก</a>
+        <a href="search.html">หมวดหมู่</a>
+        <a href="post.html">ลงประกาศ</a>
+        <a href="favorites.html">รายการโปรด</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container admin-page">
+    <div class="page-head">
+      <span class="overline">Admin</span>
+      <h1 class="page-h1">ระบบหลังบ้าน</h1>
+      <p id="admin-mode" class="muted"></p>
+    </div>
+
+    <div id="admin-gate"></div>
+
+    <div id="admin-app" hidden>
+      <div id="admin-tabs" class="chips tabs" role="tablist">
+        <button class="chip active" data-tab="overview">ภาพรวม</button>
+        <button class="chip" data-tab="products">สินค้า</button>
+        <button class="chip" data-tab="users">ผู้ใช้</button>
+        <button class="chip" data-tab="reviews">รีวิว</button>
+      </div>
+
+      <div class="admin-toolbar" id="admin-toolbar" hidden>
+        <input id="admin-q" type="search" placeholder="ค้นหา...">
+      </div>
+
+      <p class="form-error" id="admin-error" hidden></p>
+      <div id="admin-body"></div>
+    </div>
+  </main>
+
+  <script src="js/config.js?v=4"></script>
+  <script src="js/supabase.js?v=4"></script>
+  <script src="js/demo.js?v=4"></script>
+  <script src="js/data.js?v=4"></script>
+  <script src="js/app.js?v=4"></script>
+  <script src="js/admin.js?v=4"></script>
+</body>
+</html>

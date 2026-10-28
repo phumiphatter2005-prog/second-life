@@ -8,7 +8,19 @@ const ICONS = {
   user:   '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
   search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
   pin:    '<path d="M12 21s-7-6.1-7-12a7 7 0 0 1 14 0c0 5.9-7 12-7 12Z"/><circle cx="12" cy="9" r="2.5"/>',
-  logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>'
+  logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>',
+  shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/>',
+  book:   '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5Z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/>',
+  shirt:  '<path d="M20.4 6.6 16 3a4 4 0 0 1-8 0L3.6 6.6a1 1 0 0 0-.2 1.3L5 10.5a1 1 0 0 0 1.3.4L7 10.5V20a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-9.5l.7.4a1 1 0 0 0 1.3-.4l1.6-2.6a1 1 0 0 0-.2-1.3Z"/>',
+  pencil: '<path d="M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/>',
+  laptop: '<rect x="4" y="4" width="16" height="11" rx="1.5"/><path d="M2 20h20"/>',
+  lamp:   '<path d="M8 2h8l3 8H5Z"/><path d="M12 10v8M8 22h8M12 18v4"/>',
+  box:    '<path d="M21 8 12 3 3 8v8l9 5 9-5Z"/><path d="m3 8 9 5 9-5M12 13v8"/>',
+  check:  '<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',
+  camera: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3Z"/><circle cx="12" cy="13" r="3.5"/>',
+  filter: '<path d="M3 5h18M6 12h12M10 19h4"/>',
+  trash:  '<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>',
+  recycle:'<path d="M7 19H4.8a1.8 1.8 0 0 1-1.6-2.7L7.2 9.5M11 19h8.2a1.8 1.8 0 0 0 1.6-2.7l-1.2-2.1M14 16l-3 3 3 3M8.3 13.6 7.2 9.5 3.1 10.6M14.8 6.8 13.4 4.5a1.8 1.8 0 0 0-3.1 0L9.1 6.6M16.7 10.9l3.1-1.1 1.1 4.1"/>'
 };
 
 function icon(name, cls = "ic") {
@@ -42,7 +54,7 @@ function categoryName(id) {
 function productCard(p) {
   return `
     <div class="card-wrap">
-      ${p.passed ? `<span class="passed-tag">♻️ ส่งต่อแล้ว</span>` : ""}
+      ${p.passed ? `<span class="passed-tag">${icon("recycle")}ส่งต่อแล้ว</span>` : ""}
       <button class="fav-btn ${p.isFav ? "on" : ""}" data-id="${p.id}" aria-label="รายการโปรด">${icon("heart")}</button>
       <a class="card" href="product.html?id=${p.id}">
         <div class="card-img"><img src="${esc(p.img)}" alt="${esc(p.title)}" loading="lazy"></div>
@@ -87,7 +99,7 @@ function decorateNav() {
           <p>คณะเทคโนโลยีสารสนเทศ<br>มหาวิทยาลัยศรีปทุม วิทยาเขตขอนแก่น</p>
         </div>
       </div>
-      <p class="footer-tag">Second Life for a Better Tomorrow 💜</p>
+      <p class="footer-tag container">Second Life for a Better Tomorrow</p>
     </footer>`);
 }
 
@@ -102,6 +114,12 @@ const userReady = api("/me")
 function renderNavUser() {
   const nav = document.querySelector(".nav-links");
   if (!nav) return;
+  if (currentUser && currentUser.role === "admin") {
+    const onAdmin = location.pathname.endsWith("admin.html");
+    nav.insertAdjacentHTML("beforeend",
+      `<a href="admin.html" class="${onAdmin ? "active" : ""}">${icon("shield")}<span>หลังบ้าน</span></a>`);
+  }
+
   const slot = document.createElement("span");
   slot.className = "nav-user";
   if (currentUser) {
@@ -125,7 +143,7 @@ function renderCategories() {
   if (!el) return;
   el.innerHTML = CATEGORIES.map(c => `
     <a class="cat" href="search.html?cat=${c.id}">
-      <span class="cat-icon">${c.icon}</span>
+      <span class="cat-icon">${icon(c.icon)}</span>
       <span>${c.name}</span>
     </a>`).join("");
 }

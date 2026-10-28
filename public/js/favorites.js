@@ -25,7 +25,7 @@ async function renderFavs() {
     listEl.innerHTML = list.length
       ? list.map(productCard).join("")
       : tab === "favs"
-        ? emptyState("ยังไม่มีสินค้าในรายการโปรด กด 🤍 บนสินค้าที่สนใจได้เลย", "search.html", "ไปค้นหาสินค้า")
+        ? emptyState("ยังไม่มีสินค้าในรายการโปรด กดรูปหัวใจบนสินค้าที่สนใจได้เลย", "search.html", "ไปค้นหาสินค้า")
         : emptyState("คุณยังไม่ได้ลงประกาศสินค้า", "post.html", "ลงประกาศสินค้า");
   } catch (e) {
     listEl.innerHTML = `<p class="empty">โหลดไม่สำเร็จ: ${esc(e.message)}</p>`;

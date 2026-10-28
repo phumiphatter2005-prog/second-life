@@ -45,8 +45,8 @@ app.use((req, res, next) => {
   if (token) {
     const minCreated = Date.now() - SESSION_DAYS * 24 * 60 * 60 * 1000;
     req.user = db.prepare(`
-      SELECT u.id, u.student_id, u.name FROM sessions s JOIN users u ON u.id = s.user_id
-      WHERE s.token = ? AND s.created_at > ?`).get(token, minCreated);
+      SELECT u.id, u.student_id, u.name, u.role FROM sessions s JOIN users u ON u.id = s.user_id
+      WHERE s.token = ? AND s.created_at > ? AND u.banned = 0`).get(token, minCreated);
   }
   next();
 });
@@ -56,8 +56,18 @@ function requireLogin(req, res, next) {
   next();
 }
 
+function isAdmin(user) {
+  return !!user && user.role === "admin";
+}
+
+function requireAdmin(req, res, next) {
+  if (!req.user) return res.status(401).json({ error: "กรุณาเข้าสู่ระบบก่อน" });
+  if (!isAdmin(req.user)) return res.status(403).json({ error: "เฉพาะผู้ดูแลระบบเท่านั้น" });
+  next();
+}
+
 function publicUser(u) {
-  return { id: u.id, studentId: u.student_id, name: u.name };
+  return { id: u.id, studentId: u.student_id, name: u.name, role: u.role || "user" };
 }
 
 /* แปลงแถวในฐานข้อมูลเป็นข้อมูลที่ส่งให้หน้าเว็บ
@@ -121,7 +131,7 @@ app.post("/api/register", (req, res) => {
   ).run(studentId, name, hashPassword(password, salt), salt, Date.now());
 
   startSession(res, Number(lastInsertRowid));
-  res.json({ user: { id: Number(lastInsertRowid), studentId, name } });
+  res.json({ user: { id: Number(lastInsertRowid), studentId, name, role: "user" } });
 });
 
 app.post("/api/login", (req, res) => {
@@ -133,6 +143,7 @@ app.post("/api/login", (req, res) => {
     Buffer.from(hashPassword(password, user.salt), "hex"),
     Buffer.from(user.pass_hash, "hex"));
   if (!ok) return res.status(401).json({ error: "รหัสนักศึกษาหรือรหัสผ่านไม่ถูกต้อง" });
+  if (user.banned) return res.status(403).json({ error: "บัญชีนี้ถูกระงับโดยผู้ดูแลระบบ" });
 
   startSession(res, user.id);
   res.json({ user: publicUser(user) });
@@ -215,7 +226,7 @@ app.post("/api/products", requireLogin, (req, res) => {
 function ownProduct(req, res) {
   const row = db.prepare("SELECT * FROM products WHERE id = ?").get(Number(req.params.id));
   if (!row) { res.status(404).json({ error: "ไม่พบสินค้านี้" }); return null; }
-  if (row.user_id !== req.user.id) { res.status(403).json({ error: "แก้ไขได้เฉพาะประกาศของตัวเอง" }); return null; }
+  if (row.user_id !== req.user.id && !isAdmin(req.user)) { res.status(403).json({ error: "แก้ไขได้เฉพาะประกาศของตัวเอง" }); return null; }
   return row;
 }
 
@@ -302,6 +313,82 @@ app.get("/api/stats", (req, res) => {
     items: db.prepare("SELECT COUNT(*) AS n FROM products").get().n,
     users: db.prepare("SELECT COUNT(*) AS n FROM users").get().n
   });
+});
+
+/* ---------- ระบบหลังบ้าน (เฉพาะผู้ดูแลระบบ) ---------- */
+function countBy(sql) {
+  return Object.fromEntries(db.prepare(sql).all().map(r => [r.k, r.n]));
+}
+
+app.get("/api/admin/overview", requireAdmin, (req, res) => {
+  const n = sql => db.prepare(sql).get().n;
+  res.json({
+    users: n("SELECT COUNT(*) AS n FROM users"),
+    admins: n("SELECT COUNT(*) AS n FROM users WHERE role = 'admin'"),
+    banned: n("SELECT COUNT(*) AS n FROM users WHERE banned = 1"),
+    items: n("SELECT COUNT(*) AS n FROM products"),
+    passed: n("SELECT COUNT(*) AS n FROM products WHERE passed = 1"),
+    reviews: n("SELECT COUNT(*) AS n FROM reviews"),
+    byCategory: countBy("SELECT category AS k, COUNT(*) AS n FROM products GROUP BY category"),
+    byType: countBy("SELECT type AS k, COUNT(*) AS n FROM products GROUP BY type")
+  });
+});
+
+app.get("/api/admin/products", requireAdmin, (req, res) => {
+  const rows = db.prepare(`
+    SELECT p.*, u.name AS seller_name, u.student_id AS seller_sid,
+           (SELECT COUNT(*) FROM reviews r WHERE r.product_id = p.id) AS review_count
+    FROM products p LEFT JOIN users u ON u.id = p.user_id
+    ORDER BY p.created_at DESC`).all();
+  res.json(rows.map(r => ({
+    id: r.id, title: r.title, price: r.price, type: r.type, category: r.category,
+    img: r.img, passed: !!r.passed, pickup: r.pickup, contact: r.contact,
+    sellerName: r.seller_name || "Second Life", sellerStudentId: r.seller_sid,
+    reviewCount: r.review_count, createdAt: r.created_at
+  })));
+});
+
+app.get("/api/admin/users", requireAdmin, (req, res) => {
+  const rows = db.prepare(`
+    SELECT u.*, (SELECT COUNT(*) FROM products p WHERE p.user_id = u.id) AS product_count
+    FROM users u ORDER BY u.created_at DESC`).all();
+  res.json(rows.map(u => ({
+    id: u.id, studentId: u.student_id, name: u.name, role: u.role, banned: !!u.banned,
+    products: u.product_count, createdAt: u.created_at
+  })));
+});
+
+/* เปลี่ยนสิทธิ์ (role) หรือระงับบัญชี (banned) — แก้บัญชีตัวเองไม่ได้ กันล็อกตัวเองออก */
+app.post("/api/admin/users/:id", requireAdmin, (req, res) => {
+  const user = db.prepare("SELECT * FROM users WHERE id = ?").get(Number(req.params.id));
+  if (!user) return res.status(404).json({ error: "ไม่พบผู้ใช้นี้" });
+  if (user.id === req.user.id) return res.status(400).json({ error: "แก้ไขสิทธิ์บัญชีของตัวเองไม่ได้" });
+
+  const role = req.body.role === undefined ? user.role : req.body.role;
+  const banned = req.body.banned === undefined ? !!user.banned : !!req.body.banned;
+  if (!["user", "admin"].includes(role)) return res.status(400).json({ error: "สิทธิ์ไม่ถูกต้อง" });
+
+  db.prepare("UPDATE users SET role = ?, banned = ? WHERE id = ?").run(role, banned ? 1 : 0, user.id);
+  if (banned) db.prepare("DELETE FROM sessions WHERE user_id = ?").run(user.id);
+  res.json({ ok: true });
+});
+
+app.get("/api/admin/reviews", requireAdmin, (req, res) => {
+  const rows = db.prepare(`
+    SELECT r.*, u.name, p.title FROM reviews r
+    JOIN users u ON u.id = r.user_id JOIN products p ON p.id = r.product_id
+    ORDER BY r.created_at DESC`).all();
+  res.json(rows.map(r => ({
+    productId: r.product_id, productTitle: r.title, userId: r.user_id, name: r.name,
+    stars: r.stars, comment: r.comment, createdAt: r.created_at
+  })));
+});
+
+app.delete("/api/admin/reviews/:productId/:userId", requireAdmin, (req, res) => {
+  const { changes } = db.prepare("DELETE FROM reviews WHERE product_id = ? AND user_id = ?")
+    .run(Number(req.params.productId), Number(req.params.userId));
+  if (!changes) return res.status(404).json({ error: "ไม่พบรีวิวนี้" });
+  res.json({ ok: true });
 });
 
 app.use("/api", (req, res) => res.status(404).json({ error: "ไม่พบ API นี้" }));

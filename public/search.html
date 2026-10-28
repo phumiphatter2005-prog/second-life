@@ -3,14 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#7E2A8C">
   <title>ค้นหาสินค้า | Second Life</title>
-  <link rel="stylesheet" href="css/style.css?v=3">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=general-sans@500,700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500&family=IBM+Plex+Sans+Thai:wght@400;500;700&family=JetBrains+Mono&display=swap">
+  <link rel="stylesheet" href="css/style.css?v=4">
 </head>
 <body>
 
   <header class="navbar">
     <div class="container">
-      <a href="index.html" class="logo">♻️ Second Life</a>
+      <a href="index.html" class="logo">Second Life</a>
       <nav class="nav-links">
         <a href="index.html">หน้าแรก</a>
         <a href="search.html" class="active">หมวดหมู่</a>
@@ -21,9 +26,13 @@
   </header>
 
   <main class="container search-layout">
-    <aside class="filters">
-      <input id="f-q" type="text" placeholder="ค้นหาสินค้า...">
+    <aside class="filters" id="filters">
+      <div class="filters-top">
+        <input id="f-q" type="search" placeholder="ค้นหาสินค้า..." aria-label="ค้นหาสินค้า">
+        <button id="f-toggle" type="button" class="btn btn-secondary filters-toggle" aria-expanded="false" aria-controls="filters-body">ตัวกรอง</button>
+      </div>
 
+      <div class="filters-body" id="filters-body">
       <label>ประเภทประกาศ</label>
       <div id="f-type" class="chips">
         <button class="chip active" data-value="all">ทั้งหมด</button>
@@ -44,6 +53,7 @@
       </select>
 
       <button id="f-reset" class="btn-outline">ล้างตัวกรอง</button>
+      </div>
     </aside>
 
     <section class="results">
@@ -52,9 +62,11 @@
     </section>
   </main>
 
-  <script src="js/demo.js?v=3"></script>
-  <script src="js/data.js?v=3"></script>
-  <script src="js/app.js?v=3"></script>
-  <script src="js/search.js?v=3"></script>
+  <script src="js/config.js?v=4"></script>
+  <script src="js/supabase.js?v=4"></script>
+  <script src="js/demo.js?v=4"></script>
+  <script src="js/data.js?v=4"></script>
+  <script src="js/app.js?v=4"></script>
+  <script src="js/search.js?v=4"></script>
 </body>
 </html>

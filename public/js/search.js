@@ -31,6 +31,13 @@ function setupFilterControls() {
     });
   });
 
+  /* มือถือ: ซ่อนตัวกรองไว้ กดปุ่มเพื่อเปิด/ปิด */
+  const toggle = document.getElementById("f-toggle");
+  toggle.addEventListener("click", () => {
+    const open = document.getElementById("filters").classList.toggle("open");
+    toggle.setAttribute("aria-expanded", open);
+  });
+
   document.getElementById("f-reset").addEventListener("click", () => {
     filters.q = ""; filters.type = "all"; filters.cat = "all"; filters.cond = "all";
     qInput.value = "";

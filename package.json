@@ -4,7 +4,8 @@
   "description": "Second Life: ตลาดสินค้ามือสองในมหาวิทยาลัย",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "make-admin": "node make-admin.js"
   },
   "engines": {
     "node": ">=22.13"

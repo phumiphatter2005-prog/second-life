@@ -3,14 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#7E2A8C">
   <title>Second Life | ตลาดสินค้ามือสองในมหาวิทยาลัย</title>
-  <link rel="stylesheet" href="css/style.css?v=3">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=general-sans@500,700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500&family=IBM+Plex+Sans+Thai:wght@400;500;700&family=JetBrains+Mono&display=swap">
+  <link rel="stylesheet" href="css/style.css?v=4">
 </head>
 <body>
 
   <header class="navbar">
     <div class="container">
-      <a href="index.html" class="logo">♻️ Second Life</a>
+      <a href="index.html" class="logo">Second Life</a>
       <nav class="nav-links">
         <a href="index.html" class="active">หน้าแรก</a>
         <a href="search.html">หมวดหมู่</a>
@@ -22,12 +27,13 @@
 
   <section class="hero">
     <div class="container">
-      <span class="hero-pill">🌱 ตลาดสินค้ามือสองในมหาวิทยาลัย</span>
-      <h1>Second Life</h1>
-      <p>ซื้อ ขาย แลกเปลี่ยน แจกฟรี ในชุมชนมหาวิทยาลัย<br><em>ให้สิ่งของ...ได้มีชีวิตที่สอง</em></p>
-      <form id="hero-search" class="search-box">
-        <input id="hero-q" type="text" placeholder="ค้นหาสินค้าที่ต้องการ...">
-        <button type="submit" aria-label="ค้นหา">ค้นหา</button>
+      <span class="overline">ตลาดสินค้ามือสองในมหาวิทยาลัย</span>
+      <h1>ให้สิ่งของ<br>ได้มี<span class="hl">ชีวิตที่สอง</span></h1>
+      <p>ซื้อ ขาย แลกเปลี่ยน และแจกฟรี ภายในชุมชนมหาวิทยาลัย</p>
+      <form id="hero-search" class="search-box" role="search">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="hero-q" type="search" placeholder="ค้นหาสินค้าที่ต้องการ..." aria-label="ค้นหาสินค้า">
+        <button type="submit" class="btn btn-primary">ค้นหา</button>
       </form>
     </div>
   </section>
@@ -43,21 +49,22 @@
 
     <section class="about">
       <div class="about-text">
-        <span class="hero-pill">เกี่ยวกับโครงการ</span>
-        <h2>ร่วมส่งต่อสิ่งของ<br>ลดขยะ สร้างสังคมที่ยั่งยืน<br><span>ไปด้วยกัน</span></h2>
+        <span class="overline">เกี่ยวกับโครงการ</span>
+        <h2>ร่วมส่งต่อสิ่งของ ลดขยะ<br>สร้างสังคมที่ยั่งยืน <span>ไปด้วยกัน</span></h2>
         <p>ทุกชิ้นที่ส่งต่อ คือการให้ชีวิตที่สองและลดขยะ ตอบโจทย์ SDG 12 และ SDG 11</p>
       </div>
-      <div class="about-earth" aria-hidden="true">🌍</div>
       <div class="stats">
-        <div class="stat"><span class="stat-ic">♻️</span><strong id="stat-passed">0</strong><span>ชิ้นที่ส่งต่อแล้ว</span></div>
-        <div class="stat"><span class="stat-ic">📦</span><strong id="stat-items">0</strong><span>สินค้าในระบบ</span></div>
-        <div class="stat"><span class="stat-ic">👥</span><strong id="stat-users">0</strong><span>ผู้ใช้งาน</span></div>
+        <div class="stat"><strong id="stat-passed">0</strong><span>ชิ้นที่ส่งต่อแล้ว</span></div>
+        <div class="stat"><strong id="stat-items">0</strong><span>สินค้าในระบบ</span></div>
+        <div class="stat"><strong id="stat-users">0</strong><span>ผู้ใช้งาน</span></div>
       </div>
     </section>
   </main>
 
-  <script src="js/demo.js?v=3"></script>
-  <script src="js/data.js?v=3"></script>
-  <script src="js/app.js?v=3"></script>
+  <script src="js/config.js?v=4"></script>
+  <script src="js/supabase.js?v=4"></script>
+  <script src="js/demo.js?v=4"></script>
+  <script src="js/data.js?v=4"></script>
+  <script src="js/app.js?v=4"></script>
 </body>
 </html>

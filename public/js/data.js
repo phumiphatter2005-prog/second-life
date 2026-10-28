@@ -1,17 +1,18 @@
 const CATEGORIES = [
-  { id: "all",       name: "ทั้งหมด",        icon: "🔲" },
-  { id: "book",      name: "หนังสือ",        icon: "📖" },
-  { id: "clothes",   name: "เสื้อผ้า",        icon: "👕" },
-  { id: "stationery",name: "อุปกรณ์การเรียน", icon: "✏️" },
-  { id: "electronic",name: "เครื่องใช้ไฟฟ้า", icon: "💻" },
-  { id: "dorm",      name: "ของใช้ในหอพัก",  icon: "🎒" },
-  { id: "other",     name: "อื่นๆ",          icon: "💜" }
+  { id: "all",       name: "ทั้งหมด",        icon: "grid" },
+  { id: "book",      name: "หนังสือ",        icon: "book" },
+  { id: "clothes",   name: "เสื้อผ้า",        icon: "shirt" },
+  { id: "stationery",name: "อุปกรณ์การเรียน", icon: "pencil" },
+  { id: "electronic",name: "เครื่องใช้ไฟฟ้า", icon: "laptop" },
+  { id: "dorm",      name: "ของใช้ในหอพัก",  icon: "lamp" },
+  { id: "other",     name: "อื่นๆ",          icon: "box" }
 ];
 
 const TYPE_LABEL = { sell: "ขาย", swap: "แลกเปลี่ยน", free: "แจกฟรี" };
 
 /* ---------- เรียก API ของเซิร์ฟเวอร์ ---------- */
 async function api(path, options = {}) {
+  if (SUPABASE_MODE) return supabaseApi(path, options);
   if (DEMO_MODE) return demoApi(path, options);
   const res = await fetch("/api" + path, {
     method: options.method || "GET",
