@@ -39,10 +39,13 @@
         <button class="chip" data-tab="products">สินค้า</button>
         <button class="chip" data-tab="users">ผู้ใช้</button>
         <button class="chip" data-tab="reviews">รีวิว</button>
+        <button class="chip" data-tab="reports">รายงาน<span id="report-badge"></span></button>
+        <button class="chip" data-tab="settings">ตั้งค่าเว็บ</button>
       </div>
 
       <div class="admin-toolbar" id="admin-toolbar" hidden>
         <input id="admin-q" type="search" placeholder="ค้นหา...">
+        <label id="admin-filter" hidden><input type="checkbox" id="admin-filter-check"><span></span></label>
       </div>
 
       <p class="form-error" id="admin-error" hidden></p>

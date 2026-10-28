@@ -25,16 +25,20 @@
   </header>
 
   <section class="hero">
-    <div class="container">
-      <span class="overline">ตลาดสินค้ามือสองในมหาวิทยาลัย</span>
-      <h1>ให้สิ่งของ<br>ได้มี<span class="hl">ชีวิตที่สอง</span></h1>
-      <p>ซื้อ ขาย แลกเปลี่ยน และแจกฟรี ภายในชุมชนมหาวิทยาลัย</p>
-      <form id="hero-search" class="search-box" role="search">
-        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-        <input id="hero-q" type="search" placeholder="ค้นหาสินค้าที่ต้องการ..." aria-label="ค้นหาสินค้า">
-        <kbd id="hero-kbd" title="กดเพื่อค้นหาจากทุกหน้า">Ctrl K</kbd>
-        <button type="submit" class="btn btn-primary">ค้นหา</button>
-      </form>
+    <div class="container hero-grid">
+      <div>
+        <span class="overline">ตลาดสินค้ามือสองในมหาวิทยาลัย</span>
+        <h1 id="hero-title">ให้สิ่งของ<br>ได้มี<span class="hl">ชีวิตที่สอง</span></h1>
+        <p id="hero-text">ซื้อ ขาย แลกเปลี่ยน และแจกฟรี ภายในชุมชนมหาวิทยาลัย</p>
+        <form id="hero-search" class="search-box" role="search">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="hero-q" type="search" placeholder="ค้นหาสินค้าที่ต้องการ..." aria-label="ค้นหาสินค้า">
+          <kbd id="hero-kbd" title="กดเพื่อค้นหาจากทุกหน้า">Ctrl K</kbd>
+          <button type="submit" class="btn btn-primary">ค้นหา</button>
+        </form>
+      </div>
+      <!-- รูปแบนเนอร์ตั้งค่าได้ในหลังบ้าน → ตั้งค่าเว็บ -->
+      <img id="hero-banner" class="hero-banner" alt="" hidden>
     </div>
   </section>
 

@@ -286,6 +286,7 @@ code, kbd {
   line-height: 1.15;
   letter-spacing: -.03em;
   max-width: 14ch;
+  white-space: pre-line;
 }
 .hero .hl { color: var(--secondary); }
 .hero p { margin: 16px 0 32px; font-size: 17px; color: var(--text-2); max-width: 520px; white-space: pre-line; }

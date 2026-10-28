@@ -50,12 +50,24 @@ async function sbProfile(sb) {
 }
 
 /* รูปจากหน้าลงประกาศเป็น data URL → อัปโหลดเข้า Storage แล้วเก็บเป็นลิงก์ */
-async function sbUploadImage(sb, userId, dataUrl) {
+async function sbUploadImage(sb, folder, dataUrl, bucket = "product-images") {
   const blob = await (await fetch(dataUrl)).blob();
   if (blob.size > 2 * 1024 * 1024) throw sbError(400, "รูปภาพใหญ่เกินไป");
-  const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
-  sbCheck(await sb.storage.from("product-images").upload(path, blob, { contentType: blob.type }));
-  return sb.storage.from("product-images").getPublicUrl(path).data.publicUrl;
+  const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+  sbCheck(await sb.storage.from(bucket).upload(path, blob, { contentType: blob.type }));
+  return sb.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+}
+
+/* ลบไฟล์ใน Storage จากลิงก์ (ข้ามรูปที่อยู่ในเว็บ เช่น images/cat-book.svg) */
+async function sbRemoveFiles(sb, urls, bucket = "product-images") {
+  const paths = urls
+    .map(u => String(u || "").split(`/storage/v1/object/public/${bucket}/`)[1])
+    .filter(Boolean)
+    .map(p => decodeURIComponent(p.split("?")[0]));
+  if (!paths.length) return;
+  const { data, error } = await sb.storage.from(bucket).remove(paths);
+  /* ไม่ให้การลบไฟล์ล้มเหลวทำให้การบันทึกล้มเหลว แต่แจ้งไว้ในคอนโซล */
+  if (error || (data && data.length < paths.length)) console.warn("ลบไฟล์ใน Storage ไม่ครบ", error || data);
 }
 
 async function supabaseApi(path, options = {}) {
@@ -131,10 +143,9 @@ async function supabaseApi(path, options = {}) {
     const id = Number(m[1]);
     if (method === "DELETE") {
       await needUser();
-      const rows = sbCheck(await sb.from("products").delete().eq("id", id).select("img"));
+      const rows = sbCheck(await sb.from("products").delete().eq("id", id).select("*"));
       if (!rows.length) throw sbError(403, "แก้ไขได้เฉพาะประกาศของตัวเอง");
-      const stored = rows[0].img.split("/product-images/")[1];
-      if (stored) await sb.storage.from("product-images").remove([stored]);
+      await sbRemoveFiles(sb, [rows[0].img, ...(rows[0].images || [])]);
       return { ok: true };
     }
     const [p] = await rpc("sl_products", { p_id: id });
@@ -172,7 +183,77 @@ async function supabaseApi(path, options = {}) {
     return { fav: await rpc("sl_toggle_fav", { p_id: Number(m[1]) }) };
   }
 
+  /* ---------- ข้อความหน้าเว็บที่ตั้งค่าไว้ (อ่านได้ทุกคน) ---------- */
+  if (path === "/settings") {
+    const { data, error } = await sb.from("site_settings").select("data").eq("id", 1).maybeSingle();
+    return error || !data ? {} : data.data || {};   // ยังไม่ได้รัน 002_admin_cms.sql → ใช้ค่าเริ่มต้น
+  }
+
   /* ---------- ระบบหลังบ้าน ---------- */
+  if (path === "/admin/settings" && method === "PUT") {
+    const user = await needUser();
+    const current = (await supabaseApi("/settings")) || {};
+    const data = { ...b };
+    /* แบนเนอร์: data URL = รูปใหม่, "" = ลบรูป, ลิงก์เดิม = ไม่เปลี่ยน */
+    if (b.bannerUrl && b.bannerUrl.startsWith("data:")) {
+      data.bannerUrl = await sbUploadImage(sb, "banner", b.bannerUrl, "site-assets");
+    }
+    const rows = sbCheck(await sb.from("site_settings")
+      .update({ data, updated_at: new Date().toISOString(), updated_by: user.id }).eq("id", 1).select("id"));
+    if (!rows.length) throw sbError(403, "เฉพาะผู้ดูแลระบบเท่านั้น");
+    if (current.bannerUrl && current.bannerUrl !== data.bannerUrl) await sbRemoveFiles(sb, [current.bannerUrl], "site-assets");
+    return data;
+  }
+
+  if (path === "/admin/reports") return rpc("admin_reports");
+  if ((m = /^\/admin\/reports\/(\d+)$/.exec(path))) {
+    await rpc("admin_set_report", { p_id: Number(m[1]), p_status: String(b.status || "") });
+    return { ok: true };
+  }
+
+  if ((m = /^\/admin\/products\/(\d+)$/.exec(path))) {
+    const id = Number(m[1]);
+    await needUser();
+    const old = sbCheck(await sb.from("products").select("*").eq("id", id).maybeSingle());
+    if (!old) throw sbError(404, "ไม่พบสินค้านี้");
+    if (method === "GET") return old;
+
+    const item = {
+      title: String(b.title || "").trim(),
+      price: b.type === "free" ? 0 : Math.round(Number(b.price)),
+      type: b.type, category: b.category, condition: b.condition,
+      pickup: String(b.pickup || "").trim(),
+      contact: String(b.contact || "").trim(),
+      description: String(b.description || "").trim() || "ไม่มีรายละเอียดเพิ่มเติม",
+      passed: !!b.passed
+    };
+    if (!item.title) throw sbError(400, "กรุณากรอกชื่อสินค้า");
+    if (!TYPE_LABEL[item.type]) throw sbError(400, "ประเภทประกาศไม่ถูกต้อง");
+    if (!CATEGORIES.some(c => c.id === item.category && c.id !== "all")) throw sbError(400, "หมวดหมู่ไม่ถูกต้อง");
+    if (!CONDITION_INFO[item.condition]) throw sbError(400, "สภาพสินค้าไม่ถูกต้อง");
+    if (!Number.isFinite(item.price) || item.price < 0 || item.price > 1000000) throw sbError(400, "กรุณากรอกราคาให้ถูกต้อง");
+    if (!item.pickup) throw sbError(400, "กรุณาระบุจุดนัดรับ");
+    if (!item.contact) throw sbError(400, "กรุณาระบุช่องทางติดต่อ");
+
+    /* รูป: data URL = อัปโหลดใหม่, ลิงก์ = รูปเดิม · รูปเดิมที่ไม่อยู่ในรายการใหม่จะถูกลบจาก Storage */
+    const images = [];
+    for (const src of (Array.isArray(b.images) ? b.images : []).slice(0, 10)) {
+      images.push(String(src).startsWith("data:") ? await sbUploadImage(sb, `admin/${id}`, src) : String(src));
+    }
+    if (!images.length) images.push(`images/cat-${item.category}.svg`);
+    item.images = images;
+    item.img = images[0];
+
+    const rows = sbCheck(await sb.from("products").update(item).eq("id", id).select("id"));
+    if (!rows.length) {
+      await sbRemoveFiles(sb, images.filter(u => !(old.images || [old.img]).includes(u)));
+      throw sbError(403, "เฉพาะผู้ดูแลระบบเท่านั้นที่แก้ไขประกาศได้");
+    }
+    const before = [...new Set([old.img, ...(old.images || [])])];
+    await sbRemoveFiles(sb, before.filter(u => !images.includes(u)));
+    return { ok: true };
+  }
+
   if (path === "/admin/overview") return rpc("admin_overview");
   if (path === "/admin/products") return rpc("admin_products");
   if (path === "/admin/users") return rpc("admin_users");

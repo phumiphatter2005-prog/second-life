@@ -135,7 +135,7 @@ function decorateNav() {
         </div>
         <div>
           <strong>จัดทำโดย</strong>
-          <p>คณะเทคโนโลยีสารสนเทศ<br>มหาวิทยาลัยศรีปทุม วิทยาเขตขอนแก่น</p>
+          <p id="footer-credits">คณะเทคโนโลยีสารสนเทศ<br>มหาวิทยาลัยศรีปทุม วิทยาเขตขอนแก่น</p>
         </div>
       </div>
       <p class="footer-tag container">Second Life for a Better Tomorrow</p>
@@ -304,6 +304,58 @@ function setupFavButtons() {
   });
 }
 
+/* ---------- ข้อความหน้าเว็บจากหน้า "ตั้งค่าเว็บ" ---------- */
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el && typeof value === "string" && value.trim()) el.textContent = value.trim();
+}
+
+async function applySettings() {
+  const s = await settingsReady;
+  setText("footer-credits", s.credits);
+  setText("about-title", s.aboutTitle);
+  setText("about-text", s.aboutText);
+  setText("hero-text", s.heroText);
+  const h1 = document.getElementById("hero-title");
+  if (h1 && (s.heroTitle || "").trim()) {
+    h1.textContent = s.heroTitle.trim();
+    /* คำเน้นสีเขียวต่อท้ายหัวข้อ (ไม่บังคับ) */
+    if ((s.heroHighlight || "").trim()) {
+      h1.insertAdjacentHTML("beforeend", ` <span class="hl">${esc(s.heroHighlight.trim())}</span>`);
+    }
+  }
+  const banner = document.getElementById("hero-banner");
+  if (banner && s.bannerUrl) {
+    banner.src = s.bannerUrl;
+    banner.hidden = false;
+    banner.closest(".hero").classList.add("has-banner");
+  }
+}
+
+/* ย่อรูปให้กว้างไม่เกิน maxW แล้วคืนเป็น data URL (JPEG) สำหรับอัปโหลด */
+function resizeImage(file, maxW = 800) {
+  return new Promise((resolve, reject) => {
+    if (!file || !file.type.startsWith("image/")) return reject(new Error("กรุณาเลือกไฟล์รูปภาพ"));
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("อ่านไฟล์รูปไม่สำเร็จ"));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("เปิดไฟล์รูปไม่สำเร็จ"));
+      img.onload = () => {
+        const scale = Math.min(1, maxW / img.width);
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", 0.8));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+applySettings();
 renderCategories();
 renderPopular();
 renderStats();

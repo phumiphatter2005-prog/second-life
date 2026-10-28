@@ -29,11 +29,19 @@ function actionButtons(p) {
 
 function render(p) {
   document.title = p.title + " | Second Life";
+  const gallery = Array.isArray(p.images) && p.images.length ? p.images : [p.img];
 
   detail.innerHTML = `
     <div class="detail">
       <div class="detail-media">
-        <img class="detail-img" src="${esc(p.img)}" alt="${esc(p.title)}">
+        <img class="detail-img" id="detail-img" src="${esc(p.img)}" alt="${esc(p.title)}">
+        ${gallery.length > 1 ? `
+          <div class="thumbs" role="list" aria-label="รูปทั้งหมด">
+            ${gallery.map((src, i) => `
+              <button type="button" role="listitem" class="${i === 0 ? "active" : ""}" data-src="${esc(src)}" title="รูปที่ ${i + 1}">
+                <img src="${esc(src)}" alt="" loading="lazy">
+              </button>`).join("")}
+          </div>` : ""}
       </div>
       <div class="detail-info">
         <div class="detail-badges">
@@ -62,6 +70,8 @@ function render(p) {
         </div>
 
         ${actionButtons(p)}
+        ${currentUser && currentUser.role === "admin" ? `
+          <a class="btn-outline" href="admin.html?tab=products&edit=${p.id}">${icon("edit")}แก้ไขประกาศ (ผู้ดูแลระบบ)</a>` : ""}
         <p class="form-error" id="action-error" hidden></p>
 
         <h3>รายละเอียดสินค้า</h3>
@@ -100,6 +110,13 @@ function render(p) {
         </div>
       </div>
     </section>`;
+
+  detail.querySelectorAll(".thumbs button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.getElementById("detail-img").src = btn.dataset.src;
+      detail.querySelectorAll(".thumbs button").forEach(b => b.classList.toggle("active", b === btn));
+    });
+  });
 
   const showError = msg => {
     const el = document.getElementById("action-error");
