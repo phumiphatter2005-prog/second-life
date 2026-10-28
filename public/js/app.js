@@ -366,11 +366,30 @@ function setupDotGrid() {
 function renderCategories() {
   const el = document.getElementById("categories");
   if (!el) return;
+  /* "ทั้งหมด" เป็นหมวดที่เลือกไว้ก่อน กดหมวดไหน หมวดนั้นได้ขอบม่วงระหว่างไปหน้าค้นหา */
   el.innerHTML = CATEGORIES.map(c => `
-    <a class="cat" href="search.html?cat=${c.id}">
+    <a class="cat cat-${c.id} ${c.id === "all" ? "selected" : ""}" href="search.html?cat=${c.id}"
+      ${c.id === "all" ? 'aria-current="true"' : ""}>
       <span class="cat-icon">${icon(c.icon)}</span>
-      <span>${c.name}</span>
+      <span class="cat-text">
+        <span class="cat-name">${c.name}</span>
+        <span class="cat-count" data-cat="${c.id}"><span class="sk" style="display:inline-block;width:32px;height:10px"></span></span>
+      </span>
     </a>`).join("");
+  el.addEventListener("click", e => {
+    const card = e.target.closest(".cat");
+    if (!card) return;
+    el.querySelectorAll(".cat").forEach(c => c.classList.toggle("selected", c === card));
+  });
+}
+
+/* จำนวนสินค้าที่ยังเปิดอยู่ในแต่ละหมวด */
+function updateCategoryCounts(list) {
+  document.querySelectorAll(".cat-count").forEach(el => {
+    const cat = el.dataset.cat;
+    const n = list.filter(p => !p.passed && (cat === "all" || p.category === cat)).length;
+    el.textContent = n ? `${n.toLocaleString()} ชิ้น` : "ยังไม่มี";
+  });
 }
 
 async function renderPopular() {
@@ -385,9 +404,11 @@ async function renderPopular() {
       ? list.slice(0, 10).map(productCard).join("")
       : `<p class="empty">ยังไม่มีสินค้า มาเป็นคนแรกที่ <a href="post.html">ลงประกาศ</a></p>`;
     renderConveyor(list);
+    updateCategoryCounts(list);
   } catch (e) {
     el.innerHTML = `<p class="empty">โหลดสินค้าไม่สำเร็จ: ${esc(e.message)}</p>`;
     renderConveyor([]);
+    document.querySelectorAll(".cat-count").forEach(c => { c.textContent = ""; });
   }
 }
 
@@ -440,7 +461,6 @@ async function renderStats() {
 function setupHeroSearch() {
   const form = document.getElementById("hero-search");
   if (!form) return;
-  document.getElementById("hero-kbd").textContent = SHORTCUT;
   form.addEventListener("submit", e => {
     e.preventDefault();
     const q = document.getElementById("hero-q").value.trim();

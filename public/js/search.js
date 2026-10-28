@@ -5,6 +5,7 @@ function readUrlParams() {
   const params = new URLSearchParams(location.search);
   filters.q = params.get("q") || "";
   filters.cat = params.get("cat") || "all";
+  if (TYPE_LABEL[params.get("type")]) filters.type = params.get("type");
 }
 
 function setupFilterControls() {
@@ -24,6 +25,7 @@ function setupFilterControls() {
   condSelect.addEventListener("change", () => { filters.cond = condSelect.value; renderResults(); });
 
   document.querySelectorAll("#f-type .chip").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.value === filters.type);
     btn.addEventListener("click", () => {
       document.querySelectorAll("#f-type .chip").forEach(b => b.classList.remove("active"));
       btn.classList.add("active");

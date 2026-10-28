@@ -11,7 +11,7 @@
   --on-primary: #FAFAFA;
   --ring: 0 0 0 3px rgba(126, 42, 140, .12);
   --glow: 0 4px 12px rgba(126, 42, 140, .35);
-  --secondary: #20970B;              /* ไฮไลต์แบรนด์ในหัวข้อหน้าแรกเท่านั้น */
+  --brand-green: #1F7A4D;            /* ปลายไล่เฉดของคำเน้นในหัวข้อ (ม่วง → เขียว) */
 
   --bg: #FAFAFA;
   --surface: #FFFFFF;
@@ -248,7 +248,7 @@ code, kbd {
 .avatar-xs { width: 20px; height: 20px; font-size: 11px; }
 
 /* ---------- Hero ---------- */
-.hero { position: relative; padding: 80px 0 64px; overflow: hidden; }
+.hero { position: relative; padding: 64px 0 40px; overflow: hidden; }
 /* ลายจุด — องค์ประกอบตกแต่งเพียงอย่างเดียว ตอบสนองตามตำแหน่งเมาส์ */
 .hero::before, .hero::after {
   content: "";
@@ -271,8 +271,82 @@ code, kbd {
 }
 .hero.dots-on::after { opacity: .45; }
 .hero .container { position: relative; z-index: 1; }
-.hero-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 40px; align-items: center; }
-.hero.has-banner .hero-grid { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }
+.hero-grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 48px; align-items: center; }
+.hero.has-banner .hero-art { display: none; }
+
+/* ป้ายแคปซูลเหนือหัวข้อ */
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 14px 4px 10px;
+  margin-bottom: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-full);
+  font-size: 14px;
+  color: var(--text);
+}
+.hero-badge .ic { width: 16px; height: 16px; color: var(--brand-green); }
+
+/* คำค้นยอดนิยมใต้ช่องค้นหา */
+.hero-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 16px; font-size: 13px; color: var(--text-2); }
+.hero-tags .chip { display: inline-flex; align-items: center; min-height: 28px; background: var(--surface); border-color: var(--border); }
+.hero-tags .chip:hover { border-color: var(--primary); color: var(--primary); }
+
+/* ภาพตัดแปะรูปสินค้าจริง */
+.hero-art { position: relative; width: 100%; max-width: 520px; aspect-ratio: 1 / .86; justify-self: end; }
+.ha {
+  position: absolute;
+  object-fit: cover;
+  background: var(--bg-alt);
+  border: 6px solid var(--surface);
+  border-radius: var(--r-lg);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, .08), 0 0 0 1px var(--border);
+  animation: drift var(--t, 10s) ease-in-out infinite alternate;
+  animation-delay: var(--delay, 0s);
+}
+.ha1 { width: 46%; aspect-ratio: 1;     left: 4%;  top: 6%;  --r0: -6deg; --r1: -3deg; --t: 11s; z-index: 2; }
+.ha2 { width: 40%; aspect-ratio: 4 / 5; right: 4%; top: 0;   --r0: 5deg;  --r1: 2deg;  --t: 13s; --delay: -4s; z-index: 1; }
+.ha3 { width: 36%; aspect-ratio: 4 / 5; left: 20%; bottom: 0; --r0: 4deg; --r1: 7deg;  --t: 12s; --delay: -7s; z-index: 3; }
+.ha4 { width: 40%; aspect-ratio: 1;     right: 8%; bottom: 6%; --r0: -4deg; --r1: -7deg; --t: 10s; --delay: -2s; z-index: 2; }
+@keyframes drift {
+  from { transform: translateY(0) rotate(var(--r0)); }
+  to { transform: translateY(-10px) rotate(var(--r1)); }
+}
+
+.ha-chip {
+  position: absolute;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lg);
+  font-size: 13px;
+  white-space: nowrap;
+  animation: bob 6s ease-in-out infinite alternate;
+}
+.ha-chip strong { display: block; line-height: 1.3; }
+.ha-chip small { display: block; font-size: 11px; color: var(--text-2); }
+.ha-passed { left: -2%; bottom: 30%; }
+.ha-stars { right: 0; top: 46%; animation-duration: 7s; animation-delay: -3s; }
+.ha-stars small { margin-left: 2px; }
+.ha-check {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-full);
+  background: var(--success-soft);
+  color: var(--success-ink);
+}
+.ha-check svg { width: 16px; height: 16px; }
+.stars-gold { color: var(--star); letter-spacing: 1px; }
+@keyframes bob { from { transform: translateY(0); } to { transform: translateY(-8px); } }
 .hero-banner {
   width: 100%;
   aspect-ratio: 4 / 3;
@@ -288,7 +362,16 @@ code, kbd {
   max-width: 14ch;
   white-space: pre-line;
 }
-.hero .hl { color: var(--secondary); }
+/* คำเน้นในหัวข้อ: ไล่เฉดม่วงแบรนด์ → เขียว (padding กันวรรณยุกต์ไทยด้านบนถูกตัด) */
+.hero .hl {
+  padding: .12em 0;
+  background: linear-gradient(90deg, var(--primary) 0%, var(--brand-green) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
 .hero p { margin: 16px 0 32px; font-size: 17px; color: var(--text-2); max-width: 520px; white-space: pre-line; }
 
 .search-box {
@@ -321,33 +404,45 @@ code, kbd {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 12px;
-  padding: 8px 0 64px;
+  padding: 0 0 56px;
 }
 .cat {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 16px 8px;
+  gap: 12px;
+  min-height: 64px;
+  padding: 12px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   font-size: 13px;
-  text-align: center;
-  transition: transform .2s, box-shadow .2s;
+  transition: transform .2s, box-shadow .2s, border-color .2s;
 }
 .cat:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+.cat.selected { border-color: var(--primary); box-shadow: var(--ring); }
 .cat-icon {
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
   display: grid;
   place-items: center;
   border-radius: var(--r-md);
-  background: var(--bg-alt);
-  color: var(--text);
-  transition: color .2s, background .2s;
+  background: var(--cat-bg, var(--bg-alt));
+  color: var(--cat-fg, var(--text));
 }
-.cat:hover .cat-icon { background: var(--primary-soft); color: var(--primary); }
+.cat-icon .ic { width: 18px; height: 18px; }
+.cat-name { display: block; line-height: 1.3; color: var(--text); }
+.cat-count { display: block; font-size: 11px; color: var(--text-2); line-height: 1.4; }
+.cat-text { min-width: 0; display: flex; flex-direction: column; }
+.cat-count { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* ไอคอนพื้นพาสเทลประจำหมวด */
+.cat-all        { --cat-bg: #EEF2FF; --cat-fg: #4338CA; }
+.cat-book       { --cat-bg: #E0F2FE; --cat-fg: #0369A1; }
+.cat-clothes    { --cat-bg: #FCE7F3; --cat-fg: #BE185D; }
+.cat-stationery { --cat-bg: #FEF9C3; --cat-fg: #A16207; }
+.cat-electronic { --cat-bg: #F3E8FF; --cat-fg: #7E22CE; }
+.cat-dorm       { --cat-bg: #DCFCE7; --cat-fg: #15803D; }
+.cat-other      { --cat-bg: #F3F4F6; --cat-fg: #4B5563; }
 
 /* ---------- Section ---------- */
 .section-head {
@@ -1047,8 +1142,9 @@ button.admin-title { border: none; background: none; padding: 0; font-size: inhe
 
 @media (max-width: 860px) {
   .container { padding: 0 16px; }
-  .hero { padding: 48px 0; }
-  .hero.has-banner .hero-grid { grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  .hero { padding: 32px 0 24px; }
+  .hero-grid { grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  .hero-art { max-width: 400px; justify-self: center; }
   .detail { grid-template-columns: minmax(0, 1fr); gap: 24px; }
   .reviews-layout { grid-template-columns: minmax(0, 1fr); gap: 20px; }
   .search-layout { grid-template-columns: minmax(0, 1fr); gap: 20px; padding-top: 24px; }
@@ -1113,7 +1209,7 @@ button.admin-title { border: none; background: none; padding: 0; font-size: inhe
   /* ตัวอักษรอย่างน้อย 16px กัน iOS ซูมหน้าเมื่อแตะช่องกรอก */
   input[type="text"], input[type="search"], input[type="number"], input[type="password"], input[type="url"], select, textarea { font-size: 16px; }
 
-  .hero { padding: 40px 0 32px; }
+  .hero { padding: 32px 0 24px; }
   .hero p { font-size: 15px; margin: 12px 0 24px; }
   .search-box kbd { display: none; }
   .search-box .btn { padding: 0 16px; }
@@ -1129,7 +1225,14 @@ button.admin-title { border: none; background: none; padding: 0; font-size: inhe
     scrollbar-width: none;
   }
   .categories::-webkit-scrollbar { display: none; }
-  .cat { flex: 0 0 88px; scroll-snap-align: start; padding: 12px 4px; font-size: 12px; }
+  .cat { flex: 0 0 auto; width: 148px; scroll-snap-align: start; padding: 10px; gap: 10px; }
+  .categories { padding-bottom: 40px; }
+  .hero-art { max-width: 300px; }
+  .ha { border-width: 4px; }
+  .ha-chip { padding: 6px 10px; font-size: 12px; }
+  .ha-passed { left: -6%; }
+  .ha-stars { right: -6%; }
+  .hero-tags { margin-top: 12px; }
 
   .section-head h2 { font-size: 24px; }
   .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding-bottom: 32px; }

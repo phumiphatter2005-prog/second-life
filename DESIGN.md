@@ -8,7 +8,8 @@ An editorial precision interface for a university second-hand marketplace. The a
 ## Colors
 - **Primary** (#7E2A8C): CTAs, active states, links, focus rings, interactive highlights — purple
 - **Primary Hover** (#65216F): Darker purple for hover states on primary elements
-- **Secondary** (#20970B): Reserved exclusively for the brand highlight in the homepage headline — green
+- **Brand Green** (#1F7A4D): End stop of the headline gradient; also tints the leaf icon in the hero badge
+- **Headline Gradient** (`linear-gradient(90deg, #7E2A8C, #1F7A4D)`): Used only on the highlighted words of the homepage headline ("ชีวิตที่สอง"), applied as text fill (`background-clip: text`) with ~0.12em vertical padding so Thai tone marks above the line are not clipped. Replaces the old flat green #20970B
 - **Neutral** (#9C9C9C): Muted text, placeholders, timestamps, disabled states
 - **Background** (#FAFAFA): Page background, light warm gray
 - **Surface** (#FFFFFF): Cards, panels, modals, nav backdrop
@@ -37,6 +38,8 @@ Minimal shadows. Cards rest flat with a 1px border and gain a subtle shadow on h
 - **Cards**: White surface, 1px border, 12px radius. Listing cards have a 200px image area on top, then name, seller avatar and stats. Hover lifts 2px. 200ms transitions.
 - **Inputs**: 1px border, 6px radius, 10px × 14px padding, 14px text (16px on phones to stop iOS zoom). Focus: purple border + 3px ring. Error: red border.
 - **Chips**: Pill, gray-100 background, gray-600 text, 4px × 12px padding, 12px text. Active = purple fill. Status chips use the same shape with semantic colors.
+- **Category cards**: Compact row cards (icon + name + item count), equal height, 8px radius. Each category has its own pastel icon tile: all #EEF2FF, books #E0F2FE (blue), clothes #FCE7F3 (pink), stationery #FEF9C3 (yellow), electronics #F3E8FF (purple), dorm #DCFCE7 (green), other #F3F4F6 (gray). Hover lifts 2px; selected card gets a purple border + focus ring. On phones they form one horizontally scrolling row.
+- **Hero badge**: Pill above the headline with a leaf icon, 14px text, surface background and 1px border.
 - **Lists**: Stacked rows, 1px dividers, 12px × 16px padding, hover background.
 - **Checkboxes**: 20px, rounded-full, purple when checked.
 - **Tooltips**: Native `title` attributes only.
@@ -63,7 +66,7 @@ Minimal shadows. Cards rest flat with a 1px border and gain a subtle shadow on h
 - Do keep cards at 12px radius and buttons/inputs at 6px
 - Do test at 360px and 1280px
 - Don't use pure black (#000000) or pure white (#FFFFFF) for text
-- Don't add decorative gradients or illustrations — the interactive dot grid is the only decorative element
+- Don't add decorative gradients or illustrations — the interactive dot grid and the headline gradient text are the only exceptions
 - Don't use shadows on static elements
 - Don't use more than two font weights on a screen
 - Don't place more than one filled primary button in the same section

@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600&family=IBM+Plex+Sans+Thai:wght@400;600&family=JetBrains+Mono&display=swap">
-  <link rel="stylesheet" href="css/style.css?v=7">
+  <link rel="stylesheet" href="css/style.css?v=8">
 </head>
 <body>
 
@@ -26,16 +26,40 @@
 
   <section class="hero">
     <div class="container hero-grid">
-      <div>
-        <span class="overline">ตลาดสินค้ามือสองในมหาวิทยาลัย</span>
+      <div class="hero-copy">
+        <span class="hero-badge">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.5 19 2c1 2 2 4.2 2 8 0 5.5-4.8 10-10 10Z"/><path d="M2 21c0-3 1.9-5.4 5.1-6C9.5 14.5 12 13 13 12"/></svg>
+          ตลาดสินค้ามือสองในมหาวิทยาลัย
+        </span>
         <h1 id="hero-title">ให้สิ่งของ<br>ได้มี<span class="hl">ชีวิตที่สอง</span></h1>
         <p id="hero-text">ซื้อ ขาย แลกเปลี่ยน และแจกฟรี ภายในชุมชนมหาวิทยาลัย</p>
         <form id="hero-search" class="search-box" role="search">
           <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
           <input id="hero-q" type="search" placeholder="ค้นหาสินค้าที่ต้องการ..." aria-label="ค้นหาสินค้า">
-          <kbd id="hero-kbd" title="กดเพื่อค้นหาจากทุกหน้า">Ctrl K</kbd>
           <button type="submit" class="btn btn-primary">ค้นหา</button>
         </form>
+        <div class="hero-tags" aria-label="คำค้นยอดนิยม">
+          <span>ยอดนิยม:</span>
+          <a class="chip" href="search.html?cat=book">หนังสือเรียน</a>
+          <a class="chip" href="search.html?q=โน้ตบุ๊ก">โน้ตบุ๊ก</a>
+          <a class="chip" href="search.html?type=free">ของแจกฟรี</a>
+          <a class="chip" href="search.html?q=หูฟัง">หูฟัง</a>
+        </div>
+      </div>
+
+      <!-- ภาพตัดแปะรูปสินค้าจริง (ถ้าตั้งรูปแบนเนอร์ในหลังบ้าน จะแสดงแบนเนอร์แทน) -->
+      <div class="hero-art" aria-hidden="true">
+        <img class="ha ha1" src="images/sample-headphones.jpg" alt="">
+        <img class="ha ha2" src="images/sample-hoodie.jpg" alt="">
+        <img class="ha ha3" src="images/sample-cs-book.jpg" alt="">
+        <img class="ha ha4" src="images/sample-lamp.jpg" alt="">
+        <div class="ha-chip ha-passed">
+          <span class="ha-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg></span>
+          <span><strong>ส่งต่อแล้ว</strong><small>หูฟังไร้สาย · ห้องสมุด</small></span>
+        </div>
+        <div class="ha-chip ha-stars">
+          <span class="stars-gold">★★★★★</span><strong>4.9</strong><small>รีวิวผู้ขาย</small>
+        </div>
       </div>
       <!-- รูปแบนเนอร์ตั้งค่าได้ในหลังบ้าน → ตั้งค่าเว็บ -->
       <img id="hero-banner" class="hero-banner" alt="" hidden>
@@ -97,10 +121,10 @@
     </section>
   </main>
 
-  <script src="js/config.js?v=7"></script>
-  <script src="js/supabase.js?v=7"></script>
-  <script src="js/demo.js?v=7"></script>
-  <script src="js/data.js?v=7"></script>
-  <script src="js/app.js?v=7"></script>
+  <script src="js/config.js?v=8"></script>
+  <script src="js/supabase.js?v=8"></script>
+  <script src="js/demo.js?v=8"></script>
+  <script src="js/data.js?v=8"></script>
+  <script src="js/app.js?v=8"></script>
 </body>
 </html>
