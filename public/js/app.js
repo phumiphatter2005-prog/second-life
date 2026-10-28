@@ -129,33 +129,16 @@ function decorateNav() {
 
   document.body.insertAdjacentHTML("beforeend", `
     <footer class="site-footer">
-      <div class="container footer-inner">
-        <div>
-          <div class="footer-logo">${icon("leaf")} Second Life</div>
-          <p>ตลาดสินค้ามือสองในมหาวิทยาลัย<br>ให้สิ่งของ...ได้มีชีวิตที่สอง</p>
-        </div>
-        <nav aria-label="เมนูด่วน">
-          <strong>เมนูด่วน</strong>
-          <ul class="footer-links">
-            <li><a href="index.html">หน้าแรก</a></li>
-            <li><a href="search.html">หมวดหมู่</a></li>
-            <li><a href="post.html">ลงประกาศ</a></li>
-            <li><a href="messages.html">ข้อความ</a></li>
-          </ul>
-        </nav>
-        <div>
-          <strong>เป้าหมายการพัฒนาที่ยั่งยืน</strong>
-          <div class="sdg-badges footer-sdg">
-            <span class="sdg sdg-12"><b>SDG 12.5</b><span>การผลิตและการบริโภคที่ยั่งยืน</span></span>
-            <span class="sdg sdg-11"><b>SDG 11.6</b><span>เมืองและชุมชนที่ยั่งยืน</span></span>
+      <div class="container">
+        <div class="footer-row">
+          <div class="footer-brand">
+            <div class="footer-logo">${icon("leaf")} Second Life</div>
+            <p><span>ตลาดสินค้ามือสองในมหาวิทยาลัย</span><span class="footer-sep"> · </span><span>ให้สิ่งของได้มีชีวิตที่สอง</span></p>
           </div>
+          <p class="footer-sdg-note">ตอบโจทย์ SDG 12.5 และ SDG 11.6</p>
         </div>
-        <div>
-          <strong>จัดทำโดย</strong>
-          <p id="footer-credits">คณะเทคโนโลยีสารสนเทศ<br>มหาวิทยาลัยศรีปทุม วิทยาเขตขอนแก่น</p>
-        </div>
+        <p class="footer-tag">Second Life for a Better Tomorrow</p>
       </div>
-      <p class="footer-tag container">Second Life for a Better Tomorrow</p>
     </footer>`);
 }
 

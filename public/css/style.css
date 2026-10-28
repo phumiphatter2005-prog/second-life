@@ -15,7 +15,8 @@
   --green-soft: #E3F2EA;
   --amber: #B45309;                  /* ขั้น "นัดรับ" ในวิธีใช้งาน */
   --amber-soft: #FEF3C7;
-  --ink-deep: #2A1540;               /* แผงเกี่ยวกับโครงการ + ส่วนท้าย */
+  --ink-deep: #2A1540;               /* แผงเกี่ยวกับโครงการ */
+  --ink-deeper: #1C1027;             /* ส่วนท้าย (เข้มกว่าแผงเล็กน้อย) */
   --on-dark-2: rgba(250, 250, 250, .8);   /* ข้อความรองบนพื้นม่วงเข้ม */
 
   --bg: #FAFAFA;
@@ -1070,7 +1071,12 @@ input[type="checkbox"]:checked::after { opacity: 1; }
   padding: 48px;
   margin-bottom: 64px;
 }
-.about.no-stats { grid-template-columns: minmax(0, 1fr); }
+/* กว้างเท่า container และอยู่กึ่งกลางเสมอ */
+.about { width: 100%; margin-inline: auto; }
+/* ยังไม่มีตัวเลขสถิติให้แสดง: จัดข้อความกึ่งกลางแผง */
+.about.no-stats { grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: center; }
+.about.no-stats .about-text { max-width: 720px; }
+.about.no-stats .sdg-badges { justify-content: center; }
 .about > :not(.about-leaves) { position: relative; }
 .about-leaves {
   position: absolute;
@@ -1207,34 +1213,31 @@ button.admin-title { border: none; background: none; padding: 0; font-size: inhe
 .banner-preview { width: 100%; max-width: 420px; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--r-md); border: 1px solid var(--border); display: block; margin-bottom: 12px; }
 
 /* ---------- Footer ---------- */
+/* ม่วงเข้มกว่าแผงเกี่ยวกับโครงการเล็กน้อย ให้แยกกันชัด */
 .site-footer {
   margin-top: 32px;
-  background: var(--ink-deep);
+  background: var(--ink-deeper);
   color: var(--on-dark-2);
   font-size: 14px;
 }
-.footer-inner {
-  display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr) minmax(0, 1.5fr) minmax(0, 1.1fr);
-  gap: 32px;
-  padding-block: 48px 32px;
+.footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 32px;
+  padding-block: 32px 24px;
 }
-.footer-inner strong { color: var(--on-primary); }
-.footer-inner p { margin-top: 8px; line-height: 1.7; white-space: pre-line; }
+.footer-brand { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.footer-brand p { line-height: 1.6; }
 .footer-logo { display: flex; align-items: center; gap: 8px; font-family: var(--font-display); font-size: 18px; font-weight: 600; letter-spacing: -.03em; color: var(--on-primary); }
 .footer-logo .ic { width: 18px; height: 18px; color: #A7E3C1; }
-.footer-links { list-style: none; display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
-.footer-links a { color: var(--on-dark-2); transition: color .2s; }
-.footer-links a:hover { color: var(--on-primary); text-decoration: underline; }
-.site-footer a:focus-visible { box-shadow: 0 0 0 3px rgba(250, 250, 250, .45); border-radius: var(--r-xs); }
-.footer-sdg { flex-direction: column; align-items: flex-start; margin-top: 10px; }
-.footer-tag { padding-block: 16px; border-top: 1px solid rgba(255, 255, 255, .14); font-size: 12px; color: var(--on-dark-2); }
+.footer-sdg-note { font-size: 13px; color: var(--on-dark-2); text-align: right; }
+.footer-tag { padding-block: 16px; border-top: 1px solid rgba(255, 255, 255, .12); font-size: 12px; color: var(--on-dark-2); }
 
 /* ---------- Tablet ---------- */
 @media (max-width: 1024px) {
   .categories { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .about { grid-template-columns: minmax(0, 1fr); }
-  .footer-inner { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .nav-search span { display: none; }
 }
 
@@ -1390,8 +1393,12 @@ button.admin-title { border: none; background: none; padding: 0; font-size: inhe
   .panel-body { padding: 16px; }
   .img-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
-  .footer-inner { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; padding-block: 32px 16px; }
-  .footer-inner > div:first-child, .footer-inner > div:nth-child(3) { grid-column: 1 / -1; }
+  /* มือถือ: ส่วนท้ายเรียงแนวตั้งตรงกลาง */
+  .footer-row { flex-direction: column; justify-content: center; text-align: center; padding-block: 28px 16px; gap: 8px; }
+  .footer-brand { align-items: center; }
+  .footer-brand p span { display: block; }
+  .footer-brand .footer-sep { display: none; }
+  .footer-sdg-note, .footer-tag { text-align: center; }
 }
 
 /* =====================================================================

@@ -14,7 +14,7 @@ An editorial precision interface for a university second-hand marketplace. The a
 - **Background** (#FAFAFA): Page background, light warm gray
 - **Surface** (#FFFFFF): Cards, panels, modals, nav backdrop
 - **Text Primary** (#0A0A0A): Headings, body text, primary labels — near-black
-- **Ink Deep** (#2A1540): Dark purple surface for the "About" panel and the site footer. Text on it is #FAFAFA; secondary text is #FAFAFA at 80% opacity (never lower) so everything stays readable
+- **Ink Deep** (#2A1540): Dark purple surface for the "About" panel; the footer uses the darker **Ink Deeper** (#1C1027). Text on it is #FAFAFA; secondary text is #FAFAFA at 80% opacity (never lower) so everything stays readable
 - **Step colors** (How-it-works): post = Primary #7E2A8C on #F6ECF8, meet-up = Amber #B45309 on #FEF3C7, passed-on = Brand Green #1F7A4D on #E3F2EA
 - **SDG colors**: SDG 12 #BF8B2E, SDG 11 #FD9D24 (official). Used only as the tag part of SDG badges, with near-black text #1A1206 — white on these oranges fails contrast
 - **Text Secondary** (#6B6B6B): Descriptions, metadata, secondary labels
@@ -45,7 +45,7 @@ Minimal shadows. Cards rest flat with a 1px border and gain a subtle shadow on h
 - **Hero badge**: Pill above the headline with a leaf icon, 14px text, surface background and 1px border.
 - **How-it-works steps**: 12px-radius cards with a 48px icon in a 76px tinted circle (step color), a large faint step number (01/02/03, 10% opacity) as a watermark top-right, and dashed arrow connectors between cards (horizontal on desktop, vertical on the left on phones). Hover lifts 4px and the border turns the step color.
 - **About panel**: Ink Deep, 24px radius, 48px padding. Stats sit in translucent cards (white 8% fill, 16% border) with a round icon, a 44px number that counts up on scroll, and a label.
-- **Footer**: Ink Deep, white text, four columns (brand, quick links, SDG badges, credits) → two on tablet, stacked on phones.
+- **Footer**: Ink Deeper (#1C1027 — slightly darker than the About panel so the two separate clearly), white text. One row: logo + tagline on the left, a small plain "ตอบโจทย์ SDG 12.5 และ SDG 11.6" note on the right (no colored badges — those live in the About panel); a thin divider, then "Second Life for a Better Tomorrow". On phones everything stacks, centered.
 - **Lists**: Stacked rows, 1px dividers, 12px × 16px padding, hover background.
 - **Checkboxes**: 20px, rounded-full, purple when checked.
 - **Tooltips**: Native `title` attributes only.
