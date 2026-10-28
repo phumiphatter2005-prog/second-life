@@ -43,10 +43,10 @@ function sbCheck({ data, error }) {
 async function sbProfile(sb) {
   const { data: { session } } = await sb.auth.getSession();
   if (!session) return null;
-  const p = sbCheck(await sb.from("profiles").select("id, student_id, name, role, banned")
+  const p = sbCheck(await sb.from("profiles").select("*")
     .eq("id", session.user.id).maybeSingle());
   if (!p || p.banned) return null;
-  return { id: p.id, studentId: p.student_id, name: p.name, role: p.role };
+  return { id: p.id, studentId: p.student_id, name: p.name, role: p.role, avatarUrl: p.avatar_url || null };
 }
 
 /* รูปจากหน้าลงประกาศเป็น data URL → อัปโหลดเข้า Storage แล้วเก็บเป็นลิงก์ */
@@ -181,6 +181,29 @@ async function supabaseApi(path, options = {}) {
 
   if ((m = /^\/favorites\/(\d+)$/.exec(path))) {
     return { fav: await rpc("sl_toggle_fav", { p_id: Number(m[1]) }) };
+  }
+
+  /* ---------- โปรไฟล์ของฉัน (supabase/004_avatars.sql) ---------- */
+  if (path === "/profile" && method === "POST") return rpc("profile_update", { p_name: String(b.name || "") });
+  if (path === "/profile/avatar") {
+    const user = await needUser();
+    if (method === "DELETE") {
+      const old = await rpc("profile_set_avatar", { p_url: null });
+      await sbRemoveFiles(sb, [old], "avatars");
+      return { avatarUrl: null };
+    }
+    if (!/^data:image\/(jpeg|png|webp);base64,/.test(String(b.img || ""))) throw sbError(400, "รองรับเฉพาะรูป JPG PNG หรือ WebP");
+    const url = await sbUploadImage(sb, user.id, b.img, "avatars");
+    let old;
+    try { old = await rpc("profile_set_avatar", { p_url: url }); }
+    catch (e) { await sbRemoveFiles(sb, [url], "avatars"); throw e; }
+    await sbRemoveFiles(sb, [old], "avatars");
+    return { avatarUrl: url };
+  }
+  if ((m = /^\/admin\/users\/([\w-]+)\/avatar-remove$/.exec(path))) {
+    const old = await rpc("admin_remove_avatar", { p_user: m[1] });
+    await sbRemoveFiles(sb, [old], "avatars");
+    return { ok: true };
   }
 
   /* ---------- แชต (supabase/003_chat.sql) ---------- */

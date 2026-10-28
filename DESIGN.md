@@ -39,6 +39,7 @@ Minimal shadows. Cards rest flat with a 1px border and gain a subtle shadow on h
 ## Components
 - **Buttons**: Primary = purple fill, 6px radius. Secondary = transparent + 1px border. Ghost = text only. Destructive = red text + red border. All shift up 1px on hover. Sizes 32 / 38 / 44px.
 - **Cards**: White surface, 1px border, 12px radius. Listing cards have a 200px image area on top, then name, seller avatar and stats. Hover lifts 2px. 200ms transitions.
+- **Avatars**: Circle with the initial letter; the profile photo (256×256) is layered on top, so the letter shows while loading or if the image fails. Sizes 20 / 32 / 44 / 128px. Profile page: 128px avatar with a 44px purple camera button bottom-right; square crop dialog with a circular guide.
 - **Inputs**: 1px border, 6px radius, 10px × 14px padding, 14px text (16px on phones to stop iOS zoom). Focus: purple border + 3px ring. Error: red border.
 - **Chips**: Pill, gray-100 background, gray-600 text, 4px × 12px padding, 12px text. Active = purple fill. Status chips use the same shape with semantic colors.
 - **Category cards**: Compact row cards (icon + name + item count), equal height, 8px radius. Each category has its own pastel icon tile: all #EEF2FF, books #E0F2FE (blue), clothes #FCE7F3 (pink), stationery #FEF9C3 (yellow), electronics #F3E8FF (purple), dorm #DCFCE7 (green), other #F3F4F6 (gray). Hover lifts 2px; selected card gets a purple border + focus ring. On phones they form one horizontally scrolling row.

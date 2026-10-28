@@ -61,6 +61,7 @@ db.exec(`
 const userCols = db.prepare("PRAGMA table_info(users)").all().map(c => c.name);
 if (!userCols.includes("role")) db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'");
 if (!userCols.includes("banned")) db.exec("ALTER TABLE users ADD COLUMN banned INTEGER NOT NULL DEFAULT 0");
+if (!userCols.includes("avatar")) db.exec("ALTER TABLE users ADD COLUMN avatar TEXT");
 
 /* ผู้ดูแลระบบจากตัวแปร ADMIN_STUDENT_IDS (คั่นด้วยจุลภาค) */
 (process.env.ADMIN_STUDENT_IDS || "").split(",").map(s => s.trim()).filter(Boolean).forEach(sid =>

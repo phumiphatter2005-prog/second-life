@@ -45,7 +45,7 @@ app.use((req, res, next) => {
   if (token) {
     const minCreated = Date.now() - SESSION_DAYS * 24 * 60 * 60 * 1000;
     req.user = db.prepare(`
-      SELECT u.id, u.student_id, u.name, u.role FROM sessions s JOIN users u ON u.id = s.user_id
+      SELECT u.id, u.student_id, u.name, u.role, u.avatar FROM sessions s JOIN users u ON u.id = s.user_id
       WHERE s.token = ? AND s.created_at > ? AND u.banned = 0`).get(token, minCreated);
   }
   next();
@@ -67,7 +67,7 @@ function requireAdmin(req, res, next) {
 }
 
 function publicUser(u) {
-  return { id: u.id, studentId: u.student_id, name: u.name, role: u.role || "user" };
+  return { id: u.id, studentId: u.student_id, name: u.name, role: u.role || "user", avatarUrl: u.avatar || null };
 }
 
 /* แปลงแถวในฐานข้อมูลเป็นข้อมูลที่ส่งให้หน้าเว็บ
@@ -86,6 +86,7 @@ function toProduct(row, user) {
     img: row.img,
     passed: !!row.passed,
     sellerName: row.seller_name || "Second Life",
+    sellerAvatar: row.seller_avatar || null,
     hasOwner: row.user_id !== null,
     isOwner: !!user && row.user_id === user.id,
     isFav: !!row.is_fav,
@@ -99,7 +100,7 @@ function toProduct(row, user) {
 
 /* คะแนนดาวของสินค้า และคะแนนรวมของผู้ขาย (จากทุกประกาศของเขา) */
 const PRODUCT_SELECT = `
-  SELECT p.*, u.name AS seller_name,
+  SELECT p.*, u.name AS seller_name, u.avatar AS seller_avatar,
          EXISTS (SELECT 1 FROM favorites f WHERE f.product_id = p.id AND f.user_id = ?) AS is_fav,
          (SELECT AVG(stars) FROM reviews r WHERE r.product_id = p.id) AS rating_avg,
          (SELECT COUNT(*) FROM reviews r WHERE r.product_id = p.id) AS rating_count,
@@ -279,10 +280,11 @@ app.post("/api/favorites/:id", requireLogin, (req, res) => {
 /* ---------- รีวิวและให้ดาว ---------- */
 app.get("/api/products/:id/reviews", (req, res) => {
   const rows = db.prepare(`
-    SELECT r.*, u.name FROM reviews r JOIN users u ON u.id = r.user_id
+    SELECT r.*, u.name, u.avatar FROM reviews r JOIN users u ON u.id = r.user_id
     WHERE r.product_id = ? ORDER BY r.created_at DESC`).all(Number(req.params.id));
   res.json(rows.map(r => ({
     name: r.name,
+    avatar: r.avatar || null,
     stars: r.stars,
     comment: r.comment,
     createdAt: r.created_at,
@@ -359,7 +361,7 @@ app.get("/api/admin/users", requireAdmin, (req, res) => {
     SELECT u.*, (SELECT COUNT(*) FROM products p WHERE p.user_id = u.id) AS product_count
     FROM users u ORDER BY u.created_at DESC`).all();
   res.json(rows.map(u => ({
-    id: u.id, studentId: u.student_id, name: u.name, role: u.role, banned: !!u.banned,
+    id: u.id, studentId: u.student_id, name: u.name, role: u.role, banned: !!u.banned, avatarUrl: u.avatar || null,
     products: u.product_count, createdAt: u.created_at
   })));
 });
@@ -376,6 +378,42 @@ app.post("/api/admin/users/:id", requireAdmin, (req, res) => {
 
   db.prepare("UPDATE users SET role = ?, banned = ? WHERE id = ?").run(role, banned ? 1 : 0, user.id);
   if (banned) db.prepare("DELETE FROM sessions WHERE user_id = ?").run(user.id);
+  res.json({ ok: true });
+});
+
+/* ---------- โปรไฟล์ของฉัน: ชื่อที่แสดง + รูปโปรไฟล์ ---------- */
+function removeUpload(url) {
+  if (url && url.startsWith("/uploads/")) fs.rm(path.join(UPLOAD_DIR, path.basename(url)), { force: true }, () => {});
+}
+
+app.post("/api/profile", requireLogin, (req, res) => {
+  const name = cleanText(req.body.name, 60);
+  if (!name) return res.status(400).json({ error: "กรุณากรอกชื่อที่จะแสดง" });
+  db.prepare("UPDATE users SET name = ? WHERE id = ?").run(name, req.user.id);
+  res.json({ name });
+});
+
+/* รับรูปที่ครอปและย่อเหลือ 256×256 แล้วในเบราว์เซอร์ (data URL) */
+app.post("/api/profile/avatar", requireLogin, (req, res) => {
+  const url = saveImage(req.body.img);
+  if (!url) return res.status(400).json({ error: "รูปภาพไม่ถูกต้องหรือใหญ่เกินไป (JPG PNG WebP)" });
+  removeUpload(req.user.avatar);
+  db.prepare("UPDATE users SET avatar = ? WHERE id = ?").run(url, req.user.id);
+  res.json({ avatarUrl: url });
+});
+
+app.delete("/api/profile/avatar", requireLogin, (req, res) => {
+  removeUpload(req.user.avatar);
+  db.prepare("UPDATE users SET avatar = NULL WHERE id = ?").run(req.user.id);
+  res.json({ avatarUrl: null });
+});
+
+/* แอดมินลบรูปโปรไฟล์ที่ไม่เหมาะสม */
+app.post("/api/admin/users/:id/avatar-remove", requireAdmin, (req, res) => {
+  const user = db.prepare("SELECT * FROM users WHERE id = ?").get(Number(req.params.id));
+  if (!user) return res.status(404).json({ error: "ไม่พบผู้ใช้นี้" });
+  removeUpload(user.avatar);
+  db.prepare("UPDATE users SET avatar = NULL WHERE id = ?").run(user.id);
   res.json({ ok: true });
 });
 

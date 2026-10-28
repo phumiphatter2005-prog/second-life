@@ -308,7 +308,7 @@ function renderUsers(list) {
         const self = currentUser && String(u.id) === String(currentUser.id);
         return `
         <div class="list-row admin-row" data-id="${esc(u.id)}">
-          <span class="avatar">${esc(u.name.slice(0, 1))}</span>
+          ${avatarHtml(u.name, u.avatarUrl)}
           <div class="admin-main">
             <span class="admin-title">${esc(u.name)}${self ? " (คุณ)" : ""}</span>
             <div class="admin-meta">
@@ -321,6 +321,7 @@ function renderUsers(list) {
           </div>
           <div class="admin-actions">
             ${self ? `<span class="muted">บัญชีของคุณ</span>` : `
+              ${u.avatarUrl ? `<button class="btn btn-sm btn-danger" data-act="avatar-remove" data-label="ลบรูปโปรไฟล์">ลบรูปโปรไฟล์</button>` : ""}
               <button class="btn btn-sm btn-secondary" data-act="role">${u.role === "admin" ? "ยกเลิกสิทธิ์แอดมิน" : "ตั้งเป็นแอดมิน"}</button>
               <button class="btn btn-sm ${u.banned ? "btn-secondary" : "btn-danger"}" data-act="ban"
                 data-label="${u.banned ? "ปลดระงับ" : "ระงับบัญชี"}">${u.banned ? "ปลดระงับ" : "ระงับบัญชี"}</button>`}
@@ -614,6 +615,10 @@ adminBody.addEventListener("click", async e => {
       const u = adminRows.find(u => String(u.id) === row.dataset.id);
       if (!u.banned && !confirmed(btn, "ยืนยันระงับ?")) return;
       await api("/admin/users/" + u.id, { method: "POST", body: { banned: !u.banned } });
+    } else if (act === "avatar-remove") {
+      if (!confirmed(btn, "ยืนยันลบรูป?")) return;
+      await api(`/admin/users/${row.dataset.id}/avatar-remove`, { method: "POST" });
+      toast("ลบรูปโปรไฟล์แล้ว");
     } else if (act === "delete-review") {
       if (!confirmed(btn, "ยืนยันลบ?")) return;
       await api(`/admin/reviews/${row.dataset.product}/${row.dataset.user}`, { method: "DELETE" });

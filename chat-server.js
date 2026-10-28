@@ -50,6 +50,7 @@ module.exports = function setupChat(app, { db, requireLogin, requireAdmin, isAdm
   const typing = new Map();   // roomId → { userId, at }
   const fail = (res, status, error) => { res.status(status).json({ error }); return null; };
   const nameOf = id => (db.prepare("SELECT name FROM users WHERE id = ?").get(id) || {}).name || "ผู้ใช้";
+  const avatarOf = id => (db.prepare("SELECT avatar FROM users WHERE id = ?").get(id) || {}).avatar || null;
   const blockedBetween = (a, b) => !!db.prepare(`
     SELECT 1 FROM chat_blocks WHERE active = 1 AND ((blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?))`)
     .get(a, b, b, a);
@@ -93,7 +94,9 @@ module.exports = function setupChat(app, { db, requireLogin, requireAdmin, isAdm
       id: r.id, productId: p.id, productTitle: p.title, productImg: p.img, productPrice: p.price,
       productType: p.type, productPassed: !!p.passed, productPickup: p.pickup,
       isSeller: seller, isBuyer: user.id === r.buyer_id, adminView: ![r.buyer_id, r.seller_id].includes(user.id),
+      buyerId: r.buyer_id, sellerId: r.seller_id,
       buyerName: nameOf(r.buyer_id), sellerName: nameOf(r.seller_id), otherName: nameOf(other),
+      buyerAvatar: avatarOf(r.buyer_id), sellerAvatar: avatarOf(r.seller_id), otherAvatar: avatarOf(other),
       otherReadAt: seller ? r.buyer_read_at : r.seller_read_at,
       blockedByMe: !!db.prepare("SELECT 1 FROM chat_blocks WHERE active = 1 AND blocker_id = ? AND blocked_id = ?").get(user.id, other),
       blocked: blockedBetween(r.buyer_id, r.seller_id),
@@ -137,6 +140,7 @@ module.exports = function setupChat(app, { db, requireLogin, requireAdmin, isAdm
       id: r.id, productId: r.product_id, productTitle: r.title, productImg: r.img, productPrice: r.price,
       productType: r.type, productPassed: !!r.passed, isSeller: r.seller_id === me,
       otherName: nameOf(r.seller_id === me ? r.buyer_id : r.seller_id),
+      otherAvatar: avatarOf(r.seller_id === me ? r.buyer_id : r.seller_id),
       lastMessage: r.last_message, lastAt: r.last_message_at, unread: r.unread
     })));
   });

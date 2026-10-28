@@ -62,7 +62,7 @@ function render(p) {
         </ul>
 
         <div class="seller">
-          <span class="avatar avatar-lg">${esc(p.sellerName.slice(0, 1))}</span>
+          ${avatarHtml(p.sellerName, p.sellerAvatar, "avatar-lg")}
           <div>
             <strong>${esc(p.sellerName)}</strong>
             <div class="seller-rating">${p.sellerRatingCount
@@ -257,7 +257,7 @@ async function renderReviews(p) {
   listEl.innerHTML = reviews.length
     ? reviews.map(r => `
         <div class="review ${r.mine ? "mine" : ""}">
-          <span class="avatar">${esc(r.name.slice(0, 1))}</span>
+          ${avatarHtml(r.name, r.avatar)}
           <div class="review-body">
             <div class="review-head">
               <strong>${esc(r.name)}${r.mine ? " (คุณ)" : ""}</strong>

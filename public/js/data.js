@@ -37,7 +37,7 @@ const SUPABASE_ONLY = /^\/(products\/\d+\/report|settings|admin\/(reports|settin
 /* ---------- เรียก API ของเซิร์ฟเวอร์ ---------- */
 async function api(path, options = {}) {
   if (SUPABASE_MODE) return supabaseApi(path, options);
-  if (!CHAT_ENABLED && /^\/(chats|admin\/chat-reports)(\/|$|\?)/.test(path)) {
+  if (!CHAT_ENABLED && /^\/(chats|admin\/chat-reports|profile)(\/|$|\?)/.test(path)) {
     if (path === "/chats/unread") return { count: 0 };
     if (path === "/chats" || path === "/admin/chat-reports") return [];
     const err = new Error("แชตใช้ได้เมื่อเชื่อมต่อฐานข้อมูล Supabase (ตั้งค่าใน js/config.js)");

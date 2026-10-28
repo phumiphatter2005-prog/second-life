@@ -37,6 +37,26 @@ const ICONS = {
   recycle:'<path d="M7 19H4.8a1.8 1.8 0 0 1-1.6-2.7L7.2 9.5M11 19h8.2a1.8 1.8 0 0 0 1.6-2.7l-1.2-2.1M14 16l-3 3 3 3M8.3 13.6 7.2 9.5 3.1 10.6M14.8 6.8 13.4 4.5a1.8 1.8 0 0 0-3.1 0L9.1 6.6M16.7 10.9l3.1-1.1 1.1 4.1"/>'
 };
 
+/* ---------- รูปโปรไฟล์: วางรูปทับวงกลมตัวอักษร ระหว่างโหลดหรือรูปเสียจึงเห็นตัวอักษรแทน ---------- */
+function avatarHtml(name, url, cls = "") {
+  const letter = esc(String(name || "?").trim().slice(0, 1) || "?");
+  return `<span class="avatar ${cls}">${letter}${url
+    ? `<img class="avatar-img" src="${esc(url)}" alt="" loading="lazy" decoding="async">` : ""}</span>`;
+}
+document.addEventListener("error", e => {
+  if (e.target.classList && e.target.classList.contains("avatar-img")) e.target.remove();
+}, true);
+
+/* อัปเดตรูปและชื่อของฉันทุกจุดในหน้า (หลังแก้โปรไฟล์) */
+function updateMeUI() {
+  if (!currentUser) return;
+  document.querySelectorAll(".me-avatar").forEach(el => {
+    const cls = [...el.classList].filter(c => c !== "avatar").join(" ");
+    el.outerHTML = avatarHtml(currentUser.name, currentUser.avatarUrl, cls);
+  });
+  document.querySelectorAll(".me-name").forEach(el => { el.textContent = currentUser.name; });
+}
+
 function icon(name, cls = "ic") {
   return `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`;
@@ -80,7 +100,7 @@ function productCard(p) {
           </div>
           <div class="card-pickup">${icon("pin")}${esc(p.pickup)}</div>
           <div class="card-foot">
-            <span class="card-seller"><span class="avatar avatar-xs">${esc(p.sellerName.slice(0, 1))}</span><span>${esc(p.sellerName)}</span></span>
+            <span class="card-seller">${avatarHtml(p.sellerName, p.sellerAvatar, "avatar-xs")}<span>${esc(p.sellerName)}</span></span>
             ${p.ratingCount ? ratingLine(p.rating, p.ratingCount) : ""}
           </div>
         </div>
@@ -168,6 +188,7 @@ function drawerLinks() {
     CHAT_ENABLED && ["messages.html", "chat", "ข้อความ", page === "messages.html", true],
     ["favorites.html", "heart", "รายการโปรด", page === "favorites.html" && !mine],
     ["favorites.html?tab=mine", "box", "ประกาศของฉัน", page === "favorites.html" && mine],
+    currentUser && ["profile.html", "user", "โปรไฟล์ของฉัน", page === "profile.html"],
     isAdmin && ["admin.html", "shield", "หลังบ้าน", page === "admin.html"],
     ["index.html#about", "leaf", "เกี่ยวกับโครงการ", false]
   ].filter(Boolean);
@@ -223,8 +244,10 @@ function renderDrawerUser() {
   document.querySelector(".drawer-nav").innerHTML = drawerLinks();
   if (currentUser) {
     box.innerHTML = `
-      <span class="avatar avatar-lg">${esc(currentUser.name.slice(0, 1))}</span>
-      <span class="drawer-user-text"><strong>${esc(currentUser.name)}</strong><code>${esc(currentUser.studentId)}</code></span>`;
+      <a class="drawer-user-link" href="profile.html" aria-label="โปรไฟล์ของฉัน">
+        ${avatarHtml(currentUser.name, currentUser.avatarUrl, "avatar-lg me-avatar")}
+        <span class="drawer-user-text"><strong class="me-name">${esc(currentUser.name)}</strong><code>${esc(currentUser.studentId)}</code><span class="drawer-user-cta">โปรไฟล์ของฉัน ›</span></span>
+      </a>`;
     foot.hidden = false;
     foot.innerHTML = `<button type="button" class="btn btn-danger drawer-logout">${icon("logout")}ออกจากระบบ</button>`;
     foot.querySelector("button").addEventListener("click", async () => {
@@ -451,10 +474,11 @@ function renderNavUser() {
   /* เมนูบัญชีแบบ dropdown จากรูปโปรไฟล์ */
   slot.innerHTML = `
     <button class="avatar-btn" type="button" aria-haspopup="menu" aria-expanded="false" title="${esc(currentUser.name)}">
-      <span class="avatar">${esc(currentUser.name.slice(0, 1))}</span>
+      ${avatarHtml(currentUser.name, currentUser.avatarUrl, "me-avatar")}
     </button>
     <div class="user-menu" role="menu" hidden>
-      <div class="user-menu-head"><strong>${esc(currentUser.name)}</strong><code>${esc(currentUser.studentId)}</code></div>
+      <div class="user-menu-head"><strong class="me-name">${esc(currentUser.name)}</strong><code>${esc(currentUser.studentId)}</code></div>
+      <a role="menuitem" href="profile.html">${icon("user")}โปรไฟล์ของฉัน</a>
       <a role="menuitem" href="favorites.html?tab=mine">${icon("box")}ประกาศของฉัน</a>
       ${CHAT_ENABLED ? `<a role="menuitem" href="messages.html">${icon("chat")}ข้อความ</a>` : ""}
       <a role="menuitem" href="favorites.html">${icon("heart")}รายการโปรด</a>

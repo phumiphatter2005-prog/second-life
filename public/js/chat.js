@@ -52,7 +52,10 @@ async function loadList() {
     const rooms = await api("/chats");
     listEl.innerHTML = rooms.length ? rooms.map(r => `
       <a class="chat-item ${r.id === roomId ? "active" : ""}" href="messages.html?room=${r.id}" data-room="${r.id}">
-        <img src="${esc(r.productImg)}" alt="" loading="lazy">
+        <span class="chat-item-pics">
+          ${avatarHtml(r.otherName, r.otherAvatar, "chat-item-avatar")}
+          <img class="chat-item-thumb" src="${esc(r.productImg)}" alt="" loading="lazy">
+        </span>
         <span class="chat-item-main">
           <span class="chat-item-top">
             <strong>${esc(r.otherName)}</strong>
@@ -144,7 +147,7 @@ function roomHead() {
     <div class="room-sub">
       <span class="room-sub-who">${r.adminView
         ? `โหมดผู้ดูแลระบบ (ดูอย่างเดียว) · ผู้ประกาศ <b>${esc(r.sellerName)}</b> คุยกับ <b>${esc(r.buyerName)}</b>`
-        : `คุยกับ <b>${esc(r.otherName)}</b> · ${r.isSeller ? "ผู้สนใจสินค้าของคุณ" : "ผู้ประกาศ"}`}</span>
+        : `${avatarHtml(r.otherName, r.otherAvatar, "avatar-xs")} คุยกับ <b>${esc(r.otherName)}</b> · ${r.isSeller ? "ผู้สนใจสินค้าของคุณ" : "ผู้ประกาศ"}`}</span>
       <span class="room-safe">${icon("shield")}ไม่โอนเงินก่อนเห็นของ</span>
     </div>`;
 }
@@ -266,18 +269,31 @@ function renderMessages(scrollToEnd) {
       html += `<div class="msg-center${fresh}">${passedCard(m)}</div>`;
     } else {
       const who = room.adminView && m.senderName ? `<span class="msg-who">${esc(m.senderName)}</span>` : "";
+      const prev = messages[messages.indexOf(m) - 1];
+      const firstOfRun = !prev || prev.senderId !== m.senderId || ["system", "passed"].includes(prev.kind);
+      const face = m.mine ? "" : firstOfRun ? senderAvatar(m) : `<span class="msg-face-gap"></span>`;
       const read = m === lastMine && !room.adminView
         ? `<span class="msg-read">${room.otherReadAt >= m.createdAt ? "อ่านแล้ว" : "ส่งแล้ว"}</span>` : "";
       html += `
-        <div class="msg ${m.mine ? "mine" : "theirs"}${fresh}" data-id="${m.id}">
+        <div class="msg-row ${m.mine ? "mine" : "theirs"}${fresh}">${face}
+        <div class="msg ${m.mine ? "mine" : "theirs"}" data-id="${m.id}">
           ${who}${messageInner(m)}
           <span class="msg-time">${timeOf(m.createdAt)}${read ? " · " + read : ""}</span>
-        </div>`;
+        </div></div>`;
     }
   });
   box.innerHTML = html || `<div class="msg-system"><span>เริ่มคุยได้เลย ข้อความจะเห็นเฉพาะคุณ ${esc(room.otherName)} และผู้ดูแลระบบ</span></div>`;
   messages.forEach(m => rendered.add(m.id));
   if (scrollToEnd || nearBottom) box.scrollTop = box.scrollHeight;
+}
+
+/* รูปโปรไฟล์ของคนส่ง (แอดมินดูได้ทั้งสองฝ่าย) */
+function senderAvatar(m) {
+  const r = room;
+  const isBuyer = r.buyerId !== undefined ? String(m.senderId) === String(r.buyerId) : null;
+  const name = r.adminView ? (isBuyer ? r.buyerName : r.sellerName) : r.otherName;
+  const url = r.adminView ? (isBuyer ? r.buyerAvatar : r.sellerAvatar) : r.otherAvatar;
+  return avatarHtml(m.senderName || name, url, "msg-face");
 }
 
 /* ---------- ปุ่มด่วนตามประเภทประกาศ ---------- */
