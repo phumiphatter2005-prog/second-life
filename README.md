@@ -83,7 +83,7 @@ GitHub Pages ให้เบราว์เซอร์จำไฟล์ไว�
 |---|---|
 | `npm start` | `npm run make-admin -- 67402711` หรือตั้งตัวแปร `ADMIN_STUDENT_IDS=67402711` |
 | Supabase | SQL Editor: `update public.profiles set role = 'admin' where student_id = '67402711';` |
-| โหมดสาธิต | มีบัญชีให้แล้ว: รหัสนักศึกษา `00000` รหัสผ่าน `admin123` |
+| โหมดสาธิต | ไม่มีบัญชีแอดมิน (ใช้ Supabase หรือ `npm start` เพื่อทดลองระบบหลังบ้าน) |
 
 ## ฐานข้อมูลออนไลน์ด้วย Supabase (ฟรี — ทุกคนเห็นข้อมูลตรงกัน แม้เปิดจาก GitHub Pages)
 

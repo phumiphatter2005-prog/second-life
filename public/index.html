@@ -42,21 +42,43 @@
     <div id="categories" class="categories"></div>
 
     <div class="section-head">
-      <h2>สินค้ายอดนิยม</h2>
+      <h2>ประกาศล่าสุด</h2>
       <a href="search.html">ดูทั้งหมด →</a>
     </div>
     <div id="popular" class="grid"></div>
 
-    <section class="about">
+    <section class="how" aria-labelledby="how-title">
+      <div class="section-head"><h2 id="how-title">วิธีใช้งาน</h2></div>
+      <ol class="how-steps">
+        <li class="how-step">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
+          <h3>ลงประกาศ</h3>
+          <p>ถ่ายรูป ใส่ราคา หรือเลือกแลกเปลี่ยน/แจกฟรี แล้วเลือกจุดนัดรับในมหาวิทยาลัย</p>
+        </li>
+        <li class="how-step">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.1-7-12a7 7 0 0 1 14 0c0 5.9-7 12-7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg>
+          <h3>นัดรับ</h3>
+          <p>ผู้สนใจติดต่อผ่านช่องทางในประกาศ นัดเจอกันในที่สาธารณะ ตรวจของก่อนจ่ายเงิน</p>
+        </li>
+        <li class="how-step">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>
+          <h3>ส่งต่อแล้ว</h3>
+          <p>เจ้าของกด "ยืนยันว่าส่งต่อแล้ว" ผู้รับให้ดาวรีวิว และนับเป็นของที่ได้ชีวิตที่สอง</p>
+        </li>
+      </ol>
+    </section>
+
+    <section class="about no-stats" id="about">
       <div class="about-text">
         <span class="overline">เกี่ยวกับโครงการ</span>
-        <h2>ร่วมส่งต่อสิ่งของ ลดขยะ<br>สร้างสังคมที่ยั่งยืน <span>ไปด้วยกัน</span></h2>
-        <p>ทุกชิ้นที่ส่งต่อ คือการให้ชีวิตที่สองและลดขยะ ตอบโจทย์ SDG 12 และ SDG 11</p>
+        <h2 id="about-title">ร่วมส่งต่อสิ่งของ ลดขยะ สร้างสังคมที่ยั่งยืนไปด้วยกัน</h2>
+        <p id="about-text">ทุกชิ้นที่ส่งต่อ คือการให้ชีวิตที่สองและลดขยะ ตอบโจทย์ SDG 12 และ SDG 11</p>
       </div>
-      <div class="stats">
-        <div class="stat"><strong id="stat-passed">0</strong><span>ชิ้นที่ส่งต่อแล้ว</span></div>
-        <div class="stat"><strong id="stat-items">0</strong><span>สินค้าในระบบ</span></div>
-        <div class="stat"><strong id="stat-users">0</strong><span>ผู้ใช้งาน</span></div>
+      <!-- แสดงเฉพาะตัวเลขที่มากกว่า 0 -->
+      <div class="stats" id="stats" hidden>
+        <div class="stat" hidden><strong id="stat-passed">0</strong><span>ชิ้นที่ส่งต่อแล้ว</span></div>
+        <div class="stat" hidden><strong id="stat-items">0</strong><span>สินค้าในระบบ</span></div>
+        <div class="stat" hidden><strong id="stat-users">0</strong><span>ผู้ใช้งาน</span></div>
       </div>
     </section>
   </main>

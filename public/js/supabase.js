@@ -146,6 +146,11 @@ async function supabaseApi(path, options = {}) {
     return { passed: await rpc("sl_toggle_passed", { p_id: Number(m[1]) }) };
   }
 
+  if ((m = /^\/products\/(\d+)\/report$/.exec(path))) {
+    await rpc("sl_report", { p_id: Number(m[1]), p_reason: String(b.reason || ""), p_detail: String(b.detail || "") });
+    return { ok: true };
+  }
+
   if ((m = /^\/products\/(\d+)\/reviews$/.exec(path))) {
     const pid = Number(m[1]);
     if (method === "GET") return rpc("sl_reviews", { p_id: pid });

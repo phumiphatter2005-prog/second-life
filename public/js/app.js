@@ -150,6 +150,9 @@ const userReady = api("/me")
   .catch(() => {})
   .then(renderNavUser);
 
+/* ข้อความหน้าเว็บที่ผู้ดูแลระบบตั้งค่าไว้ (ว่าง = ใช้ค่าเริ่มต้นใน HTML) */
+const settingsReady = api("/settings").catch(() => ({}));
+
 function renderNavUser() {
   const nav = document.querySelector(".nav-links");
   const slot = document.querySelector(".nav-user");
@@ -251,9 +254,17 @@ async function renderStats() {
   if (!passed) return;
   try {
     const s = await api("/stats");
-    passed.textContent = s.passed.toLocaleString();
-    document.getElementById("stat-items").textContent = s.items.toLocaleString();
-    document.getElementById("stat-users").textContent = s.users.toLocaleString();
+    /* ซ่อนตัวเลขที่เป็น 0 ถ้าเป็น 0 ทั้งหมดก็ซ่อนทั้งแถบ */
+    const values = { "stat-passed": s.passed, "stat-items": s.items, "stat-users": s.users };
+    let shown = 0;
+    Object.entries(values).forEach(([id, n]) => {
+      const el = document.getElementById(id);
+      el.textContent = Number(n || 0).toLocaleString();
+      el.closest(".stat").hidden = !n;
+      if (n) shown++;
+    });
+    document.getElementById("stats").hidden = !shown;
+    document.getElementById("about").classList.toggle("no-stats", !shown);
   } catch (e) { /* ไม่แสดงตัวเลขถ้าโหลดไม่ได้ */ }
 }
 

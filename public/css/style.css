@@ -604,6 +604,7 @@ input[type="checkbox"]:checked { background: var(--primary); }
 input[type="checkbox"]:checked::after { opacity: 1; }
 
 .field-hint { margin-top: 8px; font-size: 13px; color: var(--text-2); }
+#p-pickup { margin-top: 8px; }
 
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip {
@@ -1133,7 +1134,7 @@ button.admin-title { border: none; background: none; padding: 0; font-size: inhe
   .steps { gap: 4px; }
   .step { flex-direction: column; gap: 4px; padding: 8px 4px; font-size: 12px; text-align: center; }
   .btn-row { flex-direction: column-reverse; }
-  .btn-row .btn-outline, .btn-row .btn-primary, .btn-row .btn { width: 100%; }
+  .btn-row .btn-outline, .btn-row .btn-primary, .btn-row .btn { width: 100%; flex: none; }
 
   .tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -16px 16px; padding: 0 16px; }
   .tabs .chip { flex-shrink: 0; }

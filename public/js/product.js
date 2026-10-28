@@ -46,7 +46,7 @@ function render(p) {
 
         <ul class="detail-list">
           <li><span>หมวดหมู่</span>${categoryName(p.category)}</li>
-          <li><span>สภาพสินค้า</span>${esc(p.condition)}</li>
+          <li><span>สภาพสินค้า</span><span>${esc(p.condition)}<small>${esc(CONDITION_INFO[p.condition] || "")}</small></span></li>
           <li><span>ประเภท</span>${TYPE_LABEL[p.type]}</li>
           <li><span>จุดนัดรับ</span>${esc(p.pickup)}</li>
         </ul>
@@ -66,6 +66,23 @@ function render(p) {
 
         <h3>รายละเอียดสินค้า</h3>
         <p class="detail-desc">${esc(p.desc)}</p>
+
+        <div class="notice" role="note">
+          ${icon("alert")}
+          <div>
+            <strong>ข้อควรระวังก่อนนัดรับ</strong>
+            <ul>
+              <li>นัดเจอในที่สาธารณะภายในมหาวิทยาลัย ช่วงกลางวัน</li>
+              <li>ตรวจสภาพสินค้าให้ครบก่อนจ่ายเงิน ไม่โอนเงินมัดจำล่วงหน้า</li>
+              <li>ไม่ให้ข้อมูลส่วนตัว รหัสผ่าน หรือ OTP กับใคร</li>
+              <li>ถ้าพบความผิดปกติ กด "รายงานประกาศ" เพื่อแจ้งผู้ดูแลระบบ</li>
+            </ul>
+          </div>
+        </div>
+
+        ${p.isOwner ? "" : `
+          <button id="btn-report" type="button" class="btn btn-ghost btn-sm report-link">${icon("flag")}รายงานประกาศ</button>
+          <div id="report-slot"></div>`}
       </div>
     </div>
 
@@ -129,9 +146,67 @@ function render(p) {
       if (!currentUser) return goLogin();
       document.getElementById("contact-box").hidden = false;
     });
+
+    document.getElementById("btn-report").addEventListener("click", () => {
+      if (!currentUser) return goLogin();
+      renderReportForm(p);
+    });
   }
 
   renderReviews(p);
+}
+
+/* ---------- รายงานประกาศ ---------- */
+const REPORT_REASONS = [
+  "ข้อมูลหรือรูปไม่ตรงกับสินค้าจริง",
+  "สงสัยว่าเป็นการหลอกลวง",
+  "สินค้าต้องห้ามหรือผิดกฎหมาย",
+  "ข้อความหรือรูปไม่เหมาะสม",
+  "ส่งต่อไปแล้วแต่ประกาศยังเปิดอยู่",
+  "อื่นๆ"
+];
+
+function renderReportForm(p) {
+  const slot = document.getElementById("report-slot");
+  document.getElementById("btn-report").hidden = true;
+  slot.innerHTML = `
+    <form class="report-form">
+      <strong>รายงานประกาศนี้</strong>
+      <select required aria-label="เหตุผลที่รายงาน">
+        <option value="" disabled selected>เลือกเหตุผล</option>
+        ${REPORT_REASONS.map(r => `<option>${r}</option>`).join("")}
+      </select>
+      <textarea rows="3" maxlength="500" placeholder="รายละเอียดเพิ่มเติม (ไม่บังคับ)"></textarea>
+      <p class="form-error" hidden></p>
+      <div class="btn-row">
+        <button type="button" class="btn btn-ghost btn-md" data-cancel>ยกเลิก</button>
+        <button type="submit" class="btn btn-secondary btn-md">ส่งรายงาน</button>
+      </div>
+    </form>`;
+  const form = slot.querySelector("form");
+  const err = form.querySelector(".form-error");
+  form.querySelector("[data-cancel]").addEventListener("click", () => {
+    slot.innerHTML = "";
+    document.getElementById("btn-report").hidden = false;
+  });
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const reason = form.querySelector("select").value;
+    if (!reason) { err.textContent = "กรุณาเลือกเหตุผล"; err.hidden = false; return; }
+    const submit = form.querySelector("[type=submit]");
+    submit.disabled = true;
+    try {
+      await api(`/products/${p.id}/report`, {
+        method: "POST",
+        body: { reason, detail: form.querySelector("textarea").value }
+      });
+      slot.innerHTML = `<p class="report-done">ส่งรายงานแล้ว ขอบคุณที่ช่วยดูแลชุมชน ผู้ดูแลระบบจะตรวจสอบโดยเร็ว</p>`;
+    } catch (ex) {
+      err.textContent = ex.message;
+      err.hidden = false;
+      submit.disabled = false;
+    }
+  });
 }
 
 /* ---------- รีวิว ---------- */

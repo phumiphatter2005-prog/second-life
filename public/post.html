@@ -76,15 +76,19 @@
           <option value="ดี" selected>ดี</option>
           <option value="พอใช้">พอใช้</option>
         </select>
+        <ul id="cond-guide" class="cond-guide" aria-label="คำอธิบายระดับสภาพสินค้า"></ul>
 
         <label class="field-label">รายละเอียดสินค้า</label>
         <textarea id="p-desc" rows="4" placeholder="เช่น ใช้งานน้อย มีรอยขีดเล็กน้อย"></textarea>
 
-        <label class="field-label">จุดนัดรับในมหาวิทยาลัย *</label>
-        <input id="p-pickup" type="text" placeholder="เช่น โรงอาหารกลาง">
+        <label class="field-label" for="p-pickup-select">จุดนัดรับในมหาวิทยาลัย *</label>
+        <select id="p-pickup-select"></select>
+        <input id="p-pickup" type="text" placeholder="ระบุจุดนัดรับ เช่น หน้าอาคาร 3" hidden>
+        <p class="field-hint">เลือกจุดที่มีคนพลุกพล่านและนัดในเวลากลางวัน</p>
 
         <label class="field-label">ช่องทางติดต่อ *</label>
         <input id="p-contact" type="text" placeholder="เช่น Line: yourid หรือเบอร์โทร">
+        <p class="field-hint">แสดงเฉพาะสมาชิกที่เข้าสู่ระบบแล้วเท่านั้น</p>
 
         <p class="form-error" hidden></p>
         <div class="btn-row">

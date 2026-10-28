@@ -69,26 +69,26 @@ if (!userCols.includes("banned")) db.exec("ALTER TABLE users ADD COLUMN banned I
 /* ---------- สินค้าตัวอย่าง (ใส่ให้ครั้งแรกที่ฐานข้อมูลยังว่าง) ---------- */
 const SAMPLE_PRODUCTS = [
   { title: "หนังสือวิทยาการคอมพิวเตอร์", price: 150, type: "sell", category: "book",
-    condition: "ดีมาก", pickup: "มหาวิทยาลัยศรีปทุม ขอนแก่น", contact: "081-234-5573 (Line)",
+    condition: "ดีมาก", pickup: "มหาวิทยาลัยศรีปทุม ขอนแก่น", contact: "ติดต่อผ่านเว็บ",
     desc: "หนังสือวิทยาการคอมพิวเตอร์ ม.6 สภาพดี มีรอยขีดเล็กน้อย แต่ใช้งานได้ปกติครับ",
     img: "images/sample-cs-book.jpg" },
   { title: "เสื้อฮู้ด Oversize", price: 200, type: "sell", category: "clothes",
-    condition: "ดี", pickup: "โรงอาหารกลาง", contact: "Line: pom_sp",
+    condition: "ดี", pickup: "โรงอาหารกลาง", contact: "ติดต่อผ่านเว็บ",
     desc: "ใส่ไม่กี่ครั้ง ซักสะอาดแล้ว", img: "images/sample-hoodie.jpg" },
   { title: "โน้ตบุ๊ก", price: 6500, type: "sell", category: "electronic",
-    condition: "ดี", pickup: "อาคารเรียนรวม", contact: "Line: nb_sell",
+    condition: "ดี", pickup: "อาคารเรียนรวม", contact: "ติดต่อผ่านเว็บ",
     desc: "ใช้งานปกติ แบตอยู่ได้ประมาณ 3 ชม.", img: "images/sample-laptop.jpg" },
   { title: "กระเป๋าเป้", price: 350, type: "swap", category: "dorm",
-    condition: "ดีมาก", pickup: "หอพักนักศึกษา", contact: "Line: bag_swap",
+    condition: "ดีมาก", pickup: "หอพักนักศึกษา", contact: "ติดต่อผ่านเว็บ",
     desc: "อยากแลกกับกระเป๋าใบเล็กกว่า", img: "images/sample-backpack.jpg" },
   { title: "โคมไฟตั้งโต๊ะ", price: 120, type: "sell", category: "dorm",
-    condition: "ดี", pickup: "หอพักนักศึกษา", contact: "Line: lamp01",
+    condition: "ดี", pickup: "หอพักนักศึกษา", contact: "ติดต่อผ่านเว็บ",
     desc: "ไฟ LED ปรับความสว่างได้", img: "images/sample-lamp.jpg" },
   { title: "หูฟังไร้สาย", price: 890, type: "sell", category: "electronic",
-    condition: "ดีมาก", pickup: "ห้องสมุด", contact: "Line: hp_sell",
+    condition: "ดีมาก", pickup: "ห้องสมุด", contact: "ติดต่อผ่านเว็บ",
     desc: "ใช้งานได้ปกติ มีกล่องครบ", img: "images/sample-headphones.jpg" },
   { title: "หนังสือภาษาอังกฤษ", price: 0, type: "free", category: "book",
-    condition: "ดี", pickup: "ห้องสมุด", contact: "Line: free_book",
+    condition: "ดี", pickup: "ห้องสมุด", contact: "ติดต่อผ่านเว็บ",
     desc: "แจกฟรี มารับได้เลย", img: "images/sample-english-book.jpg" }
 ];
 
@@ -96,6 +96,10 @@ const SAMPLE_PRODUCTS = [
 const fixSampleImg = db.prepare(
   "UPDATE products SET img = ? WHERE user_id IS NULL AND title = ? AND (img LIKE 'https://picsum%' OR (img LIKE 'images/%.svg' AND img NOT LIKE 'images/cat-%'))");
 SAMPLE_PRODUCTS.forEach(p => fixSampleImg.run(p.img, p.title));
+
+/* ฐานข้อมูลรุ่นเก่า: ลบเบอร์โทร/Line ของสินค้าตัวอย่าง */
+const fixSampleContact = db.prepare("UPDATE products SET contact = ? WHERE user_id IS NULL AND title = ?");
+SAMPLE_PRODUCTS.forEach(p => fixSampleContact.run(p.contact, p.title));
 
 if (db.prepare("SELECT COUNT(*) AS n FROM products").get().n === 0) {
   const insert = db.prepare(`

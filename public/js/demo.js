@@ -5,30 +5,28 @@ const DEMO_MODE = location.hostname.endsWith("github.io") || location.protocol =
 
 const DEMO_PRODUCTS = [
   { title: "หนังสือวิทยาการคอมพิวเตอร์", price: 150, type: "sell", category: "book",
-    condition: "ดีมาก", pickup: "มหาวิทยาลัยศรีปทุม ขอนแก่น", contact: "081-234-5573 (Line)",
+    condition: "ดีมาก", pickup: "มหาวิทยาลัยศรีปทุม ขอนแก่น", contact: "ติดต่อผ่านเว็บ",
     desc: "หนังสือวิทยาการคอมพิวเตอร์ ม.6 สภาพดี มีรอยขีดเล็กน้อย แต่ใช้งานได้ปกติครับ",
     img: "images/sample-cs-book.jpg" },
   { title: "เสื้อฮู้ด Oversize", price: 200, type: "sell", category: "clothes",
-    condition: "ดี", pickup: "โรงอาหารกลาง", contact: "Line: pom_sp",
+    condition: "ดี", pickup: "โรงอาหารกลาง", contact: "ติดต่อผ่านเว็บ",
     desc: "ใส่ไม่กี่ครั้ง ซักสะอาดแล้ว", img: "images/sample-hoodie.jpg" },
   { title: "โน้ตบุ๊ก", price: 6500, type: "sell", category: "electronic",
-    condition: "ดี", pickup: "อาคารเรียนรวม", contact: "Line: nb_sell",
+    condition: "ดี", pickup: "อาคารเรียนรวม", contact: "ติดต่อผ่านเว็บ",
     desc: "ใช้งานปกติ แบตอยู่ได้ประมาณ 3 ชม.", img: "images/sample-laptop.jpg" },
   { title: "กระเป๋าเป้", price: 350, type: "swap", category: "dorm",
-    condition: "ดีมาก", pickup: "หอพักนักศึกษา", contact: "Line: bag_swap",
+    condition: "ดีมาก", pickup: "หอพักนักศึกษา", contact: "ติดต่อผ่านเว็บ",
     desc: "อยากแลกกับกระเป๋าใบเล็กกว่า", img: "images/sample-backpack.jpg" },
   { title: "โคมไฟตั้งโต๊ะ", price: 120, type: "sell", category: "dorm",
-    condition: "ดี", pickup: "หอพักนักศึกษา", contact: "Line: lamp01",
+    condition: "ดี", pickup: "หอพักนักศึกษา", contact: "ติดต่อผ่านเว็บ",
     desc: "ไฟ LED ปรับความสว่างได้", img: "images/sample-lamp.jpg" },
   { title: "หูฟังไร้สาย", price: 890, type: "sell", category: "electronic",
-    condition: "ดีมาก", pickup: "ห้องสมุด", contact: "Line: hp_sell",
+    condition: "ดีมาก", pickup: "ห้องสมุด", contact: "ติดต่อผ่านเว็บ",
     desc: "ใช้งานได้ปกติ มีกล่องครบ", img: "images/sample-headphones.jpg" },
   { title: "หนังสือภาษาอังกฤษ", price: 0, type: "free", category: "book",
-    condition: "ดี", pickup: "ห้องสมุด", contact: "Line: free_book",
+    condition: "ดี", pickup: "ห้องสมุด", contact: "ติดต่อผ่านเว็บ",
     desc: "แจกฟรี มารับได้เลย", img: "images/sample-english-book.jpg" }
 ];
-
-const DEMO_ADMIN = { studentId: "00000", name: "ผู้ดูแลระบบ", password: "admin123", role: "admin" };
 
 function demoLoad() {
   let s = null;
@@ -39,14 +37,18 @@ function demoLoad() {
       { ...p, id: s.nextId++, userId: null, passed: false, createdAt: Date.now() - i * 1000 }));
   }
   s.reviews = s.reviews || [];
-  /* บัญชีผู้ดูแลระบบสำหรับทดลองระบบหลังบ้าน */
-  if (!s.users.some(u => u.role === "admin")) {
-    s.users.push({ ...DEMO_ADMIN, id: s.nextId++, createdAt: Date.now() });
+  /* ข้อมูลรุ่นเก่า: ลบบัญชีแอดมินสาธิต (00000) ที่เคยสร้างให้อัตโนมัติ */
+  const oldAdmin = s.users.find(u => u.studentId === "00000" && u.password === "admin123" && u.role === "admin");
+  if (oldAdmin) {
+    s.users = s.users.filter(u => u !== oldAdmin);
+    if (s.session === oldAdmin.id) s.session = null;
   }
-  /* ข้อมูลรุ่นเก่า: เปลี่ยนรูปสุ่ม/รูปการ์ตูนของสินค้าตัวอย่างเป็นรูปถ่ายจริง */
+  /* ข้อมูลรุ่นเก่า: เปลี่ยนรูปสุ่ม/รูปการ์ตูนเป็นรูปถ่ายจริง และลบเบอร์/Line ของสินค้าตัวอย่าง */
   s.products.forEach(p => {
     const sample = p.userId === null && DEMO_PRODUCTS.find(d => d.title === p.title);
-    if (sample && (p.img.startsWith("https://picsum") || /^images\/(?!cat-).*\.svg$/.test(p.img))) p.img = sample.img;
+    if (!sample) return;
+    if (p.img.startsWith("https://picsum") || /^images\/(?!cat-).*\.svg$/.test(p.img)) p.img = sample.img;
+    p.contact = sample.contact;
   });
   return s;
 }

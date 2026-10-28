@@ -12,6 +12,36 @@ $("p-cat").innerHTML = CATEGORIES
   .map(c => `<option value="${c.id}">${c.name}</option>`)
   .join("");
 
+/* ---------- คำอธิบายสภาพสินค้า (ไฮไลต์ระดับที่เลือก) ---------- */
+function renderCondGuide() {
+  $("cond-guide").innerHTML = Object.entries(CONDITION_INFO).map(([name, info]) =>
+    `<li class="${name === $("p-cond").value ? "current" : ""}"><b>${name}</b>${info}</li>`).join("");
+}
+$("p-cond").addEventListener("change", renderCondGuide);
+renderCondGuide();
+
+/* ---------- จุดนัดรับ: เลือกจากรายการ หรือระบุเอง ---------- */
+function renderPickupOptions(points) {
+  $("p-pickup-select").innerHTML =
+    `<option value="" disabled selected>เลือกจุดนัดรับ</option>` +
+    points.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join("") +
+    `<option value="${PICKUP_OTHER}">อื่นๆ (ระบุเอง)</option>`;
+}
+renderPickupOptions(DEFAULT_PICKUP_POINTS);
+settingsReady.then(s => {
+  if (Array.isArray(s.pickupPoints) && s.pickupPoints.length) renderPickupOptions(s.pickupPoints);
+});
+$("p-pickup-select").addEventListener("change", () => {
+  const other = $("p-pickup-select").value === PICKUP_OTHER;
+  $("p-pickup").hidden = !other;
+  if (other) $("p-pickup").focus();
+});
+
+function pickupValue() {
+  const sel = $("p-pickup-select").value;
+  return sel === PICKUP_OTHER ? $("p-pickup").value.trim() : sel;
+}
+
 /* ---------- แสดงขั้นตอน ---------- */
 function showStep(n) {
   step = n;
@@ -85,7 +115,7 @@ function validate() {
     }
   }
   if (step === 2) {
-    if ($("p-pickup").value.trim() === "") return "กรุณาระบุจุดนัดรับ";
+    if (!pickupValue()) return "กรุณาระบุจุดนัดรับ";
     if ($("p-contact").value.trim() === "") return "กรุณาระบุช่องทางติดต่อ";
   }
   return "";
@@ -98,7 +128,7 @@ function buildItem() {
     type: type,
     category: $("p-cat").value,
     condition: $("p-cond").value,
-    pickup: $("p-pickup").value.trim(),
+    pickup: pickupValue(),
     contact: $("p-contact").value.trim(),
     desc: $("p-desc").value.trim(),
     img: imgData

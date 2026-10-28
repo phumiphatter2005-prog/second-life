@@ -10,9 +10,36 @@ const CATEGORIES = [
 
 const TYPE_LABEL = { sell: "ขาย", swap: "แลกเปลี่ยน", free: "แจกฟรี" };
 
+/* คำอธิบายระดับสภาพสินค้า (แสดงตอนลงประกาศและในหน้าสินค้า) */
+const CONDITION_INFO = {
+  "ดีมาก": "แทบไม่มีร่องรอยการใช้งาน ใช้งานได้ครบทุกฟังก์ชัน",
+  "ดี":    "มีรอยใช้งานเล็กน้อย เช่น รอยขีด รอยพับ แต่ใช้งานได้ปกติ",
+  "พอใช้": "มีรอยชัดเจนหรือชำรุดบางส่วน ยังใช้งานได้ (ควรระบุจุดที่ชำรุดในรายละเอียด)"
+};
+
+/* จุดนัดรับเริ่มต้น — ผู้ดูแลระบบแก้ได้ในหน้า "ตั้งค่าเว็บ" */
+const DEFAULT_PICKUP_POINTS = [
+  "โรงอาหารกลาง",
+  "ห้องสมุด",
+  "อาคารเรียนรวม",
+  "หอพักนักศึกษา",
+  "ลานกิจกรรมหน้าอาคารอำนวยการ",
+  "ป้ายรถหน้ามหาวิทยาลัย"
+];
+const PICKUP_OTHER = "__other";
+
+/* ฟีเจอร์ที่ต้องใช้ฐานข้อมูล Supabase (server.js และโหมดสาธิตไม่มี) */
+const SUPABASE_ONLY = /^\/(products\/\d+\/report|settings|admin\/(reports|settings|products\/\d+))(\/|$)/;
+
 /* ---------- เรียก API ของเซิร์ฟเวอร์ ---------- */
 async function api(path, options = {}) {
   if (SUPABASE_MODE) return supabaseApi(path, options);
+  if (SUPABASE_ONLY.test(path)) {
+    if (path === "/settings") return {};
+    const err = new Error("ฟีเจอร์นี้ใช้ได้เมื่อเชื่อมต่อฐานข้อมูล Supabase (ตั้งค่าใน js/config.js)");
+    err.status = 501;
+    throw err;
+  }
   if (DEMO_MODE) return demoApi(path, options);
   const res = await fetch("/api" + path, {
     method: options.method || "GET",

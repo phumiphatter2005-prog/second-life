@@ -10,13 +10,6 @@ function nextUrl() {
 
 userReady.then(() => { if (currentUser) location.href = nextUrl(); });
 
-/* โหมดสาธิตมีบัญชีผู้ดูแลระบบให้ทดลองระบบหลังบ้าน */
-if (DEMO_MODE && !SUPABASE_MODE) {
-  form.insertAdjacentHTML("afterend", `
-    <p class="muted demo-note">ทดลองระบบหลังบ้าน: รหัสนักศึกษา <code>${DEMO_ADMIN.studentId}</code>
-    รหัสผ่าน <code>${DEMO_ADMIN.password}</code></p>`);
-}
-
 document.querySelectorAll("#auth-tabs .chip").forEach(btn => {
   btn.addEventListener("click", () => {
     document.querySelectorAll("#auth-tabs .chip").forEach(b => b.classList.remove("active"));
