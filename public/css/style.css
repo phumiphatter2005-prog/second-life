@@ -12,6 +12,11 @@
   --ring: 0 0 0 3px rgba(126, 42, 140, .12);
   --glow: 0 4px 12px rgba(126, 42, 140, .35);
   --brand-green: #1F7A4D;            /* ปลายไล่เฉดของคำเน้นในหัวข้อ (ม่วง → เขียว) */
+  --green-soft: #E3F2EA;
+  --amber: #B45309;                  /* ขั้น "นัดรับ" ในวิธีใช้งาน */
+  --amber-soft: #FEF3C7;
+  --ink-deep: #2A1540;               /* แผงเกี่ยวกับโครงการ + ส่วนท้าย */
+  --on-dark-2: rgba(250, 250, 250, .8);   /* ข้อความรองบนพื้นม่วงเข้ม */
 
   --bg: #FAFAFA;
   --surface: #FFFFFF;
@@ -458,25 +463,59 @@ code, kbd {
 
 /* ---------- How it works (home) ---------- */
 .how { margin-bottom: 64px; }
-.how-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; list-style: none; counter-reset: how; }
+.how-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 48px; list-style: none; }
+/* แต่ละขั้นมีสีของตัวเอง: ลงประกาศ ม่วง · นัดรับ ส้มอำพัน · ส่งต่อแล้ว เขียว */
 .how-step {
-  counter-increment: how;
-  padding: 24px;
+  --step: var(--primary);
+  --step-soft: var(--primary-soft);
+  position: relative;
+  padding: 28px 24px 24px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  border-radius: var(--r-lg);
+  transition: transform .2s, box-shadow .2s, border-color .2s;
 }
+.how-meet { --step: var(--amber); --step-soft: var(--amber-soft); }
+.how-done { --step: var(--brand-green); --step-soft: var(--green-soft); }
+.how-step:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); border-color: var(--step); }
+/* เลขขั้นตัวใหญ่จางๆ เป็นลายน้ำมุมขวาบน */
 .how-step::before {
-  content: counter(how, decimal-leading-zero);
-  display: block;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--neutral);
-  margin-bottom: 16px;
+  content: attr(data-step);
+  position: absolute;
+  top: 12px;
+  right: 20px;
+  font-family: var(--font-display);
+  font-size: 72px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -.04em;
+  color: var(--step);
+  opacity: .1;
+  pointer-events: none;
 }
-.how-step .ic { width: 24px; height: 24px; margin-bottom: 12px; }
+.how-icon {
+  width: 76px;
+  height: 76px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 16px;
+  border-radius: 50%;
+  background: var(--step-soft);
+  color: var(--step);
+}
+.how-icon svg { width: 48px; height: 48px; }
 .how-step h3 { font-size: 20px; margin-bottom: 4px; }
 .how-step p { color: var(--text-2); font-size: 14px; }
+/* เส้นประ + ลูกศรเชื่อมระหว่างการ์ด (คอม: แนวนอน) */
+.how-step:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 60px;
+  left: 100%;
+  width: 48px;
+  height: 12px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 12'%3E%3Cpath d='M4 6h33' stroke='%239C9C9C' stroke-width='2' stroke-dasharray='4 4' fill='none'/%3E%3Cpath d='M37 1.5l6 4.5-6 4.5' stroke='%239C9C9C' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+}
 
 /* ---------- Listing cards ---------- */
 .grid {
@@ -1017,26 +1056,80 @@ input[type="checkbox"]:checked::after { opacity: 1; }
 .auth-page { max-width: 440px; }
 
 /* ---------- About (home) ---------- */
+/* แผงม่วงเข้ม ตัวอักษรขาว (#FAFAFA) — ข้อความรองใช้ความทึบ ≥ 78% ให้อ่านง่าย */
 .about {
+  position: relative;
+  overflow: hidden;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
-  gap: 32px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  gap: 40px;
   align-items: center;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  padding: 40px;
+  background: var(--ink-deep);
+  color: var(--on-primary);
+  border-radius: 24px;
+  padding: 48px;
   margin-bottom: 64px;
 }
 .about.no-stats { grid-template-columns: minmax(0, 1fr); }
-.about h2 { font-size: 32px; letter-spacing: -.03em; white-space: pre-line; }
-.about-text p { color: var(--text-2); margin-top: 12px; white-space: pre-line; }
+.about > :not(.about-leaves) { position: relative; }
+.about-leaves {
+  position: absolute;
+  right: -48px;
+  bottom: -56px;
+  width: 280px;
+  height: 280px;
+  color: var(--on-primary);
+  opacity: .07;
+  transform: rotate(-14deg);
+  pointer-events: none;
+}
+.about .overline { color: var(--on-dark-2); }
+.about h2 { font-size: 32px; letter-spacing: -.03em; white-space: pre-line; color: var(--on-primary); }
+.about-text p { color: var(--on-dark-2); margin-top: 12px; white-space: pre-line; }
 
-.stats { display: flex; border: 1px solid var(--border); border-radius: var(--r-md); }
-.stat { flex: 1; display: flex; flex-direction: column; padding: 20px; min-width: 0; }
-.stat + .stat { border-left: 1px solid var(--border); }
-.stat strong { font-family: var(--font-display); font-size: 40px; font-weight: 600; letter-spacing: -.04em; line-height: 1.2; }
-.stat span { font-size: 13px; color: var(--text-2); }
+/* ตัวเลขสถิติในการ์ดโปร่งแสงบนพื้นม่วง */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); grid-auto-flow: column; gap: 12px; }
+.stat {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 20px;
+  background: rgba(255, 255, 255, .08);
+  border: 1px solid rgba(255, 255, 255, .16);
+  border-radius: var(--r-lg);
+}
+.stat-icon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .12);
+  color: #F1DDF5;
+}
+.stat-icon .ic { width: 20px; height: 20px; }
+.stat:last-child .stat-icon { color: #A7E3C1; }
+.stat strong { font-family: var(--font-display); font-size: 44px; font-weight: 600; letter-spacing: -.04em; line-height: 1.1; color: var(--on-primary); }
+.stat > span:last-child { font-size: 13px; color: var(--on-dark-2); }
+
+/* ป้าย SDG: สีทางการ + ตัวอักษรเข้ม (อ่านง่ายกว่าตัวขาวบนสีส้ม) */
+.sdg-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+.sdg {
+  display: inline-flex;
+  align-items: stretch;
+  overflow: hidden;
+  border-radius: var(--r-full);
+  background: rgba(255, 255, 255, .1);
+  border: 1px solid rgba(255, 255, 255, .18);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.sdg b { padding: 4px 10px; background: var(--sdg); color: #1A1206; font-weight: 600; white-space: nowrap; }
+.sdg span { padding: 4px 12px 4px 10px; color: var(--on-primary); }
+.sdg-12 { --sdg: #BF8B2E; }
+.sdg-11 { --sdg: #FD9D24; }
 
 /* ---------- Admin ---------- */
 .admin-page { padding-bottom: 64px; }
@@ -1116,27 +1209,32 @@ button.admin-title { border: none; background: none; padding: 0; font-size: inhe
 /* ---------- Footer ---------- */
 .site-footer {
   margin-top: 32px;
-  background: var(--surface);
-  border-top: 1px solid var(--border);
-  color: var(--text-2);
+  background: var(--ink-deep);
+  color: var(--on-dark-2);
   font-size: 14px;
 }
 .footer-inner {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 24px;
-  padding-block: 40px 24px;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr) minmax(0, 1.5fr) minmax(0, 1.1fr);
+  gap: 32px;
+  padding-block: 48px 32px;
 }
-.footer-inner strong { color: var(--text); }
+.footer-inner strong { color: var(--on-primary); }
 .footer-inner p { margin-top: 8px; line-height: 1.7; white-space: pre-line; }
-.footer-logo { display: flex; align-items: center; gap: 8px; font-family: var(--font-display); font-size: 18px; font-weight: 600; letter-spacing: -.03em; color: var(--text); }
-.footer-logo .ic { width: 18px; height: 18px; color: var(--text-2); }
-.footer-tag { padding-block: 16px; border-top: 1px solid var(--border); font-size: 12px; color: var(--neutral); }
+.footer-logo { display: flex; align-items: center; gap: 8px; font-family: var(--font-display); font-size: 18px; font-weight: 600; letter-spacing: -.03em; color: var(--on-primary); }
+.footer-logo .ic { width: 18px; height: 18px; color: #A7E3C1; }
+.footer-links { list-style: none; display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.footer-links a { color: var(--on-dark-2); transition: color .2s; }
+.footer-links a:hover { color: var(--on-primary); text-decoration: underline; }
+.site-footer a:focus-visible { box-shadow: 0 0 0 3px rgba(250, 250, 250, .45); border-radius: var(--r-xs); }
+.footer-sdg { flex-direction: column; align-items: flex-start; margin-top: 10px; }
+.footer-tag { padding-block: 16px; border-top: 1px solid rgba(255, 255, 255, .14); font-size: 12px; color: var(--on-dark-2); }
 
 /* ---------- Tablet ---------- */
 @media (max-width: 1024px) {
   .categories { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .about { grid-template-columns: minmax(0, 1fr); }
+  .footer-inner { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .nav-search span { display: none; }
 }
 
@@ -1153,7 +1251,16 @@ button.admin-title { border: none; background: none; padding: 0; font-size: inhe
   .filters-body { display: none; padding: 4px 4px 8px; }
   .filters.open .filters-body { display: flex; }
   .how { margin-bottom: 48px; }
-  .how-steps { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .how-steps { grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  .how-step { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 0 16px; padding: 20px; }
+  .how-step .how-icon { grid-row: span 2; width: 64px; height: 64px; margin: 0; }
+  .how-step .how-icon svg { width: 40px; height: 40px; }
+  .how-step::before { font-size: 56px; top: 8px; right: 16px; }
+  /* มือถือ: เส้นเชื่อมแนวตั้งด้านซ้าย */
+  .how-step:not(:last-child)::after {
+    top: 100%; left: 46px; width: 12px; height: 32px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 12 32%27%3E%3Cpath d=%27M6 3v18%27 stroke=%27%239C9C9C%27 stroke-width=%272%27 stroke-dasharray=%274 4%27 fill=%27none%27/%3E%3Cpath d=%27M1.5 22l4.5 6 4.5-6%27 stroke=%27%239C9C9C%27 stroke-width=%272%27 fill=%27none%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E");
+  }
 
   /* เมนูย้ายไปเป็นแถบด้านล่าง มีแคปซูลเลื่อนไปที่เมนูที่เลือก */
   /* backdrop-filter ทำให้ position: fixed ของแถบล่างผิดตำแหน่ง จึงปิดบนจอเล็ก */
@@ -1245,11 +1352,14 @@ button.admin-title { border: none; background: none; padding: 0; font-size: inhe
   .fav-btn { width: 40px; height: 40px; top: 8px; right: 8px; }
   .passed-tag { top: 8px; left: 8px; padding: 0 8px; }
 
-  .about { padding: 24px 16px; gap: 24px; margin-bottom: 32px; }
+  .about { padding: 32px 20px; gap: 24px; margin-bottom: 32px; border-radius: 20px; }
+  .about-leaves { width: 200px; height: 200px; right: -40px; bottom: auto; top: -40px; }
   .about h2 { font-size: 24px; }
   .stat { padding: 12px; }
+  .stat-icon { width: 32px; height: 32px; margin-bottom: 4px; }
+  .stat-icon .ic { width: 16px; height: 16px; }
   .stat strong { font-size: 28px; }
-  .stat span { font-size: 12px; }
+  .stat > span:last-child { font-size: 12px; }
 
   .detail, .reviews, .post-card { padding: 16px; }
   .detail-info h1 { font-size: 24px; }
@@ -1280,7 +1390,8 @@ button.admin-title { border: none; background: none; padding: 0; font-size: inhe
   .panel-body { padding: 16px; }
   .img-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
-  .footer-inner { padding-block: 32px 16px; }
+  .footer-inner { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; padding-block: 32px 16px; }
+  .footer-inner > div:first-child, .footer-inner > div:nth-child(3) { grid-column: 1 / -1; }
 }
 
 /* =====================================================================

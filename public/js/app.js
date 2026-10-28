@@ -134,9 +134,21 @@ function decorateNav() {
           <div class="footer-logo">${icon("leaf")} Second Life</div>
           <p>ตลาดสินค้ามือสองในมหาวิทยาลัย<br>ให้สิ่งของ...ได้มีชีวิตที่สอง</p>
         </div>
+        <nav aria-label="เมนูด่วน">
+          <strong>เมนูด่วน</strong>
+          <ul class="footer-links">
+            <li><a href="index.html">หน้าแรก</a></li>
+            <li><a href="search.html">หมวดหมู่</a></li>
+            <li><a href="post.html">ลงประกาศ</a></li>
+            <li><a href="messages.html">ข้อความ</a></li>
+          </ul>
+        </nav>
         <div>
           <strong>เป้าหมายการพัฒนาที่ยั่งยืน</strong>
-          <p>SDG 12 การผลิตและการบริโภคที่ยั่งยืน (12.5)<br>SDG 11 เมืองและชุมชนที่ยั่งยืน (11.6)</p>
+          <div class="sdg-badges footer-sdg">
+            <span class="sdg sdg-12"><b>SDG 12.5</b><span>การผลิตและการบริโภคที่ยั่งยืน</span></span>
+            <span class="sdg sdg-11"><b>SDG 11.6</b><span>เมืองและชุมชนที่ยั่งยืน</span></span>
+          </div>
         </div>
         <div>
           <strong>จัดทำโดย</strong>

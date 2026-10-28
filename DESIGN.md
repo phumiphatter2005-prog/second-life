@@ -14,6 +14,9 @@ An editorial precision interface for a university second-hand marketplace. The a
 - **Background** (#FAFAFA): Page background, light warm gray
 - **Surface** (#FFFFFF): Cards, panels, modals, nav backdrop
 - **Text Primary** (#0A0A0A): Headings, body text, primary labels — near-black
+- **Ink Deep** (#2A1540): Dark purple surface for the "About" panel and the site footer. Text on it is #FAFAFA; secondary text is #FAFAFA at 80% opacity (never lower) so everything stays readable
+- **Step colors** (How-it-works): post = Primary #7E2A8C on #F6ECF8, meet-up = Amber #B45309 on #FEF3C7, passed-on = Brand Green #1F7A4D on #E3F2EA
+- **SDG colors**: SDG 12 #BF8B2E, SDG 11 #FD9D24 (official). Used only as the tag part of SDG badges, with near-black text #1A1206 — white on these oranges fails contrast
 - **Text Secondary** (#6B6B6B): Descriptions, metadata, secondary labels
 - **On Primary** (#FAFAFA): Text on filled primary buttons (never pure white)
 - **Border** (#E8E8EC): Card borders, dividers, input borders — subtle and recessive
@@ -40,6 +43,9 @@ Minimal shadows. Cards rest flat with a 1px border and gain a subtle shadow on h
 - **Chips**: Pill, gray-100 background, gray-600 text, 4px × 12px padding, 12px text. Active = purple fill. Status chips use the same shape with semantic colors.
 - **Category cards**: Compact row cards (icon + name + item count), equal height, 8px radius. Each category has its own pastel icon tile: all #EEF2FF, books #E0F2FE (blue), clothes #FCE7F3 (pink), stationery #FEF9C3 (yellow), electronics #F3E8FF (purple), dorm #DCFCE7 (green), other #F3F4F6 (gray). Hover lifts 2px; selected card gets a purple border + focus ring. On phones they form one horizontally scrolling row.
 - **Hero badge**: Pill above the headline with a leaf icon, 14px text, surface background and 1px border.
+- **How-it-works steps**: 12px-radius cards with a 48px icon in a 76px tinted circle (step color), a large faint step number (01/02/03, 10% opacity) as a watermark top-right, and dashed arrow connectors between cards (horizontal on desktop, vertical on the left on phones). Hover lifts 4px and the border turns the step color.
+- **About panel**: Ink Deep, 24px radius, 48px padding. Stats sit in translucent cards (white 8% fill, 16% border) with a round icon, a 44px number that counts up on scroll, and a label.
+- **Footer**: Ink Deep, white text, four columns (brand, quick links, SDG badges, credits) → two on tablet, stacked on phones.
 - **Lists**: Stacked rows, 1px dividers, 12px × 16px padding, hover background.
 - **Checkboxes**: 20px, rounded-full, purple when checked.
 - **Tooltips**: Native `title` attributes only.
@@ -66,7 +72,7 @@ Minimal shadows. Cards rest flat with a 1px border and gain a subtle shadow on h
 - Do keep cards at 12px radius and buttons/inputs at 6px
 - Do test at 360px and 1280px
 - Don't use pure black (#000000) or pure white (#FFFFFF) for text
-- Don't add decorative gradients or illustrations — the interactive dot grid and the headline gradient text are the only exceptions
+- Don't add decorative gradients or illustrations — exceptions: the interactive dot grid, the headline gradient text, and the faint leaf pattern (≤ 7% opacity) in the corner of the dark About panel
 - Don't use shadows on static elements
 - Don't use more than two font weights on a screen
 - Don't place more than one filled primary button in the same section
