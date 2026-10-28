@@ -86,6 +86,7 @@ function toProduct(row, user) {
     img: row.img,
     passed: !!row.passed,
     sellerName: row.seller_name || "Second Life",
+    hasOwner: row.user_id !== null,
     isOwner: !!user && row.user_id === user.id,
     isFav: !!row.is_fav,
     rating: row.rating_avg,
@@ -315,6 +316,9 @@ app.get("/api/stats", (req, res) => {
   });
 });
 
+/* ---------- แชตระหว่างผู้ประกาศกับผู้สนใจ (chat-server.js) ---------- */
+const chat = require("./chat-server")(app, { db, requireLogin, requireAdmin, isAdmin, cleanText, saveImage });
+
 /* ---------- ระบบหลังบ้าน (เฉพาะผู้ดูแลระบบ) ---------- */
 function countBy(sql) {
   return Object.fromEntries(db.prepare(sql).all().map(r => [r.k, r.n]));
@@ -329,6 +333,8 @@ app.get("/api/admin/overview", requireAdmin, (req, res) => {
     items: n("SELECT COUNT(*) AS n FROM products"),
     passed: n("SELECT COUNT(*) AS n FROM products WHERE passed = 1"),
     reviews: n("SELECT COUNT(*) AS n FROM reviews"),
+    reportsOpen: chat.openReports(),
+    chatRooms: chat.roomCount(),
     byCategory: countBy("SELECT category AS k, COUNT(*) AS n FROM products GROUP BY category"),
     byType: countBy("SELECT type AS k, COUNT(*) AS n FROM products GROUP BY type")
   });

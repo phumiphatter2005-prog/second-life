@@ -28,12 +28,22 @@ const DEFAULT_PICKUP_POINTS = [
 ];
 const PICKUP_OTHER = "__other";
 
+/* แชตใช้ได้กับ Supabase และ server.js (โหมดสาธิตในเบราว์เซอร์ไม่มี) */
+const CHAT_ENABLED = SUPABASE_MODE || !DEMO_MODE;
+
 /* ฟีเจอร์ที่ต้องใช้ฐานข้อมูล Supabase (server.js และโหมดสาธิตไม่มี) */
 const SUPABASE_ONLY = /^\/(products\/\d+\/report|settings|admin\/(reports|settings|products\/\d+))(\/|$)/;
 
 /* ---------- เรียก API ของเซิร์ฟเวอร์ ---------- */
 async function api(path, options = {}) {
   if (SUPABASE_MODE) return supabaseApi(path, options);
+  if (!CHAT_ENABLED && /^\/(chats|admin\/chat-reports)(\/|$|\?)/.test(path)) {
+    if (path === "/chats/unread") return { count: 0 };
+    if (path === "/chats" || path === "/admin/chat-reports") return [];
+    const err = new Error("แชตใช้ได้เมื่อเชื่อมต่อฐานข้อมูล Supabase (ตั้งค่าใน js/config.js)");
+    err.status = 501;
+    throw err;
+  }
   if (SUPABASE_ONLY.test(path)) {
     if (path === "/settings") return {};
     const err = new Error("ฟีเจอร์นี้ใช้ได้เมื่อเชื่อมต่อฐานข้อมูล Supabase (ตั้งค่าใน js/config.js)");

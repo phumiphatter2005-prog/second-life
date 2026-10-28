@@ -20,6 +20,10 @@ const ICONS = {
   camera: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3Z"/><circle cx="12" cy="13" r="3.5"/>',
   filter: '<path d="M3 5h18M6 12h12M10 19h4"/>',
   menu:   '<path d="M4 6h16M4 12h16M4 18h16"/>',
+  back:   '<path d="M15 18l-6-6 6-6"/>',
+  send:   '<path d="M22 2 11 13M22 2l-7 20-4-9-9-4Z"/>',
+  tag:    '<path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z"/><circle cx="7.5" cy="7.5" r="1.5"/>',
+  swap:   '<path d="M17 3l4 4-4 4M21 7H8M7 21l-4-4 4-4M3 17h13"/>',
   eye:    '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
   eyeOff: '<path d="M10.6 5.1A10.5 10.5 0 0 1 12 5c6.5 0 10 7 10 7a17.6 17.6 0 0 1-2.4 3.4M6.6 6.6C3.7 8.4 2 12 2 12s3.5 7 10 7a9.7 9.7 0 0 0 5.4-1.6M9.9 9.9a3 3 0 0 0 4.2 4.2M3 3l18 18"/>',
   close:  '<path d="M6 6l12 12M18 6 6 18"/>',
@@ -85,7 +89,7 @@ function productCard(p) {
 }
 
 /* ---------- แถบเมนู + ส่วนท้าย (เหมือนกันทุกหน้า) ---------- */
-const NAV_ICONS = { "index.html": "home", "search.html": "grid", "post.html": "plus", "favorites.html": "heart" };
+const NAV_ICONS = { "index.html": "home", "search.html": "grid", "post.html": "plus", "messages.html": "chat", "favorites.html": "heart" };
 
 const SHORTCUT = /Mac|iPhone|iPad/.test(navigator.platform) ? "⌘K" : "Ctrl K";
 
@@ -96,10 +100,21 @@ function decorateNav() {
   const nav = document.querySelector(".nav-links");
   if (nav) {
     nav.id = "nav-links";
+    /* เมนู "ข้อความ" (แชต) ก่อนรายการโปรด */
+    const favLink = nav.querySelector('a[href="favorites.html"]');
+    if (CHAT_ENABLED && favLink && !nav.querySelector('a[href="messages.html"]')) {
+      const onMessages = location.pathname.endsWith("messages.html");
+      favLink.insertAdjacentHTML("beforebegin", `<a href="messages.html" class="${onMessages ? "active" : ""}">ข้อความ</a>`);
+    }
     nav.querySelectorAll("a").forEach(a => {
       const name = NAV_ICONS[a.getAttribute("href")];
       if (name) a.innerHTML = icon(name) + `<span>${a.textContent}</span>`;
     });
+    const chatLink = nav.querySelector('a[href="messages.html"]');
+    if (chatLink) {
+      chatLink.classList.add("nav-chat");
+      chatLink.insertAdjacentHTML("beforeend", `<span class="nav-badge" hidden aria-label="ข้อความที่ยังไม่อ่าน"></span>`);
+    }
 
     /* มือถือ: แคปซูลพื้นหลังของแถบเมนูล่าง · ขวา: ปุ่มค้นหา + บัญชีผู้ใช้ */
     nav.insertAdjacentHTML("afterbegin", `<span class="nav-pill" aria-hidden="true"></span>`);
@@ -137,7 +152,8 @@ function placeNavPill() {
   const nav = document.querySelector(".nav-links");
   const pill = nav && nav.querySelector(".nav-pill");
   if (!pill) return;
-  const links = [...nav.querySelectorAll(":scope > a")];
+  /* นับเฉพาะเมนูที่แสดงอยู่ (มือถือซ่อน "หลังบ้าน" ไว้ในเมนูบัญชี) */
+  const links = [...nav.querySelectorAll(":scope > a")].filter(a => getComputedStyle(a).display !== "none");
   const i = links.findIndex(a => a.classList.contains("active"));
   nav.style.setProperty("--n", links.length);
   pill.hidden = i < 0;
@@ -315,6 +331,7 @@ function renderNavUser() {
     <div class="user-menu" role="menu" hidden>
       <div class="user-menu-head"><strong>${esc(currentUser.name)}</strong><code>${esc(currentUser.studentId)}</code></div>
       <a role="menuitem" href="favorites.html?tab=mine">${icon("box")}ประกาศของฉัน</a>
+      ${CHAT_ENABLED ? `<a role="menuitem" href="messages.html">${icon("chat")}ข้อความ</a>` : ""}
       <a role="menuitem" href="favorites.html">${icon("heart")}รายการโปรด</a>
       ${isAdmin ? `<a role="menuitem" href="admin.html">${icon("shield")}ระบบหลังบ้าน</a>` : ""}
       <button role="menuitem" type="button" class="danger-item" id="btn-logout">${icon("logout")}ออกจากระบบ</button>
@@ -554,6 +571,40 @@ function resizeImage(file, maxW = 800) {
     reader.readAsDataURL(file);
   });
 }
+
+/* ---------- ตัวเลขข้อความที่ยังไม่อ่านบนเมนู "ข้อความ" ---------- */
+let unreadTimer = null;
+async function refreshUnread() {
+  if (!currentUser || !CHAT_ENABLED) return;
+  try {
+    const { count } = await api("/chats/unread");
+    document.querySelectorAll(".nav-badge").forEach(b => {
+      b.textContent = count > 99 ? "99+" : count;
+      b.hidden = !count;
+    });
+  } catch (e) { /* ไม่แสดงตัวเลขถ้าโหลดไม่ได้ */ }
+}
+
+function watchUnread() {
+  if (!currentUser || !CHAT_ENABLED) return;
+  refreshUnread();
+  const bump = () => {
+    clearTimeout(unreadTimer);
+    unreadTimer = setTimeout(() => {
+      refreshUnread();
+      document.dispatchEvent(new CustomEvent("chat:activity"));
+    }, 400);
+  };
+  /* Supabase: ข้อความใหม่ในห้องที่เราอยู่เด้งมาทันที (RLS กรองให้เห็นเฉพาะห้องของเรา) */
+  if (SUPABASE_MODE) {
+    sbClient().then(sb => sb.channel(`unread-${currentUser.id}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages" }, bump)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "chat_rooms" }, bump)
+      .subscribe()).catch(() => {});
+  }
+  setInterval(refreshUnread, SUPABASE_MODE ? 60000 : 15000);
+}
+userReady.then(watchUnread);
 
 applySettings();
 revealOnScroll();

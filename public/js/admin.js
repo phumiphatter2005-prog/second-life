@@ -13,7 +13,7 @@ const ADMIN_TABS = {
               filter: "เฉพาะที่ถูกรายงาน" },
   users:    { load: "/admin/users", render: renderUsers, search: "ค้นหาชื่อหรือรหัสนักศึกษา" },
   reviews:  { load: "/admin/reviews", render: renderReviews, search: "ค้นหาชื่อสินค้า ผู้รีวิว หรือข้อความ" },
-  reports:  { load: "/admin/reports", render: renderReports, search: "ค้นหาชื่อสินค้า เหตุผล หรือผู้รายงาน",
+  reports:  { load: loadReports, render: renderReports, search: "ค้นหาชื่อสินค้า เหตุผล หรือผู้รายงาน",
               filter: "แสดงเรื่องที่ปิดแล้วด้วย" },
   settings: { load: "/settings", render: renderSettings }
 };
@@ -63,6 +63,7 @@ function renderOverview(o) {
     ["บัญชีที่ถูกระงับ", o.banned]
   ];
   if (o.reportsOpen !== undefined) tiles.push(["รายงานรอตรวจสอบ", o.reportsOpen]);
+  if (o.chatRooms !== undefined) tiles.push(["ห้องแชต", o.chatRooms]);
   const rate = o.items ? Math.round(o.passed / o.items * 100) : 0;
   const breakdown = (title, entries) => `
     <div class="panel">
@@ -349,12 +350,71 @@ function renderReviews(list) {
     </div>`;
 }
 
-/* ---------- รายงานประกาศ ---------- */
-function renderReports(list) {
+/* ---------- รายงานประกาศ + รายงานแชต ---------- */
+async function loadReports() {
+  /* รายงานประกาศต้องใช้ Supabase · รายงานแชตใช้ได้ทั้ง Supabase และ npm start */
+  const [products, chats] = await Promise.allSettled([api("/admin/reports"), api("/admin/chat-reports")]);
+  return {
+    product: products.status === "fulfilled" ? products.value : [],
+    productError: products.status === "rejected" ? products.reason.message : "",
+    chat: chats.status === "fulfilled" ? chats.value : [],
+    chatError: chats.status === "rejected" ? chats.reason.message : ""
+  };
+}
+
+function reportButtons(r, act) {
+  return r.status === "open" ? `
+    <button class="btn btn-sm btn-secondary" data-act="${act}" data-status="resolved">จัดการแล้ว</button>
+    <button class="btn btn-sm btn-secondary" data-act="${act}" data-status="dismissed">ไม่ดำเนินการ</button>` : `
+    <button class="btn btn-sm btn-secondary" data-act="${act}" data-status="open">เปิดเรื่องอีกครั้ง</button>`;
+}
+
+function renderReports(data) {
+  const visible = r => adminFilterCheck.checked || r.status === "open";
+  const chats = data.chat.filter(r =>
+    matches(r.productTitle, r.reason, r.detail, r.reporterName, r.reporterStudentId, r.reportedName, r.reportedStudentId) &&
+    visible(r));
+  renderProductReports(data.product, data.productError);
+  adminBody.insertAdjacentHTML("beforeend", `
+    <h3 class="admin-subhead">รายงานห้องแชต</h3>
+    ${data.chatError ? `<p class="muted">${esc(data.chatError)}</p>` : `
+    <p class="muted admin-count">${chats.length.toLocaleString()} เรื่อง</p>
+    <div class="list panel">
+      ${chats.map(r => {
+        const [label, cls] = REPORT_STATUS[r.status] || [r.status, ""];
+        return `
+        <div class="list-row admin-row" data-id="${r.id}">
+          <img class="admin-thumb" src="${esc(r.productImg)}" alt="" loading="lazy">
+          <div class="admin-main">
+            <a class="admin-title" href="messages.html?room=${r.roomId}">แชตเรื่อง ${esc(r.productTitle)}</a>
+            <div class="admin-meta">
+              <span class="status ${cls}">${label}</span>
+              <strong>${esc(r.reason)}</strong>
+              <span>ผู้ถูกรายงาน ${esc(r.reportedName)}${r.reportedStudentId ? ` · <code>${esc(r.reportedStudentId)}</code>` : ""}</span>
+              <span>โดย ${esc(r.reporterName)}</span>
+              <span>${formatDay(r.createdAt)}</span>
+            </div>
+            ${r.detail ? `<p class="admin-comment">${esc(r.detail)}</p>` : ""}
+          </div>
+          <div class="admin-actions">
+            <a class="btn btn-sm btn-secondary" href="messages.html?room=${r.roomId}">ดูแชต</a>
+            ${reportButtons(r, "chat-report-status")}
+          </div>
+        </div>`;
+      }).join("") || `<p class="empty" style="padding:16px">${adminFilterCheck.checked ? "ยังไม่มีรายงานแชต" : "ไม่มีรายงานแชตที่รอตรวจสอบ"}</p>`}
+    </div>`}`);
+}
+
+function renderProductReports(list, error) {
   const rows = list.filter(r =>
     matches(r.productTitle, r.reason, r.detail, r.reporterName, r.reporterStudentId) &&
     (adminFilterCheck.checked || r.status === "open"));
+  if (error) {
+    adminBody.innerHTML = `<h3 class="admin-subhead" style="margin-top:0">รายงานประกาศ</h3><p class="muted">${esc(error)}</p>`;
+    return;
+  }
   adminBody.innerHTML = `
+    <h3 class="admin-subhead" style="margin-top:0">รายงานประกาศ</h3>
     <p class="muted admin-count">${rows.length.toLocaleString()} เรื่อง</p>
     <div class="list panel">
       ${rows.map(r => {
@@ -385,7 +445,7 @@ function renderReports(list) {
 }
 
 async function refreshReportBadge() {
-  if (!SUPABASE_MODE) return;
+  /* นับรวมรายงานประกาศและรายงานแชตที่รอตรวจ */
   try {
     const o = await api("/admin/overview");
     document.getElementById("report-badge").textContent = o.reportsOpen ? ` (${o.reportsOpen})` : "";
@@ -509,7 +569,7 @@ async function loadTab() {
   adminError("");
   adminBody.innerHTML = skeletonRows(5);
   try {
-    adminRows = await api(conf.load);
+    adminRows = typeof conf.load === "function" ? await conf.load() : await api(conf.load);
     conf.render(adminRows);
   } catch (e) {
     adminBody.innerHTML = "";
@@ -557,6 +617,9 @@ adminBody.addEventListener("click", async e => {
     } else if (act === "delete-review") {
       if (!confirmed(btn, "ยืนยันลบ?")) return;
       await api(`/admin/reviews/${row.dataset.product}/${row.dataset.user}`, { method: "DELETE" });
+    } else if (act === "chat-report-status") {
+      await api("/admin/chat-reports/" + row.dataset.id, { method: "POST", body: { status: btn.dataset.status } });
+      refreshReportBadge();
     } else if (act === "report-status") {
       await api("/admin/reports/" + row.dataset.id, { method: "POST", body: { status: btn.dataset.status } });
       refreshReportBadge();

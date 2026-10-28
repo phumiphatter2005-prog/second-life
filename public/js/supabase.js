@@ -183,6 +183,47 @@ async function supabaseApi(path, options = {}) {
     return { fav: await rpc("sl_toggle_fav", { p_id: Number(m[1]) }) };
   }
 
+  /* ---------- แชต (supabase/003_chat.sql) ---------- */
+  if (path === "/chats/open") return { roomId: await rpc("chat_open", { p_product: Number(b.productId) }) };
+  if (path === "/chats") return rpc("chat_rooms_list");
+  if (path === "/chats/unread") return { count: await rpc("chat_unread") };
+  if ((m = /^\/chats\/requesters\/(\d+)$/.exec(path))) return rpc("chat_requesters", { p_product: Number(m[1]) });
+  if ((m = /^\/chats\/messages\/(\d+)\/respond$/.exec(path))) {
+    await rpc("chat_respond", { p_message: Number(m[1]), p_action: String(b.action || "") });
+    return { ok: true };
+  }
+  if ((m = /^\/chats\/(\d+)(\?after=(\d+))?$/.exec(path))) {
+    const room = Number(m[1]);
+    const [info, messages] = await Promise.all([
+      rpc("chat_room", { p_room: room }),
+      rpc("chat_messages_list", { p_room: room, p_after: Number(m[3]) || 0 })
+    ]);
+    return { room: info, messages, typing: null };   // กำลังพิมพ์ส่งผ่าน Realtime broadcast (chat.js)
+  }
+  if ((m = /^\/chats\/(\d+)\/(messages|read|give|passed|block|report|typing)$/.exec(path))) {
+    const room = Number(m[1]);
+    const action = m[2];
+    if (action === "messages") {
+      const data = { ...(b.data || {}) };
+      if (typeof data.img === "string" && data.img.startsWith("data:")) {
+        const user = await needUser();
+        data.img = await sbUploadImage(sb, user.id, data.img, "chat-images");
+      }
+      return rpc("chat_send", { p_room: room, p_kind: String(b.kind || ""), p_body: String(b.body || ""), p_data: data });
+    }
+    if (action === "read") await rpc("chat_mark_read", { p_room: room });
+    if (action === "give") await rpc("chat_give", { p_room: room });
+    if (action === "passed") await rpc("chat_passed", { p_room: room });
+    if (action === "block") await rpc("chat_block", { p_room: room, p_block: !!b.block });
+    if (action === "report") await rpc("chat_report", { p_room: room, p_reason: String(b.reason || ""), p_detail: String(b.detail || "") });
+    return { ok: true };
+  }
+  if (path === "/admin/chat-reports") return rpc("admin_chat_reports");
+  if ((m = /^\/admin\/chat-reports\/(\d+)$/.exec(path))) {
+    await rpc("admin_set_chat_report", { p_id: Number(m[1]), p_status: String(b.status || "") });
+    return { ok: true };
+  }
+
   /* ---------- ข้อความหน้าเว็บที่ตั้งค่าไว้ (อ่านได้ทุกคน) ---------- */
   if (path === "/settings") {
     const { data, error } = await sb.from("site_settings").select("data").eq("id", 1).maybeSingle();

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#7E2A8C">
+  <title>ข้อความ | Second Life</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600&family=IBM+Plex+Sans+Thai:wght@400;600&family=JetBrains+Mono&display=swap">
+  <link rel="stylesheet" href="css/style.css?v=10">
+</head>
+<body>
+
+  <header class="navbar">
+    <div class="container">
+      <a href="index.html" class="logo">Second Life</a>
+      <nav class="nav-links">
+        <a href="index.html">หน้าแรก</a>
+        <a href="search.html">หมวดหมู่</a>
+        <a href="post.html">ลงประกาศ</a>
+        <a href="favorites.html">รายการโปรด</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container chat-page" id="chat-page">
+    <aside class="chat-list-pane" aria-label="ห้องแชตทั้งหมด">
+      <div class="chat-list-head">
+        <h1>ข้อความ</h1>
+        <span class="muted">คุยได้เฉพาะ 2 คนในห้อง</span>
+      </div>
+      <nav class="chat-list" id="chat-list"></nav>
+    </aside>
+    <section class="chat-room" id="chat-room" aria-label="ห้องแชต"></section>
+  </main>
+
+  <script src="js/config.js?v=10"></script>
+  <script src="js/supabase.js?v=10"></script>
+  <script src="js/demo.js?v=10"></script>
+  <script src="js/data.js?v=10"></script>
+  <script src="js/app.js?v=10"></script>
+  <script src="js/chat.js?v=10"></script>
+</body>
+</html>

@@ -90,7 +90,8 @@ GitHub Pages ให้เบราว์เซอร์จำไฟล์ไว�
 1. สร้างโปรเจกต์ที่ [supabase.com](https://supabase.com)
 2. **SQL Editor** → วางไฟล์ `supabase/schema.sql` ทั้งไฟล์ → **Run** (สร้างตาราง, สิทธิ์ RLS, ที่เก็บรูป, สินค้าตัวอย่าง)
    แล้ววาง `supabase/002_admin_cms.sql` → **Run** อีกครั้ง (รูปหลายรูป, รายงานประกาศ, ตั้งค่าเว็บ, สิทธิ์แอดมินแก้ประกาศ, อัปเดตสินค้าตัวอย่าง)
-   ถ้าเคยรัน `schema.sql` ไปแล้ว ให้รันเฉพาะ `002_admin_cms.sql` — ไฟล์นี้ไม่ลบข้อมูลเดิม และรันซ้ำได้
+   แล้ววาง `supabase/003_chat.sql` → **Run** (ระบบแชต + เปิด Realtime) — ต้องรันหลัง 002 เสมอ
+   ไฟล์ที่เคยรันแล้วไม่ต้องรันซ้ำ (รันซ้ำก็ได้ ไม่ลบข้อมูลเดิม)
 3. **Authentication → Sign In / Providers → Email** ปิด **Confirm email**
    (เว็บใช้รหัสนักศึกษาแทนอีเมล จึงยืนยันอีเมลไม่ได้)
 4. **Project Settings → API** คัดลอก Project URL และ anon public key ไปใส่ใน `public/js/config.js`
@@ -113,3 +114,12 @@ anon key เปิดเผยได้ ข้อมูลถูกป้อง�
 | `sample-lamp.jpg` | โคมไฟตั้งโต๊ะ | [Beth Stevenson](https://unsplash.com/@bthstvn) | [unsplash.com/photos/okUB5th8QtQ](https://unsplash.com/photos/black-desk-lamp-on-brown-wooden-table-okUB5th8QtQ) |
 | `sample-headphones.jpg` | หูฟังไร้สาย | [Sam Grozyan](https://unsplash.com/@ijeunes) | [unsplash.com/photos/P7KF3cTRKcE](https://unsplash.com/photos/black-wireless-headphones-on-white-desk-P7KF3cTRKcE) |
 | `sample-english-book.jpg` | หนังสือภาษาอังกฤษ | [Clarissa Watson](https://unsplash.com/@issaphotography) | [unsplash.com/photos/jAebodq7oxk](https://unsplash.com/photos/pile-of-assorted-title-books-jAebodq7oxk) |
+
+## แชตระหว่างผู้ประกาศกับผู้สนใจ
+
+- หน้าสินค้ามีปุ่ม **แชตกับผู้ประกาศ** (ต้องเข้าสู่ระบบ, เจ้าของประกาศไม่เห็นปุ่ม) — 1 ห้องต่อสินค้า 1 ชิ้นต่อผู้สนใจ 1 คน
+- หน้า **ข้อความ** (`messages.html`) รายการห้อง + จุดแจ้งเตือน, เมนูมีตัวเลขข้อความที่ยังไม่อ่าน
+- ขาย: ปุ่มด่วน + เสนอราคา · แลกเปลี่ยน: เสนอของแลกพร้อมรูป · แจกฟรี: ขอรับ แล้วผู้ประกาศเลือกผู้รับ
+- นัดรับ (จุด/วัน/เวลา) อีกฝ่ายกดยืนยัน · ผู้ประกาศกด "ส่งต่อแล้ว" ในแชต แล้วอีกฝ่ายให้ดาวได้ทันที
+- อ่านแล้ว / กำลังพิมพ์ / รายงาน / บล็อก · จำกัด 1000 ตัวอักษร และไม่เกิน 6 ข้อความต่อ 10 วินาที
+- ใช้ได้กับ Supabase (ข้อความเด้งทันทีผ่าน Realtime) และ `npm start` (ดึงข้อความใหม่ทุก 2 วินาที) — โหมดสาธิตไม่มีแชต

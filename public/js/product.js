@@ -22,7 +22,9 @@ function actionButtons(p) {
       <button id="btn-delete" class="btn-outline danger">ลบประกาศ</button>`;
   }
   return `
-    <button id="btn-fav" class="btn-primary btn-fav ${p.isFav ? "on" : ""}">${favButtonText(p.isFav)}</button>
+    ${CHAT_ENABLED && p.hasOwner !== false ? `
+      <button id="btn-chat" class="btn-primary">${icon("chat")} แชตกับผู้ประกาศ</button>` : ""}
+    <button id="btn-fav" class="${CHAT_ENABLED && p.hasOwner !== false ? "btn-outline" : "btn-primary"} btn-fav ${p.isFav ? "on" : ""}">${favButtonText(p.isFav)}</button>
     <button id="btn-contact" class="btn-outline">ติดต่อผู้ขาย</button>
     <p id="contact-box" class="contact-box" hidden>ช่องทางติดต่อ: ${esc(p.contact)}</p>`;
 }
@@ -158,6 +160,19 @@ function render(p) {
           if (on) popHeart(favBtn);
         }
       } catch (err) { showError(err.message); }
+    });
+
+    const chatBtn = document.getElementById("btn-chat");
+    if (chatBtn) chatBtn.addEventListener("click", async () => {
+      if (!currentUser) return goLogin();
+      chatBtn.disabled = true;
+      try {
+        const { roomId } = await api("/chats/open", { method: "POST", body: { productId: p.id } });
+        location.href = "messages.html?room=" + roomId;
+      } catch (err) {
+        showError(err.message);
+        chatBtn.disabled = false;
+      }
     });
 
     document.getElementById("btn-contact").addEventListener("click", () => {
