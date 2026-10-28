@@ -71,30 +71,30 @@ const SAMPLE_PRODUCTS = [
   { title: "หนังสือวิทยาการคอมพิวเตอร์", price: 150, type: "sell", category: "book",
     condition: "ดีมาก", pickup: "มหาวิทยาลัยศรีปทุม ขอนแก่น", contact: "081-234-5573 (Line)",
     desc: "หนังสือวิทยาการคอมพิวเตอร์ ม.6 สภาพดี มีรอยขีดเล็กน้อย แต่ใช้งานได้ปกติครับ",
-    img: "images/book1.svg" },
+    img: "images/sample-cs-book.jpg" },
   { title: "เสื้อฮู้ด Oversize", price: 200, type: "sell", category: "clothes",
     condition: "ดี", pickup: "โรงอาหารกลาง", contact: "Line: pom_sp",
-    desc: "ใส่ไม่กี่ครั้ง ซักสะอาดแล้ว", img: "images/hoodie.svg" },
+    desc: "ใส่ไม่กี่ครั้ง ซักสะอาดแล้ว", img: "images/sample-hoodie.jpg" },
   { title: "โน้ตบุ๊ก", price: 6500, type: "sell", category: "electronic",
     condition: "ดี", pickup: "อาคารเรียนรวม", contact: "Line: nb_sell",
-    desc: "ใช้งานปกติ แบตอยู่ได้ประมาณ 3 ชม.", img: "images/laptop.svg" },
+    desc: "ใช้งานปกติ แบตอยู่ได้ประมาณ 3 ชม.", img: "images/sample-laptop.jpg" },
   { title: "กระเป๋าเป้", price: 350, type: "swap", category: "dorm",
     condition: "ดีมาก", pickup: "หอพักนักศึกษา", contact: "Line: bag_swap",
-    desc: "อยากแลกกับกระเป๋าใบเล็กกว่า", img: "images/bag.svg" },
+    desc: "อยากแลกกับกระเป๋าใบเล็กกว่า", img: "images/sample-backpack.jpg" },
   { title: "โคมไฟตั้งโต๊ะ", price: 120, type: "sell", category: "dorm",
     condition: "ดี", pickup: "หอพักนักศึกษา", contact: "Line: lamp01",
-    desc: "ไฟ LED ปรับความสว่างได้", img: "images/lamp.svg" },
+    desc: "ไฟ LED ปรับความสว่างได้", img: "images/sample-lamp.jpg" },
   { title: "หูฟังไร้สาย", price: 890, type: "sell", category: "electronic",
     condition: "ดีมาก", pickup: "ห้องสมุด", contact: "Line: hp_sell",
-    desc: "ใช้งานได้ปกติ มีกล่องครบ", img: "images/headphone.svg" },
+    desc: "ใช้งานได้ปกติ มีกล่องครบ", img: "images/sample-headphones.jpg" },
   { title: "หนังสือภาษาอังกฤษ", price: 0, type: "free", category: "book",
     condition: "ดี", pickup: "ห้องสมุด", contact: "Line: free_book",
-    desc: "แจกฟรี มารับได้เลย", img: "images/book2.svg" }
+    desc: "แจกฟรี มารับได้เลย", img: "images/sample-english-book.jpg" }
 ];
 
-/* ฐานข้อมูลรุ่นเก่า: เปลี่ยนรูปสุ่มของสินค้าตัวอย่างเป็นรูปประกอบ */
+/* ฐานข้อมูลรุ่นเก่า: เปลี่ยนรูปสุ่ม/รูปการ์ตูนของสินค้าตัวอย่างเป็นรูปถ่ายจริง */
 const fixSampleImg = db.prepare(
-  "UPDATE products SET img = ? WHERE user_id IS NULL AND title = ? AND img LIKE 'https://picsum%'");
+  "UPDATE products SET img = ? WHERE user_id IS NULL AND title = ? AND (img LIKE 'https://picsum%' OR (img LIKE 'images/%.svg' AND img NOT LIKE 'images/cat-%'))");
 SAMPLE_PRODUCTS.forEach(p => fixSampleImg.run(p.img, p.title));
 
 if (db.prepare("SELECT COUNT(*) AS n FROM products").get().n === 0) {

@@ -97,3 +97,17 @@ GitHub Pages ให้เบราว์เซอร์จำไฟล์ไว�
 
 เมื่อใส่ค่าใน `config.js` แล้ว เว็บจะใช้ Supabase เสมอ (แทนทั้ง server.js และโหมดสาธิต)
 anon key เปิดเผยได้ ข้อมูลถูกป้องกันด้วย Row Level Security ใน `schema.sql`
+
+## เครดิตรูปภาพสินค้าตัวอย่าง
+
+รูปสินค้าตัวอย่าง 7 ชิ้นใน `public/images/sample-*.jpg` มาจาก [Unsplash](https://unsplash.com) ใช้ฟรีภายใต้ [Unsplash License](https://unsplash.com/license) ย่อให้กว้าง 800px (รูปกระเป๋าเป้ครอปให้เหลือใบเดียว)
+
+| ไฟล์ | สินค้า | ช่างภาพ | ต้นฉบับ |
+|---|---|---|---|
+| `sample-cs-book.jpg` | หนังสือวิทยาการคอมพิวเตอร์ | [Rick Muigo](https://unsplash.com/@kimothorick) | [unsplash.com/photos/UcuCPy3Pwus](https://unsplash.com/photos/get-coding-and-coding-books-beside-cup-of-coffee-UcuCPy3Pwus) |
+| `sample-hoodie.jpg` | เสื้อฮู้ด Oversize | [Mediamodifier](https://unsplash.com/@mediamodifier) | [unsplash.com/photos/kJXGTOY1wLQ](https://unsplash.com/photos/white-hoodie-and-distressed-jeans-kJXGTOY1wLQ) |
+| `sample-laptop.jpg` | โน้ตบุ๊ก | [Christopher Gower](https://unsplash.com/@cgower) | [unsplash.com/photos/vjMgqUkS8q8](https://unsplash.com/photos/silver-macbook-pro-on-white-table-vjMgqUkS8q8) |
+| `sample-backpack.jpg` | กระเป๋าเป้ | [Wiser by the Mile](https://unsplash.com/@wiserbythemile) | [unsplash.com/photos/1Frndjy7tkM](https://unsplash.com/photos/black-and-brown-backpack-on-white-textile-1Frndjy7tkM) |
+| `sample-lamp.jpg` | โคมไฟตั้งโต๊ะ | [Beth Stevenson](https://unsplash.com/@bthstvn) | [unsplash.com/photos/okUB5th8QtQ](https://unsplash.com/photos/black-desk-lamp-on-brown-wooden-table-okUB5th8QtQ) |
+| `sample-headphones.jpg` | หูฟังไร้สาย | [Sam Grozyan](https://unsplash.com/@ijeunes) | [unsplash.com/photos/P7KF3cTRKcE](https://unsplash.com/photos/black-wireless-headphones-on-white-desk-P7KF3cTRKcE) |
+| `sample-english-book.jpg` | หนังสือภาษาอังกฤษ | [Clarissa Watson](https://unsplash.com/@issaphotography) | [unsplash.com/photos/jAebodq7oxk](https://unsplash.com/photos/pile-of-assorted-title-books-jAebodq7oxk) |
