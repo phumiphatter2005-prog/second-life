@@ -89,6 +89,8 @@ GitHub Pages ให้เบราว์เซอร์จำไฟล์ไว�
 
 1. สร้างโปรเจกต์ที่ [supabase.com](https://supabase.com)
 2. **SQL Editor** → วางไฟล์ `supabase/schema.sql` ทั้งไฟล์ → **Run** (สร้างตาราง, สิทธิ์ RLS, ที่เก็บรูป, สินค้าตัวอย่าง)
+   แล้ววาง `supabase/002_admin_cms.sql` → **Run** อีกครั้ง (รูปหลายรูป, รายงานประกาศ, ตั้งค่าเว็บ, สิทธิ์แอดมินแก้ประกาศ, อัปเดตสินค้าตัวอย่าง)
+   ถ้าเคยรัน `schema.sql` ไปแล้ว ให้รันเฉพาะ `002_admin_cms.sql` — ไฟล์นี้ไม่ลบข้อมูลเดิม และรันซ้ำได้
 3. **Authentication → Sign In / Providers → Email** ปิด **Confirm email**
    (เว็บใช้รหัสนักศึกษาแทนอีเมล จึงยืนยันอีเมลไม่ได้)
 4. **Project Settings → API** คัดลอก Project URL และ anon public key ไปใส่ใน `public/js/config.js`
