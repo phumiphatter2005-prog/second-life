@@ -94,41 +94,25 @@ function setupSheet() {
   matchMedia("(max-width: 860px)").addEventListener("change", e => { if (!e.matches) close(); });
 }
 
-/* ---------- แถบหมวดหมู่: แถบสีม่วงเลื่อนตามหมวดที่เลือก ---------- */
+/* ---------- แถวแคปซูลหมวดหมู่ (สร้างด้วย renderCatPills ใน app.js) ---------- */
 function setupCategoryTabs() {
-  const bar = $("cat-tabs");
-  bar.innerHTML = CATEGORIES.map(c =>
-    `<button type="button" role="tab" data-cat="${c.id}">${c.name}</button>`).join("") +
-    `<span class="cat-ink" aria-hidden="true"></span>`;
-  bar.addEventListener("click", e => {
-    const btn = e.target.closest("[data-cat]");
-    if (btn) setCategory(btn.dataset.cat);
+  const wrap = $("cat-pills");
+  renderCatPills(wrap, filters.cat, false);
+  wrap.addEventListener("click", e => {
+    const pill = e.target.closest("[data-cat]");
+    if (pill) setCategory(pill.dataset.cat);
   });
-  addEventListener("resize", moveCatInk);
-  if (document.fonts) document.fonts.ready.then(moveCatInk);
   syncCategoryTabs();
 }
 
-function moveCatInk() {
-  const bar = $("cat-tabs");
-  const btn = bar.querySelector("button.active");
-  const ink = bar.querySelector(".cat-ink");
-  if (!btn) return;
-  ink.style.setProperty("--x", btn.offsetLeft + "px");
-  ink.style.setProperty("--w", btn.offsetWidth);
-}
-
 function syncCategoryTabs() {
-  document.querySelectorAll("#cat-tabs [data-cat]").forEach(b => {
-    const on = b.dataset.cat === filters.cat;
-    b.classList.toggle("active", on);
-    b.setAttribute("aria-selected", on);
-  });
-  /* เลื่อนเฉพาะแถบแนวนอนให้เห็นหมวดที่เลือก (ไม่เลื่อนทั้งหน้า) */
-  const bar = $("cat-tabs");
-  const active = bar.querySelector("button.active");
-  if (active) bar.scrollLeft = Math.max(0, active.offsetLeft - 16);
-  moveCatInk();
+  const wrap = $("cat-pills");
+  selectCatPill(wrap, filters.cat);
+  /* เลื่อนเฉพาะแถวแนวนอนให้เห็นหมวดที่เลือก (ไม่เลื่อนทั้งหน้า) */
+  const row = wrap.querySelector(".cat-pills");
+  const active = row.querySelector('[aria-pressed="true"]');
+  if (active) row.scrollLeft = Math.max(0, active.offsetLeft - row.offsetLeft - 16);
+  updateCatFade(wrap);
 }
 
 function setCategory(cat) {
@@ -244,6 +228,7 @@ async function loadProducts() {
   try {
     await userReady;
     PRODUCTS = await api("/products");
+    hideEmptyCatPills($("cat-pills"), PRODUCTS);
     renderResults();
   } catch (e) {
     $("result-count").textContent = "โหลดสินค้าไม่สำเร็จ: " + e.message;

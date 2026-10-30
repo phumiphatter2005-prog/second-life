@@ -28,6 +28,7 @@
   --text-2: #6B6B6B;
   --neutral: #9C9C9C;
   --border: #E8E8EC;
+  --border-strong: #C9C9D1;           /* ขอบตอนชี้ (แคปซูลหมวดหมู่) */
   --dot: #D9D9DF;
 
   --success: #10B981;
@@ -406,50 +407,60 @@ code, kbd {
   background: transparent;
 }
 
-/* ---------- Categories ---------- */
-.categories {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 12px;
-  padding: 0 0 56px;
+/* ---------- แถวแคปซูลหมวดหมู่ (หน้าแรก + หน้าค้นหา) ---------- */
+.cat-pills-wrap { position: relative; }
+/* เงาจางขอบขวา บอกว่ายังเลื่อนต่อได้ */
+.cat-pills-wrap::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 48px;
+  background: linear-gradient(90deg, rgba(250, 250, 250, 0), var(--bg));
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .2s;
 }
-.cat {
+.cat-pills-wrap.more::after { opacity: 1; }
+.cat-pills {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 64px;
-  padding: 12px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  font-size: 13px;
-  transition: transform .2s, box-shadow .2s, border-color .2s;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 2px 0;
 }
-.cat:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
-.cat.selected { border-color: var(--primary); box-shadow: var(--ring); }
-.cat-icon {
-  width: 36px;
-  height: 36px;
+.cat-pills::-webkit-scrollbar { display: none; }
+.cat-pill {
   flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  border-radius: var(--r-md);
-  background: var(--cat-bg, var(--bg-alt));
-  color: var(--cat-fg, var(--text));
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-full);
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background .2s, border-color .2s, color .2s;
 }
-.cat-icon .ic { width: 18px; height: 18px; }
-.cat-name { display: block; line-height: 1.3; color: var(--text); }
-.cat-count { display: block; font-size: 11px; color: var(--text-2); line-height: 1.4; }
-.cat-text { min-width: 0; display: flex; flex-direction: column; }
-.cat-count { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* ไอคอนพื้นพาสเทลประจำหมวด */
-.cat-all        { --cat-bg: #EEF2FF; --cat-fg: #4338CA; }
-.cat-book       { --cat-bg: #E0F2FE; --cat-fg: #0369A1; }
-.cat-clothes    { --cat-bg: #FCE7F3; --cat-fg: #BE185D; }
-.cat-stationery { --cat-bg: #FEF9C3; --cat-fg: #A16207; }
-.cat-electronic { --cat-bg: #F3E8FF; --cat-fg: #7E22CE; }
-.cat-dorm       { --cat-bg: #DCFCE7; --cat-fg: #15803D; }
-.cat-other      { --cat-bg: #F3F4F6; --cat-fg: #4B5563; }
+.cat-pill[hidden] { display: none; }
+.cat-pill .ic { width: 16px; height: 16px; stroke-width: 1.75; color: var(--text-2); }
+.cat-pill:hover { border-color: var(--border-strong); background: var(--bg-alt); }
+.cat-pill[aria-current="true"], .cat-pill[aria-pressed="true"] {
+  border-color: transparent;
+  background: var(--primary);
+  color: var(--on-primary);
+  font-weight: 600;
+}
+.cat-pill[aria-current="true"] .ic, .cat-pill[aria-pressed="true"] .ic { color: var(--on-primary); }
+.cat-pill[aria-current="true"]:hover, .cat-pill[aria-pressed="true"]:hover { background: var(--primary-hover); }
+.home-cats { margin-bottom: 48px; }
+#cat-pills { margin-bottom: 16px; }
 
 /* ---------- Section ---------- */
 .section-head {
@@ -1391,7 +1402,6 @@ button.admin-title { border: none; background: none; padding: 0; font-size: inhe
 
 /* ---------- Tablet ---------- */
 @media (max-width: 1024px) {
-  .categories { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .about { grid-template-columns: minmax(0, 1fr); }
   .nav-search span { display: none; }
 }
@@ -1509,19 +1519,10 @@ button.admin-title { border: none; background: none; padding: 0; font-size: inhe
   .search-box kbd { display: none; }
   .search-box .btn { padding: 0 16px; }
 
-  .categories {
-    display: flex;
-    gap: 8px;
-    overflow-x: auto;
-    margin: 0 -16px;
-    padding: 4px 16px 32px;
-    scroll-snap-type: x mandatory;
-    scroll-padding-inline: 16px;
-    scrollbar-width: none;
-  }
-  .categories::-webkit-scrollbar { display: none; }
-  .cat { flex: 0 0 auto; width: 148px; scroll-snap-align: start; padding: 10px; gap: 10px; }
-  .categories { padding-bottom: 40px; }
+  /* แถวหมวดหมู่ชิดขอบจอ เลื่อนด้วยนิ้ว */
+  .cat-pills-wrap { margin-inline: -16px; }
+  .cat-pills { padding-inline: 16px; scroll-padding-inline: 16px; }
+  .home-cats { margin-bottom: 32px; }
   .hero-art { max-width: 300px; }
   .ha { border-width: 4px; }
   .ha-chip { padding: 6px 10px; font-size: 12px; }
@@ -1684,43 +1685,6 @@ button.admin-title { border: none; background: none; padding: 0; font-size: inhe
 .star-input button.on { transform: scale(1.08); }
 @keyframes star-pop { 0% { transform: scale(1); } 40% { transform: scale(1.45) rotate(-8deg); } 100% { transform: scale(1.08); } }
 .star-input button.pop { animation: star-pop .4s cubic-bezier(.3, .7, .3, 1) both; animation-delay: var(--d, 0s); }
-
-/* ---------- แถบหมวดหมู่ (หน้าค้นหา) ---------- */
-.cat-tabs {
-  position: relative;
-  display: flex;
-  gap: 4px;
-  margin-bottom: 20px;
-  border-bottom: 1px solid var(--border);
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.cat-tabs::-webkit-scrollbar { display: none; }
-.cat-tabs button {
-  flex-shrink: 0;
-  height: 40px;
-  padding: 0 12px;
-  border: none;
-  background: none;
-  color: var(--text-2);
-  font-size: 14px;
-  cursor: pointer;
-  transition: color .2s;
-}
-.cat-tabs button:hover { color: var(--text); }
-.cat-tabs button.active { color: var(--primary); font-weight: 600; }
-.cat-ink {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  width: 1px;
-  height: 3px;
-  border-radius: 3px 3px 0 0;
-  background: var(--primary);
-  transform-origin: left;
-  transform: translateX(var(--x, 0)) scaleX(var(--w, 0));
-  transition: transform .35s cubic-bezier(.3, .7, .2, 1);
-}
 
 /* ---------- กล่องเทาระหว่างโหลด (skeleton) ---------- */
 .sk {
@@ -2603,7 +2567,7 @@ body.drawer-open .drawer-backdrop { opacity: 1; }
   }
   .reveal { opacity: 1; transform: none; }
   .conveyor { overflow-x: auto; }
-  .belt-card:hover, .cat:hover { transform: none; }
+  .belt-card:hover { transform: none; }
   .card-wrap:hover .card-img img, .belt-card:hover img { transform: none; }
   .leaf-burst { display: none; }
 }

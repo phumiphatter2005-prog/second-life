@@ -378,7 +378,7 @@ function celebratePassed(btn) {
 
 /* ---------- ทุกส่วนค่อยๆ เลื่อนขึ้นและชัดขึ้นเมื่อเลื่อนมาถึง ---------- */
 const REVEAL_SELECTOR = [
-  "main > .section-head", "main > .grid", ".shelf", ".how", ".about", ".conveyor-section", ".categories",
+  "main > .section-head", "main > .grid", ".shelf", ".how", ".about", ".conveyor-section", ".home-cats",
   ".detail", ".reviews", ".post-card", ".steps", ".search-layout", ".page-head", ".kpis", ".admin-split",
   "#fav-list", ".empty-state"
 ].join(",");
@@ -528,33 +528,55 @@ function setupDotGrid() {
   hero.addEventListener("pointerleave", () => hero.classList.remove("dots-on"));
 }
 
+/* ---------- แถวแคปซูลหมวดหมู่ (หน้าแรก + หน้าค้นหา) ----------
+   wrap = .cat-pills-wrap · asLink = หน้าแรกเป็นลิงก์ไปหน้าค้นหา, หน้าค้นหาเป็นปุ่มกรอง */
+function renderCatPills(wrap, active, asLink) {
+  wrap.innerHTML = `<div class="cat-pills">${CATEGORIES.map(c => asLink
+    ? `<a class="cat-pill" data-cat="${c.id}" href="search.html${c.id === "all" ? "" : `?cat=${c.id}`}"
+        ${c.id === active ? 'aria-current="true"' : ""}>${icon(c.icon)}${c.name}</a>`
+    : `<button type="button" class="cat-pill" data-cat="${c.id}" aria-pressed="${c.id === active}">${icon(c.icon)}${c.name}</button>`
+  ).join("")}</div>`;
+  const row = wrap.querySelector(".cat-pills");
+  row.addEventListener("scroll", () => updateCatFade(wrap), { passive: true });
+  addEventListener("resize", () => updateCatFade(wrap));
+  updateCatFade(wrap);
+}
+
+/* หมวดที่เลือก: พื้นม่วง (ลิงก์ใช้ aria-current, ปุ่มใช้ aria-pressed) */
+function selectCatPill(wrap, cat) {
+  wrap.querySelectorAll(".cat-pill").forEach(p => {
+    const on = p.dataset.cat === cat;
+    if (p.tagName === "A") on ? p.setAttribute("aria-current", "true") : p.removeAttribute("aria-current");
+    else p.setAttribute("aria-pressed", on);
+    if (on) p.hidden = false;
+  });
+}
+
+/* ซ่อนหมวดที่ยังไม่มีสินค้า ("ทั้งหมด" และหมวดที่เลือกอยู่แสดงเสมอ) */
+function hideEmptyCatPills(wrap, list) {
+  const has = new Set(list.map(p => p.category));
+  wrap.querySelectorAll(".cat-pill").forEach(p => {
+    const cat = p.dataset.cat;
+    p.hidden = cat !== "all" && !has.has(cat) && !p.matches('[aria-current], [aria-pressed="true"]');
+  });
+  updateCatFade(wrap);
+}
+
+/* เงาจางขอบขวา แสดงเมื่อยังเลื่อนไปทางขวาได้อีก */
+function updateCatFade(wrap) {
+  const row = wrap.querySelector(".cat-pills");
+  if (row) wrap.classList.toggle("more", row.scrollLeft + row.clientWidth < row.scrollWidth - 2);
+}
+
 /* ---------- หน้าแรก ---------- */
 function renderCategories() {
   const el = document.getElementById("categories");
   if (!el) return;
-  /* "ทั้งหมด" เป็นหมวดที่เลือกไว้ก่อน กดหมวดไหน หมวดนั้นได้ขอบม่วงระหว่างไปหน้าค้นหา */
-  el.innerHTML = CATEGORIES.map(c => `
-    <a class="cat cat-${c.id} ${c.id === "all" ? "selected" : ""}" href="search.html?cat=${c.id}"
-      ${c.id === "all" ? 'aria-current="true"' : ""}>
-      <span class="cat-icon">${icon(c.icon)}</span>
-      <span class="cat-text">
-        <span class="cat-name">${c.name}</span>
-        <span class="cat-count" data-cat="${c.id}"><span class="sk" style="display:inline-block;width:32px;height:10px"></span></span>
-      </span>
-    </a>`).join("");
+  /* "ทั้งหมด" เลือกไว้ก่อน กดหมวดไหน หมวดนั้นเป็นสีม่วงระหว่างไปหน้าค้นหา */
+  renderCatPills(el, "all", true);
   el.addEventListener("click", e => {
-    const card = e.target.closest(".cat");
-    if (!card) return;
-    el.querySelectorAll(".cat").forEach(c => c.classList.toggle("selected", c === card));
-  });
-}
-
-/* จำนวนสินค้าที่ยังเปิดอยู่ในแต่ละหมวด */
-function updateCategoryCounts(list) {
-  document.querySelectorAll(".cat-count").forEach(el => {
-    const cat = el.dataset.cat;
-    const n = list.filter(p => !p.passed && (cat === "all" || p.category === cat)).length;
-    el.textContent = n ? `${n.toLocaleString()} ชิ้น` : "ยังไม่มี";
+    const pill = e.target.closest(".cat-pill");
+    if (pill) selectCatPill(el, pill.dataset.cat);
   });
 }
 
@@ -622,13 +644,13 @@ async function renderPopular() {
       <p class="empty">ยังไม่มีสินค้า มาเป็นคนแรกที่ <a href="post.html">ลงประกาศ</a></p>`;
     setupShelves(el);
     renderConveyor(list);
-    updateCategoryCounts(list);
+    const cats = document.getElementById("categories");
+    if (cats) hideEmptyCatPills(cats, list);
   } catch (e) {
     el.innerHTML = `
       <div class="section-head"><h2>ประกาศล่าสุด</h2></div>
       <p class="empty">โหลดสินค้าไม่สำเร็จ: ${esc(e.message)}</p>`;
     renderConveyor([]);
-    document.querySelectorAll(".cat-count").forEach(c => { c.textContent = ""; });
   }
 }
 
