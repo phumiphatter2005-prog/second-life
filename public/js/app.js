@@ -572,11 +572,14 @@ function updateCatFade(wrap) {
 function renderCategories() {
   const el = document.getElementById("categories");
   if (!el) return;
-  /* "ทั้งหมด" เลือกไว้ก่อน กดหมวดไหน หมวดนั้นเป็นสีม่วงระหว่างไปหน้าค้นหา */
-  renderCatPills(el, "all", true);
+  /* กดหมวดแล้วกรองแถวสินค้าในหน้าแรกทันที (ไม่ไปหน้าค้นหา) */
+  renderCatPills(el, homeCat, false);
   el.addEventListener("click", e => {
     const pill = e.target.closest(".cat-pill");
-    if (pill) selectCatPill(el, pill.dataset.cat);
+    if (!pill || pill.dataset.cat === homeCat) return;
+    homeCat = pill.dataset.cat;
+    selectCatPill(el, homeCat);
+    if (homeList) swapShelves();
   });
 }
 
@@ -587,6 +590,14 @@ const SHELVES = [
   { title: "แลกเปลี่ยน",   href: "search.html?type=swap", pick: p => p.type === "swap" }
 ];
 const SHELF_MAX = 15;
+let homeCat = "all";   // หมวดที่เลือกในหน้าแรก
+let homeList = null;   // สินค้าที่ยังไม่ส่งต่อ (โหลดครั้งเดียว ใช้กรองซ้ำ)
+
+/* "ดูทั้งหมด" ส่งหมวดที่เลือกไปหน้าค้นหาด้วย */
+function shelfHref(shelf) {
+  if (homeCat === "all") return shelf.href;
+  return shelf.href + (shelf.href.includes("?") ? "&" : "?") + "cat=" + encodeURIComponent(homeCat);
+}
 
 function shelfHtml(shelf, cards, i) {
   return `
@@ -594,7 +605,7 @@ function shelfHtml(shelf, cards, i) {
       <div class="section-head">
         <h2 id="shelf-title-${i}">${shelf.title}</h2>
         <div class="shelf-actions">
-          <a href="${shelf.href}">ดูทั้งหมด →</a>
+          <a href="${shelfHref(shelf)}">ดูทั้งหมด →</a>
           <span class="shelf-nav" hidden>
             <button type="button" class="shelf-btn" data-dir="-1" aria-label="เลื่อนไปทางซ้าย" disabled>‹</button>
             <button type="button" class="shelf-btn" data-dir="1" aria-label="เลื่อนไปทางขวา">›</button>
@@ -624,8 +635,39 @@ function setupShelves(root) {
     }));
     updateShelfNav(shelf);
   });
-  window.addEventListener("resize", () => root.querySelectorAll(".shelf").forEach(updateShelfNav));
 }
+
+/* วาดแถวสินค้าตามหมวดที่เลือก (แถวที่ไม่มีสินค้าไม่แสดง) */
+function renderShelves() {
+  const el = document.getElementById("shelves");
+  const list = homeList.filter(p => homeCat === "all" || p.category === homeCat);
+  const rows = SHELVES.map((s, i) => {
+    const items = list.filter(s.pick).slice(0, SHELF_MAX);
+    return items.length ? shelfHtml(s, items.map(productCard).join(""), i) : "";
+  }).join("");
+  el.innerHTML = rows || (homeCat === "all"
+    ? `<div class="section-head"><h2>ประกาศล่าสุด</h2></div>
+       <p class="empty">ยังไม่มีสินค้า มาเป็นคนแรกที่ <a href="post.html">ลงประกาศ</a></p>`
+    : `<div class="shelf-empty">
+         <p>ยังไม่มีสินค้าในหมวดนี้</p>
+         <a class="btn btn-primary" href="post.html">ลงประกาศ</a>
+       </div>`);
+  setupShelves(el);
+}
+
+/* เปลี่ยนหมวด: จางออก → เปลี่ยนสินค้า → จางเข้า (ไม่เลื่อนหน้าจอ) */
+let shelfSwapTimer;
+function swapShelves() {
+  const el = document.getElementById("shelves");
+  clearTimeout(shelfSwapTimer);
+  el.classList.add("fading");
+  shelfSwapTimer = setTimeout(() => {
+    renderShelves();
+    requestAnimationFrame(() => el.classList.remove("fading"));
+  }, matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 180);
+}
+
+addEventListener("resize", () => document.querySelectorAll(".shelf").forEach(updateShelfNav));
 
 async function renderPopular() {
   const el = document.getElementById("shelves");
@@ -635,14 +677,8 @@ async function renderPopular() {
   try {
     await userReady;
     const list = (await api("/products")).filter(p => !p.passed);
-    const rows = SHELVES.map((s, i) => {
-      const items = list.filter(s.pick).slice(0, SHELF_MAX);
-      return items.length ? shelfHtml(s, items.map(productCard).join(""), i) : "";
-    }).join("");
-    el.innerHTML = rows || `
-      <div class="section-head"><h2>ประกาศล่าสุด</h2></div>
-      <p class="empty">ยังไม่มีสินค้า มาเป็นคนแรกที่ <a href="post.html">ลงประกาศ</a></p>`;
-    setupShelves(el);
+    homeList = list;
+    renderShelves();
     renderConveyor(list);
     const cats = document.getElementById("categories");
     if (cats) hideEmptyCatPills(cats, list);

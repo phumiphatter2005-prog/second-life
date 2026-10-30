@@ -589,6 +589,21 @@ code, kbd {
 .tag-free, .tag-passed { color: var(--success-ink); }
 
 /* ---------- แถวสินค้าในหน้าแรก (เลื่อนซ้ายขวา) ---------- */
+/* เปลี่ยนหมวดในหน้าแรก: แถวสินค้าจางออกแล้วจางเข้า */
+#shelves { transition: opacity .18s ease; }
+#shelves.fading { opacity: 0; }
+.shelf-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 48px;
+  padding: 48px 16px;
+  border: 1px dashed var(--border);
+  border-radius: var(--r-lg);
+  text-align: center;
+  color: var(--text-2);
+}
 .shelf { margin-bottom: 48px; }
 .shelf .section-head { align-items: center; }
 .shelf-actions { display: flex; align-items: center; gap: 12px; }
