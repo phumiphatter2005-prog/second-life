@@ -150,7 +150,7 @@ function decorateNav() {
     nav.insertAdjacentHTML("afterbegin", `<span class="nav-pill" aria-hidden="true"></span>`);
     nav.insertAdjacentHTML("afterend", `
       <div class="nav-right">
-        <button class="nav-search" type="button" title="ค้นหา (${SHORTCUT})" aria-label="ค้นหา">${icon("search")}<span>ค้นหา</span><kbd>${SHORTCUT}</kbd></button>
+        <button class="nav-search" type="button" title="ค้นหา (${SHORTCUT})" aria-label="ค้นหา">${icon("search")}<span>ค้นหา</span></button>
         <span class="nav-user"></span>
       </div>`);
     document.querySelector(".nav-search").addEventListener("click", openSearch);

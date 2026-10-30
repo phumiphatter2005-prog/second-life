@@ -1347,7 +1347,6 @@ button.admin-title { border: none; background: none; padding: 0; font-size: inhe
   .nav-pill.no-anim { transition: none; }
   body { padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px)); }
   .nav-search { width: 36px; height: 36px; padding: 0; justify-content: center; border-radius: var(--r-sm); }
-  .nav-search kbd { display: none; }
 }
 
 @media (max-width: 720px) {
