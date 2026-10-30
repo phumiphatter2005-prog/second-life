@@ -38,7 +38,9 @@ Minimal shadows. Cards rest flat with a 1px border and gain a subtle shadow on h
 
 ## Components
 - **Buttons**: Primary = purple fill, 6px radius. Secondary = transparent + 1px border. Ghost = text only. Destructive = red text + red border. All shift up 1px on hover. Sizes 32 / 38 / 44px.
-- **Cards**: White surface, 1px border, 12px radius. Listing cards have a 200px image area on top, then name, seller avatar and stats. Hover lifts 2px. 200ms transitions.
+- **Cards**: White surface, 1px border, 12px radius. Hover lifts 2px. 200ms transitions.
+- **Listing cards**: No border and no surface — a 1:1 image with 14px radius sits straight on the page background; hover zooms the image slightly (scale 1.04), no lift. On the image: type pill top-left (white capsule; ขาย near-black, แลกเปลี่ยน amber ink, แจกฟรี / ส่งต่อแล้ว green ink) and the heart button top-right. Below, three lines: name (one line, ellipsis) / pickup point · condition (12px, Text Secondary) / bold price + seller ★ rating if any. No seller row.
+- **Home shelves**: "ประกาศล่าสุด", "แจกฟรี", "แลกเปลี่ยน" as horizontal rows (up to 15 items, empty rows hidden). Head: title left; "ดูทั้งหมด →" plus 32px round ‹ › buttons right (buttons hidden when the row doesn't overflow, disabled at each end). 5 cards per row on desktop, 4 at ≤ 1024px, 2½ on phones with swipe + scroll snap. Search and favorites keep the grid.
 - **Avatars**: Circle with the initial letter; the profile photo (256×256) is layered on top, so the letter shows while loading or if the image fails. Sizes 20 / 32 / 44 / 128px. Profile page: 128px avatar with a 44px purple camera button bottom-right; square crop dialog with a circular guide.
 - **Inputs**: 1px border, 6px radius, 10px × 14px padding, 14px text (16px on phones to stop iOS zoom). Focus: purple border + 3px ring. Error: red border.
 - **Chips**: Pill, gray-100 background, gray-600 text, 4px × 12px padding, 12px text. Active = purple fill. Status chips use the same shape with semantic colors.
@@ -63,14 +65,15 @@ Minimal shadows. Cards rest flat with a 1px border and gain a subtle shadow on h
 - 4px: tags, badges, inline code
 - 6px: buttons, inputs, selects
 - 8px: metadata cards, dropdowns, panels
-- 12px: listing cards, search bar, featured sections
+- 12px: cards, search bar, featured sections
+- 14px: listing card images
 - 9999px: avatars, status dots, pill chips
 
 ## Do's and Don'ts
 - Do use purple only for interactive elements — never for decoration or static text
 - Do keep the 4px spacing grid
 - Do use Prompt for headings and IBM Plex Sans Thai for body — never swap them
-- Do keep cards at 12px radius and buttons/inputs at 6px
+- Do keep cards at 12px radius (listing images 14px) and buttons/inputs at 6px
 - Do test at 360px and 1280px
 - Don't use pure black (#000000) or pure white (#FFFFFF) for text
 - Don't add decorative gradients or illustrations — exceptions: the interactive dot grid, the headline gradient text, and the faint leaf pattern (≤ 7% opacity) in the corner of the dark About panel

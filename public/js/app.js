@@ -85,23 +85,23 @@ function categoryName(id) {
   return c ? c.name : "อื่นๆ";
 }
 
+/* การ์ดไม่มีกรอบ: รูป 1:1 (ป้ายประเภทซ้ายบน หัวใจขวาบน) + 3 บรรทัด ชื่อ / จุดนัดรับ · สภาพ / ราคา + ดาวผู้ขาย */
 function productCard(p) {
+  const tag = p.passed
+    ? `<span class="card-tag tag-passed">${icon("recycle")}ส่งต่อแล้ว</span>`
+    : `<span class="card-tag tag-${p.type}">${TYPE_LABEL[p.type]}</span>`;
+  const sub = [p.pickup, p.condition].filter(Boolean).map(esc).join(" · ");
   return `
     <div class="card-wrap">
-      ${p.passed ? `<span class="passed-tag">${icon("recycle")}ส่งต่อแล้ว</span>` : ""}
       <button class="fav-btn ${p.isFav ? "on" : ""}" data-id="${p.id}" aria-label="รายการโปรด">${icon("heart")}</button>
       <a class="card" href="product.html?id=${p.id}">
-        <div class="card-img"><img src="${esc(p.img)}" alt="${esc(p.title)}" loading="lazy"></div>
+        <div class="card-img">${tag}<img src="${esc(p.img)}" alt="${esc(p.title)}" loading="lazy"></div>
         <div class="card-body">
           <h3>${esc(p.title)}</h3>
+          <div class="card-sub">${sub}</div>
           <div class="card-meta">
             <span class="price">${formatPrice(p)}</span>
-            <span class="badge badge-${p.type}">${TYPE_LABEL[p.type]}</span>
-          </div>
-          <div class="card-pickup">${icon("pin")}${esc(p.pickup)}</div>
-          <div class="card-foot">
-            <span class="card-seller">${avatarHtml(p.sellerName, p.sellerAvatar, "avatar-xs")}<span>${esc(p.sellerName)}</span></span>
-            ${p.ratingCount ? ratingLine(p.rating, p.ratingCount) : ""}
+            ${p.ratingCount ? `<span class="card-rating" title="คะแนนผู้ขาย ${p.rating.toFixed(1)} จาก ${p.ratingCount} รีวิว"><span aria-hidden="true">★</span>${p.rating.toFixed(1)}</span>` : ""}
           </div>
         </div>
       </a>
@@ -378,7 +378,7 @@ function celebratePassed(btn) {
 
 /* ---------- ทุกส่วนค่อยๆ เลื่อนขึ้นและชัดขึ้นเมื่อเลื่อนมาถึง ---------- */
 const REVEAL_SELECTOR = [
-  "main > .section-head", "main > .grid", ".how", ".about", ".conveyor-section", ".categories",
+  "main > .section-head", "main > .grid", ".shelf", ".how", ".about", ".conveyor-section", ".categories",
   ".detail", ".reviews", ".post-card", ".steps", ".search-layout", ".page-head", ".kpis", ".admin-split",
   "#fav-list", ".empty-state"
 ].join(",");
@@ -428,8 +428,8 @@ function skeletonCards(n = 4) {
       <div class="sk sk-img"></div>
       <div class="card-body">
         <div class="sk sk-line w-80"></div>
-        <div class="sk sk-line w-30"></div>
         <div class="sk sk-line w-50"></div>
+        <div class="sk sk-line w-30"></div>
       </div>
     </div>`).join("");
 }
@@ -558,21 +558,75 @@ function updateCategoryCounts(list) {
   });
 }
 
+/* ---------- แถวสินค้าตามหัวข้อ เลื่อนซ้ายขวาได้ (แถวที่ไม่มีสินค้าจะไม่แสดง) ---------- */
+const SHELVES = [
+  { title: "ประกาศล่าสุด", href: "search.html",           pick: () => true },
+  { title: "แจกฟรี",       href: "search.html?type=free", pick: p => p.type === "free" },
+  { title: "แลกเปลี่ยน",   href: "search.html?type=swap", pick: p => p.type === "swap" }
+];
+const SHELF_MAX = 15;
+
+function shelfHtml(shelf, cards, i) {
+  return `
+    <section class="shelf" aria-labelledby="shelf-title-${i}">
+      <div class="section-head">
+        <h2 id="shelf-title-${i}">${shelf.title}</h2>
+        <div class="shelf-actions">
+          <a href="${shelf.href}">ดูทั้งหมด →</a>
+          <span class="shelf-nav" hidden>
+            <button type="button" class="shelf-btn" data-dir="-1" aria-label="เลื่อนไปทางซ้าย" disabled>‹</button>
+            <button type="button" class="shelf-btn" data-dir="1" aria-label="เลื่อนไปทางขวา">›</button>
+          </span>
+        </div>
+      </div>
+      <div class="shelf-track">${cards}</div>
+    </section>`;
+}
+
+/* ปิดปุ่มลูกศรเมื่อสุดทางซ้าย/ขวา และซ่อนปุ่มถ้าสินค้าไม่ล้นแถว */
+function updateShelfNav(shelf) {
+  const track = shelf.querySelector(".shelf-track");
+  const [prev, next] = shelf.querySelectorAll(".shelf-btn");
+  const max = track.scrollWidth - track.clientWidth;
+  shelf.querySelector(".shelf-nav").hidden = max <= 1;
+  prev.disabled = track.scrollLeft <= 1;
+  next.disabled = track.scrollLeft >= max - 1;
+}
+
+function setupShelves(root) {
+  root.querySelectorAll(".shelf").forEach(shelf => {
+    const track = shelf.querySelector(".shelf-track");
+    track.addEventListener("scroll", () => updateShelfNav(shelf), { passive: true });
+    shelf.querySelectorAll(".shelf-btn").forEach(btn => btn.addEventListener("click", () => {
+      track.scrollBy({ left: Number(btn.dataset.dir) * track.clientWidth, behavior: "smooth" });
+    }));
+    updateShelfNav(shelf);
+  });
+  window.addEventListener("resize", () => root.querySelectorAll(".shelf").forEach(updateShelfNav));
+}
+
 async function renderPopular() {
-  const el = document.getElementById("popular");
+  const el = document.getElementById("shelves");
   if (!el) return;
-  el.innerHTML = skeletonCards(4);
+  el.innerHTML = shelfHtml(SHELVES[0], skeletonCards(5), 0);
   renderConveyorSkeleton();
   try {
     await userReady;
     const list = (await api("/products")).filter(p => !p.passed);
-    el.innerHTML = list.length
-      ? list.slice(0, 10).map(productCard).join("")
-      : `<p class="empty">ยังไม่มีสินค้า มาเป็นคนแรกที่ <a href="post.html">ลงประกาศ</a></p>`;
+    const rows = SHELVES.map((s, i) => {
+      const items = list.filter(s.pick).slice(0, SHELF_MAX);
+      return items.length ? shelfHtml(s, items.map(productCard).join(""), i) : "";
+    }).join("");
+    el.innerHTML = rows || `
+      <div class="section-head"><h2>ประกาศล่าสุด</h2></div>
+      <p class="empty">ยังไม่มีสินค้า มาเป็นคนแรกที่ <a href="post.html">ลงประกาศ</a></p>`;
+    setupShelves(el);
     renderConveyor(list);
     updateCategoryCounts(list);
   } catch (e) {
-    el.innerHTML = `<p class="empty">โหลดสินค้าไม่สำเร็จ: ${esc(e.message)}</p>`;
+    el.innerHTML = `
+      <div class="section-head"><h2>ประกาศล่าสุด</h2></div>
+      <p class="empty">โหลดสินค้าไม่สำเร็จ: ${esc(e.message)}</p>`;
     renderConveyor([]);
     document.querySelectorAll(".cat-count").forEach(c => { c.textContent = ""; });
   }

@@ -53,6 +53,7 @@
   --r-sm: 6px;
   --r-md: 8px;
   --r-lg: 12px;
+  --r-card: 14px;
   --r-full: 9999px;
 
   --nav-h: 56px;
@@ -526,55 +527,95 @@ code, kbd {
   padding-bottom: 64px;
 }
 
-.card-wrap {
-  position: relative;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  overflow: hidden;
-  transition: transform .2s, box-shadow .2s;
-}
-.card-wrap:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+/* การ์ดไม่มีกรอบและพื้น: รูป 1:1 มุมโค้ง แล้วข้อความ 3 บรรทัดใต้รูป */
+.card-wrap { position: relative; min-width: 0; }
 .card { display: block; height: 100%; }
-.card-img { height: 200px; overflow: hidden; background: var(--bg-alt); border-bottom: 1px solid var(--border); }
+.card-img {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border-radius: var(--r-card);
+  background: var(--bg-alt);
+}
 .card-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.card-body { padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 4px; }
+.card-body { padding-top: 8px; display: flex; flex-direction: column; gap: 2px; }
+.card-body h3, .card-sub {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .card-body h3 {
   font-family: var(--font-body);
   font-size: 15px;
   font-weight: 400;
   letter-spacing: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
-.card-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.card-sub { font-size: 12px; color: var(--text-2); }
+.card-sub:empty { display: none; }
+.card-meta { display: flex; align-items: center; gap: 8px; }
 .price { font-family: var(--font-display); font-weight: 600; font-size: 18px; letter-spacing: -.02em; }
-.card-foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid var(--border);
-  font-size: 12px;
-  color: var(--text-2);
-}
-.card-seller { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.card-seller span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.card-foot .rating { font-size: 12px; flex-shrink: 0; }
-.card-pickup {
-  display: flex;
+.card-rating { display: inline-flex; align-items: center; gap: 2px; font-size: 12px; color: var(--text-2); }
+.card-rating span { color: var(--star); }
+
+/* ป้ายประเภทบนรูป: แคปซูลพื้นขาว สีตัวอักษรตามประเภท */
+.card-tag {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1;
+  display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: var(--text-2);
+  padding: 0 10px;
+  background: rgba(255, 255, 255, .94);
+  color: var(--text);
   font-size: 12px;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  line-height: 24px;
+  border-radius: var(--r-full);
 }
-.card-pickup .ic { width: 14px; height: 14px; color: var(--neutral); }
+.card-tag .ic { width: 14px; height: 14px; }
+.tag-swap { color: var(--warning-ink); }
+.tag-free, .tag-passed { color: var(--success-ink); }
+
+/* ---------- แถวสินค้าในหน้าแรก (เลื่อนซ้ายขวา) ---------- */
+.shelf { margin-bottom: 48px; }
+.shelf .section-head { align-items: center; }
+.shelf-actions { display: flex; align-items: center; gap: 12px; }
+.shelf-nav { display: inline-flex; gap: 8px; }
+.shelf-nav[hidden] { display: none; }
+.shelf-btn {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  padding: 0 0 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-full);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color .2s, color .2s;
+}
+.shelf-btn:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
+.shelf-btn:disabled { color: var(--neutral); cursor: default; opacity: .5; }
+.shelf-track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - 4 * 20px) / 5);
+  gap: 20px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  padding-block: 4px;
+}
+.shelf-track::-webkit-scrollbar { display: none; }
+.shelf-track > .card-wrap { scroll-snap-align: start; }
+@media (max-width: 1024px) {
+  .shelf-track { grid-auto-columns: calc((100% - 3 * 16px) / 4); gap: 16px; }
+}
 
 .badge, .status {
   display: inline-flex;
@@ -617,23 +658,6 @@ code, kbd {
 .fav-btn:hover { transform: translateY(-1px); color: var(--error); }
 .fav-btn.on { color: var(--error); }
 .fav-btn.on .ic { fill: currentColor; }
-
-.passed-tag {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0 12px;
-  background: var(--success-soft);
-  color: var(--success-ink);
-  font-size: 12px;
-  line-height: 24px;
-  border-radius: var(--r-full);
-}
-.passed-tag .ic { width: 14px; height: 14px; }
 
 /* ---------- Stars ---------- */
 .stars {
@@ -1357,14 +1381,19 @@ button.admin-title { border: none; background: none; padding: 0; font-size: inhe
 
   .section-head h2 { font-size: 24px; }
   .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding-bottom: 32px; }
-  .card-img { height: 160px; }
-  .card-body { padding: 8px 12px 12px; }
   .card-body h3 { font-size: 14px; }
   .price { font-size: 16px; }
-  .card-meta { flex-wrap: wrap; gap: 4px; }
-  .card-foot .rating { display: none; }
-  .fav-btn { width: 40px; height: 40px; top: 8px; right: 8px; }
-  .passed-tag { top: 8px; left: 8px; padding: 0 8px; }
+  .fav-btn { width: 36px; height: 36px; top: 6px; right: 6px; }
+  .card-tag { top: 8px; left: 8px; padding: 0 8px; }
+  /* มือถือ: เห็น 2 ใบครึ่ง ใบสุดท้ายโผล่ชิดขอบจอ */
+  .shelf { margin-bottom: 32px; }
+  .shelf-track {
+    grid-auto-columns: calc((100% - 8px) / 2.5);
+    gap: 12px;
+    margin: 0 -16px;
+    padding-inline: 16px;
+    scroll-padding-inline: 16px;
+  }
 
   .about { padding: 32px 20px; gap: 24px; margin-bottom: 32px; border-radius: 20px; }
   .about-leaves { width: 200px; height: 200px; right: -40px; bottom: auto; top: -40px; }
@@ -1424,7 +1453,7 @@ button.admin-title { border: none; background: none; padding: 0; font-size: inhe
 
 /* การ์ดค่อยๆ โผล่ตามลำดับ */
 @keyframes rise-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
-.grid > .card-wrap { animation: rise-in .45s cubic-bezier(.2, .7, .2, 1) both; }
+.grid > .card-wrap, .shelf-track > .card-wrap { animation: rise-in .45s cubic-bezier(.2, .7, .2, 1) both; }
 .grid > .card-wrap:nth-child(2) { animation-delay: .04s; }
 .grid > .card-wrap:nth-child(3) { animation-delay: .08s; }
 .grid > .card-wrap:nth-child(4) { animation-delay: .12s; }
@@ -1432,9 +1461,9 @@ button.admin-title { border: none; background: none; padding: 0; font-size: inhe
 .grid > .card-wrap:nth-child(6) { animation-delay: .2s; }
 .grid > .card-wrap:nth-child(n+7) { animation-delay: .24s; }
 
-/* ---------- การ์ดสินค้า: รูปซูม + การ์ดยก ---------- */
+/* ---------- การ์ดสินค้า: ชี้แล้วรูปซูมเล็กน้อย ---------- */
 .card-img img { transition: transform .5s cubic-bezier(.2, .7, .2, 1); }
-.card-wrap:hover .card-img img { transform: scale(1.06); }
+.card-wrap:hover .card-img img { transform: scale(1.04); }
 
 /* ---------- ปุ่มหัวใจเด้ง ---------- */
 @keyframes heart-pop {
@@ -1560,8 +1589,7 @@ button.admin-title { border: none; background: none; padding: 0; font-size: inhe
 }
 @keyframes shimmer { to { transform: translateX(100%); } }
 .sk-card { pointer-events: none; }
-.sk-card:hover { transform: none; box-shadow: none; }
-.sk-img { height: 200px; border-radius: 0; }
+.sk-img { aspect-ratio: 1 / 1; border-radius: var(--r-card); }
 .sk-line { height: 12px; margin-top: 8px; }
 .sk-line.w-80 { width: 80%; }
 .sk-line.w-50 { width: 50%; }
@@ -1809,7 +1837,6 @@ button.admin-title { border: none; background: none; padding: 0; font-size: inhe
 @media (max-width: 720px) {
   .belt-card { flex-basis: 160px; }
   .belt-card img { height: 120px; }
-  .sk-img { height: 160px; }
 }
 
 /* =====================================================================
@@ -2426,7 +2453,7 @@ body.drawer-open .drawer-backdrop { opacity: 1; }
   }
   .reveal { opacity: 1; transform: none; }
   .conveyor { overflow-x: auto; }
-  .card-wrap:hover, .belt-card:hover, .cat:hover { transform: none; }
+  .belt-card:hover, .cat:hover { transform: none; }
   .card-wrap:hover .card-img img, .belt-card:hover img { transform: none; }
   .leaf-burst { display: none; }
 }
