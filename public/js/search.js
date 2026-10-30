@@ -1,59 +1,102 @@
-const filters = { q: "", type: "all", cat: "all", cond: "all" };
+/* conds = สภาพที่ติ๊กไว้ (ว่าง = ทุกสภาพ) · min/max = ช่วงราคา ("" = ไม่จำกัด) */
+const filters = { q: "", type: "all", cat: "all", conds: new Set(), min: "", max: "", sort: "latest" };
 let PRODUCTS = [];
+
+/* คำอธิบายสั้นใต้แต่ละระดับสภาพในแผงตัวกรอง */
+const CONDITION_SHORT = { "ดีมาก": "แทบไม่มีร่องรอยการใช้งาน", "ดี": "มีรอยใช้งานเล็กน้อย", "พอใช้": "มีรอยชัดเจน แต่ยังใช้งานได้" };
+
+const $ = id => document.getElementById(id);
 
 function readUrlParams() {
   const params = new URLSearchParams(location.search);
   filters.q = params.get("q") || "";
-  filters.cat = params.get("cat") || "all";
+  filters.cat = CATEGORIES.some(c => c.id === params.get("cat")) ? params.get("cat") : "all";
   if (TYPE_LABEL[params.get("type")]) filters.type = params.get("type");
 }
 
 function setupFilterControls() {
-  const qInput = document.getElementById("f-q");
-  const catSelect = document.getElementById("f-cat");
-  const condSelect = document.getElementById("f-cond");
-
-  catSelect.innerHTML = CATEGORIES.map(c =>
-    `<option value="${c.id}">${c.name}</option>`).join("");
-
+  const qInput = $("f-q");
   qInput.value = filters.q;
   if (new URLSearchParams(location.search).has("focus")) qInput.focus();
-  catSelect.value = filters.cat;
-
   qInput.addEventListener("input", () => { filters.q = qInput.value; renderResults(); });
-  catSelect.addEventListener("change", () => setCategory(catSelect.value));
-  condSelect.addEventListener("change", () => { filters.cond = condSelect.value; renderResults(); });
 
-  document.querySelectorAll("#f-type .chip").forEach(btn => {
-    btn.classList.toggle("active", btn.dataset.value === filters.type);
-    btn.addEventListener("click", () => {
-      document.querySelectorAll("#f-type .chip").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-      filters.type = btn.dataset.value;
-      renderResults();
+  $("f-type").addEventListener("click", e => {
+    const btn = e.target.closest("[data-value]");
+    if (btn) { filters.type = btn.dataset.value; renderResults(); }
+  });
+
+  $("f-cond").innerHTML = Object.keys(CONDITION_INFO).map(c => `
+    <label class="f-check">
+      <input type="checkbox" value="${c}">
+      <span><b>${c}</b><small>${CONDITION_SHORT[c] || ""}</small></span>
+    </label>`).join("");
+  $("f-cond").addEventListener("change", e => {
+    e.target.checked ? filters.conds.add(e.target.value) : filters.conds.delete(e.target.value);
+    renderResults();
+  });
+
+  ["min", "max"].forEach(k => $("f-" + k).addEventListener("input", e => {
+    const v = e.target.value;
+    filters[k] = v === "" || Number(v) < 0 ? "" : String(Math.floor(Number(v)));
+    renderResults();
+  }));
+
+  $("f-sort").addEventListener("change", e => { filters.sort = e.target.value; renderResults(); });
+
+  $("f-reset").addEventListener("click", () => { clearPanelFilters(); renderResults(); });
+
+  /* ชิปตัวกรองที่เลือกอยู่ และปุ่มล้างในข้อความ "ไม่พบสินค้า" */
+  document.querySelector(".results").addEventListener("click", e => {
+    const chip = e.target.closest("[data-remove]");
+    if (chip) { removeFilter(chip.dataset.remove); return; }
+    if (e.target.closest("#empty-reset")) clearAllFilters();
+  });
+
+  setupSheet();
+}
+
+/* ---------- มือถือ: แผ่นตัวกรองเลื่อนขึ้นจากล่าง ---------- */
+function setupSheet() {
+  const sheet = $("filters"), backdrop = $("filters-backdrop"), openBtn = $("f-open");
+  $("f-close").innerHTML = icon("close");
+
+  const open = () => {
+    backdrop.hidden = false;
+    document.documentElement.classList.add("drawer-lock");
+    openBtn.setAttribute("aria-expanded", "true");
+    sheet.setAttribute("role", "dialog");
+    sheet.setAttribute("aria-modal", "true");
+    /* โฟกัสได้หลังแผ่นไม่ถูกซ่อน (visibility) แล้วเท่านั้น */
+    requestAnimationFrame(() => {
+      sheet.classList.add("open");
+      backdrop.classList.add("open");
+      sheet.focus({ preventScroll: true });
     });
-  });
+  };
+  const close = () => {
+    if (!sheet.classList.contains("open")) return;
+    sheet.classList.remove("open");
+    backdrop.classList.remove("open");
+    document.documentElement.classList.remove("drawer-lock");
+    openBtn.setAttribute("aria-expanded", "false");
+    sheet.removeAttribute("role");
+    sheet.removeAttribute("aria-modal");
+    setTimeout(() => { backdrop.hidden = true; }, 300);
+    openBtn.focus({ preventScroll: true });
+  };
 
-  /* มือถือ: ซ่อนตัวกรองไว้ กดปุ่มเพื่อเปิด/ปิด */
-  const toggle = document.getElementById("f-toggle");
-  toggle.addEventListener("click", () => {
-    const open = document.getElementById("filters").classList.toggle("open");
-    toggle.setAttribute("aria-expanded", open);
-  });
-
-  document.getElementById("f-reset").addEventListener("click", () => {
-    filters.q = ""; filters.type = "all"; filters.cat = "all"; filters.cond = "all";
-    qInput.value = "";
-    condSelect.value = "all";
-    document.querySelectorAll("#f-type .chip").forEach(b =>
-      b.classList.toggle("active", b.dataset.value === "all"));
-    setCategory("all");
-  });
+  openBtn.addEventListener("click", open);
+  $("f-close").addEventListener("click", close);
+  $("f-apply").addEventListener("click", close);
+  backdrop.addEventListener("click", close);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") close(); });
+  /* ขยายจอจนกลายเป็นแผงซ้าย ให้ปิดแผ่นทิ้ง */
+  matchMedia("(max-width: 860px)").addEventListener("change", e => { if (!e.matches) close(); });
 }
 
 /* ---------- แถบหมวดหมู่: แถบสีม่วงเลื่อนตามหมวดที่เลือก ---------- */
 function setupCategoryTabs() {
-  const bar = document.getElementById("cat-tabs");
+  const bar = $("cat-tabs");
   bar.innerHTML = CATEGORIES.map(c =>
     `<button type="button" role="tab" data-cat="${c.id}">${c.name}</button>`).join("") +
     `<span class="cat-ink" aria-hidden="true"></span>`;
@@ -67,7 +110,7 @@ function setupCategoryTabs() {
 }
 
 function moveCatInk() {
-  const bar = document.getElementById("cat-tabs");
+  const bar = $("cat-tabs");
   const btn = bar.querySelector("button.active");
   const ink = bar.querySelector(".cat-ink");
   if (!btn) return;
@@ -82,7 +125,7 @@ function syncCategoryTabs() {
     b.setAttribute("aria-selected", on);
   });
   /* เลื่อนเฉพาะแถบแนวนอนให้เห็นหมวดที่เลือก (ไม่เลื่อนทั้งหน้า) */
-  const bar = document.getElementById("cat-tabs");
+  const bar = $("cat-tabs");
   const active = bar.querySelector("button.active");
   if (active) bar.scrollLeft = Math.max(0, active.offsetLeft - 16);
   moveCatInk();
@@ -90,42 +133,126 @@ function syncCategoryTabs() {
 
 function setCategory(cat) {
   filters.cat = cat;
-  document.getElementById("f-cat").value = cat;
   syncCategoryTabs();
   renderResults();
 }
 
+/* ---------- ล้าง / เอาตัวกรองออกทีละอัน ---------- */
+function clearPanelFilters() {
+  filters.type = "all";
+  filters.conds.clear();
+  filters.min = filters.max = "";
+}
+
+function clearAllFilters() {
+  clearPanelFilters();
+  filters.q = "";
+  filters.cat = "all";
+  syncCategoryTabs();
+  renderResults();
+}
+
+function removeFilter(key) {
+  if (key === "q") filters.q = "";
+  else if (key === "cat") { filters.cat = "all"; syncCategoryTabs(); }
+  else if (key === "type") filters.type = "all";
+  else if (key === "price") filters.min = filters.max = "";
+  else if (key.startsWith("cond:")) filters.conds.delete(key.slice(5));
+  renderResults();
+}
+
+/* จำนวนตัวกรองในแผง (ประเภท + สภาพแต่ละอัน + ช่วงราคา) สำหรับ "ล้าง (n)" และปุ่มตัวกรองบนมือถือ */
+function panelFilterCount() {
+  return (filters.type !== "all") + filters.conds.size + (filters.min !== "" || filters.max !== "");
+}
+
+function priceLabel() {
+  const fmt = v => "฿" + Number(v).toLocaleString();
+  if (filters.min !== "" && filters.max !== "") return `${fmt(filters.min)} – ${fmt(filters.max)}`;
+  return filters.min !== "" ? `ตั้งแต่ ${fmt(filters.min)}` : `ไม่เกิน ${fmt(filters.max)}`;
+}
+
+function activeChips() {
+  const chips = [];
+  if (filters.q.trim()) chips.push(["q", `“${filters.q.trim()}”`]);
+  if (filters.cat !== "all") chips.push(["cat", categoryName(filters.cat)]);
+  if (filters.type !== "all") chips.push(["type", TYPE_LABEL[filters.type]]);
+  filters.conds.forEach(c => chips.push(["cond:" + c, `สภาพ${c}`]));
+  if (filters.min !== "" || filters.max !== "") chips.push(["price", priceLabel()]);
+  return chips;
+}
+
+/* ทำให้ปุ่ม/ช่องในแผงตรงกับค่าใน filters (หลังล้างหรือกด × บนชิป) */
+function syncPanel() {
+  $("f-q").value = filters.q;
+  document.querySelectorAll("#f-type [data-value]").forEach(b =>
+    b.setAttribute("aria-pressed", b.dataset.value === filters.type));
+  document.querySelectorAll("#f-cond input").forEach(cb => { cb.checked = filters.conds.has(cb.value); });
+  if ($("f-min").value !== filters.min && document.activeElement !== $("f-min")) $("f-min").value = filters.min;
+  if ($("f-max").value !== filters.max && document.activeElement !== $("f-max")) $("f-max").value = filters.max;
+
+  const n = panelFilterCount();
+  $("f-reset").hidden = !n;
+  $("f-reset-n").textContent = n;
+  $("f-open-n").hidden = !n;
+  $("f-open-n").textContent = n;
+
+  const chips = activeChips();
+  const box = $("active-filters");
+  box.hidden = !chips.length;
+  box.innerHTML = chips.map(([key, label]) => `
+    <button type="button" class="filter-chip" data-remove="${esc(key)}" aria-label="เอาตัวกรอง ${esc(label)} ออก">
+      ${esc(label)}${icon("close")}
+    </button>`).join("");
+}
+
+const priceOf = p => (p.type === "free" ? 0 : Number(p.price) || 0);
+
 function renderResults() {
+  syncPanel();
   const q = filters.q.trim().toLowerCase();
+  let lo = filters.min === "" ? -Infinity : Number(filters.min);
+  let hi = filters.max === "" ? Infinity : Number(filters.max);
+  if (lo > hi) [lo, hi] = [hi, lo];
 
   const list = PRODUCTS.filter(p =>
     (q === "" || p.title.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q)) &&
     (filters.type === "all" || p.type === filters.type) &&
     (filters.cat === "all" || p.category === filters.cat) &&
-    (filters.cond === "all" || p.condition === filters.cond)
+    (!filters.conds.size || filters.conds.has(p.condition)) &&
+    priceOf(p) >= lo && priceOf(p) <= hi
   );
+  /* "ล่าสุด" = ลำดับที่ได้จากเซิร์ฟเวอร์ (ใหม่ก่อน) */
+  if (filters.sort === "price-asc") list.sort((a, b) => priceOf(a) - priceOf(b));
+  if (filters.sort === "price-desc") list.sort((a, b) => priceOf(b) - priceOf(a));
 
-  document.getElementById("result-count").textContent =
-    `สินค้าที่พบ ${list.length} รายการ`;
+  $("result-count").innerHTML = `สินค้าที่พบ <b>${list.length.toLocaleString()}</b> รายการ`;
+  $("f-apply-n").textContent = list.length.toLocaleString();
 
-  document.getElementById("results").innerHTML = list.length
+  const hasFilters = activeChips().length > 0;
+  $("results").innerHTML = list.length
     ? list.map(productCard).join("")
-    : `<p class="empty">ไม่พบสินค้าที่ตรงกับเงื่อนไข</p>`;
+    : `<div class="empty empty-filter">
+        <p>${hasFilters ? "ไม่พบสินค้าที่ตรงกับตัวกรอง ลองเอาบางเงื่อนไขออกดู" : "ยังไม่มีสินค้า"}</p>
+        ${hasFilters ? `<button id="empty-reset" type="button" class="btn btn-secondary btn-md">ล้างตัวกรองทั้งหมด</button>` : ""}
+      </div>`;
 }
 
 async function loadProducts() {
-  document.getElementById("result-count").textContent = "กำลังโหลด...";
-  document.getElementById("results").innerHTML = skeletonCards(6);
+  $("result-count").textContent = "กำลังโหลด...";
+  $("results").innerHTML = skeletonCards(6);
   try {
     await userReady;
     PRODUCTS = await api("/products");
     renderResults();
   } catch (e) {
-    document.getElementById("result-count").textContent = "โหลดสินค้าไม่สำเร็จ: " + e.message;
+    $("result-count").textContent = "โหลดสินค้าไม่สำเร็จ: " + e.message;
+    $("results").innerHTML = "";
   }
 }
 
 readUrlParams();
 setupFilterControls();
 setupCategoryTabs();
+syncPanel();
 loadProducts();

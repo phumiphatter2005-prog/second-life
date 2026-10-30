@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600&family=IBM+Plex+Sans+Thai:wght@400;600&family=JetBrains+Mono&display=swap">
-  <link rel="stylesheet" href="css/style.css?v=18">
+  <link rel="stylesheet" href="css/style.css?v=19">
 </head>
 <body>
 
@@ -25,48 +25,76 @@
   </header>
 
   <main class="container search-layout">
-    <aside class="filters" id="filters">
-      <div class="filters-top">
-        <input id="f-q" type="search" placeholder="ค้นหาสินค้า..." aria-label="ค้นหาสินค้า">
-        <button id="f-toggle" type="button" class="btn btn-secondary filters-toggle" aria-expanded="false" aria-controls="filters-body">ตัวกรอง</button>
+    <!-- คอม: แผงซ้ายติดจอ · มือถือ: แผ่นเลื่อนขึ้นจากล่าง (เปิดด้วยปุ่ม "ตัวกรอง") -->
+    <div class="filters-backdrop" id="filters-backdrop" hidden></div>
+    <aside class="filters" id="filters" aria-labelledby="filters-title" tabindex="-1">
+      <div class="filters-head">
+        <h2 id="filters-title">ตัวกรอง</h2>
+        <button id="f-reset" type="button" class="filters-reset" hidden>ล้าง (<span id="f-reset-n">0</span>)</button>
+        <button id="f-close" type="button" class="filters-close" aria-label="ปิดตัวกรอง"></button>
       </div>
 
-      <div class="filters-body" id="filters-body">
-      <label>ประเภทประกาศ</label>
-      <div id="f-type" class="chips">
-        <button class="chip active" data-value="all">ทั้งหมด</button>
-        <button class="chip" data-value="sell">ขาย</button>
-        <button class="chip" data-value="swap">แลกเปลี่ยน</button>
-        <button class="chip" data-value="free">แจกฟรี</button>
+      <div class="filters-body">
+        <fieldset class="f-group">
+          <legend>ประเภทประกาศ</legend>
+          <div id="f-type" class="type-seg">
+            <button type="button" data-value="all" aria-pressed="true"><i class="dot dot-all"></i>ทั้งหมด</button>
+            <button type="button" data-value="sell" aria-pressed="false"><i class="dot dot-sell"></i>ขาย</button>
+            <button type="button" data-value="swap" aria-pressed="false"><i class="dot dot-swap"></i>แลก</button>
+            <button type="button" data-value="free" aria-pressed="false"><i class="dot dot-free"></i>แจกฟรี</button>
+          </div>
+        </fieldset>
+
+        <fieldset class="f-group">
+          <legend>สภาพสินค้า</legend>
+          <div id="f-cond" class="f-checks"></div>
+        </fieldset>
+
+        <fieldset class="f-group">
+          <legend>ช่วงราคา (บาท)</legend>
+          <div class="f-price">
+            <input id="f-min" type="number" min="0" step="1" inputmode="numeric" placeholder="ต่ำสุด" aria-label="ราคาต่ำสุด">
+            <span aria-hidden="true">–</span>
+            <input id="f-max" type="number" min="0" step="1" inputmode="numeric" placeholder="สูงสุด" aria-label="ราคาสูงสุด">
+          </div>
+        </fieldset>
       </div>
 
-      <label>หมวดหมู่</label>
-      <select id="f-cat"></select>
-
-      <label>สภาพสินค้า</label>
-      <select id="f-cond">
-        <option value="all">ทั้งหมด</option>
-        <option value="ดีมาก">ดีมาก</option>
-        <option value="ดี">ดี</option>
-        <option value="พอใช้">พอใช้</option>
-      </select>
-
-      <button id="f-reset" class="btn-outline">ล้างตัวกรอง</button>
+      <div class="filters-foot">
+        <button id="f-apply" type="button" class="btn btn-primary">ดูผล <span id="f-apply-n">0</span> รายการ</button>
       </div>
     </aside>
 
     <section class="results">
+      <div class="search-bar">
+        <label class="search-field">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="f-q" type="search" placeholder="ค้นหาสินค้า..." aria-label="ค้นหาสินค้า">
+        </label>
+        <button id="f-open" type="button" class="btn btn-secondary filters-open" aria-expanded="false" aria-controls="filters">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 5h18M6 12h12M10 19h4"/></svg>
+          ตัวกรอง<span id="f-open-n" class="filters-count" hidden></span>
+        </button>
+      </div>
       <div id="cat-tabs" class="cat-tabs" role="tablist" aria-label="หมวดหมู่"></div>
-      <p id="result-count" class="result-count"></p>
+      <div class="results-head">
+        <p id="result-count" class="result-count" aria-live="polite"></p>
+        <select id="f-sort" class="sort-select" aria-label="เรียงลำดับ">
+          <option value="latest">ล่าสุด</option>
+          <option value="price-asc">ราคาต่ำ-สูง</option>
+          <option value="price-desc">ราคาสูง-ต่ำ</option>
+        </select>
+      </div>
+      <div id="active-filters" class="active-filters" hidden></div>
       <div id="results" class="grid"></div>
     </section>
   </main>
 
-  <script src="js/config.js?v=18"></script>
-  <script src="js/supabase.js?v=18"></script>
-  <script src="js/demo.js?v=18"></script>
-  <script src="js/data.js?v=18"></script>
-  <script src="js/app.js?v=18"></script>
-  <script src="js/search.js?v=18"></script>
+  <script src="js/config.js?v=19"></script>
+  <script src="js/supabase.js?v=19"></script>
+  <script src="js/demo.js?v=19"></script>
+  <script src="js/data.js?v=19"></script>
+  <script src="js/app.js?v=19"></script>
+  <script src="js/search.js?v=19"></script>
 </body>
 </html>
