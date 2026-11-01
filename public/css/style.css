@@ -1235,6 +1235,8 @@ input[type="checkbox"]:checked::after { opacity: 1; }
 .ai-result p { margin-top: 4px; }
 .ai-result .detail-list { margin: 12px 0 0; }
 .ai-badge { display: inline-block; padding: 2px 8px; border-radius: var(--r-xs); background: var(--amber-soft); color: #7C3F06; font-size: 12px; font-weight: 600; }
+.ai-tag { display: inline-block; margin-left: 4px; padding: 0 6px; border-radius: var(--r-xs); background: var(--amber-soft); color: #7C3F06; font-size: 11px; font-weight: 600; }
+.ai-tag[hidden] { display: none; }
 .ai-confidence { font-size: 13px; color: var(--text-2); }
 .ai-meter { display: block; height: 6px; margin-top: 4px; border-radius: var(--r-full); background: var(--bg-alt); overflow: hidden; }
 .ai-meter i { display: block; height: 100%; background: var(--success); }

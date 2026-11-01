@@ -87,6 +87,14 @@ function setPhoto(data) {
   $("photo-hint").hidden = true;
 }
 
+function clearPhoto() {
+  imgData = "";
+  $("p-photo").value = "";
+  $("photo-preview").removeAttribute("src");
+  $("photo-preview").hidden = true;
+  $("photo-hint").hidden = false;
+}
+
 $("p-photo").addEventListener("change", e => {
   const file = e.target.files[0];
   if (!file) return;

@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600&family=IBM+Plex+Sans+Thai:wght@400;600&family=JetBrains+Mono&display=swap">
-  <link rel="stylesheet" href="css/style.css?v=22">
+  <link rel="stylesheet" href="css/style.css?v=23">
 </head>
 <body>
 
@@ -71,10 +71,10 @@
         </label>
         <input id="p-photo" type="file" accept="image/*" hidden>
 
-        <label class="field-label">ชื่อสินค้า *</label>
+        <label class="field-label">ชื่อสินค้า * <span class="ai-tag" data-ai-for="p-title" title="AI กรอกให้ โปรดตรวจสอบ" hidden>AI</span></label>
         <input id="p-title" type="text" placeholder="เช่น เสื้อฮู้ด Oversize">
 
-        <label class="field-label">หมวดหมู่ *</label>
+        <label class="field-label">หมวดหมู่ * <span class="ai-tag" data-ai-for="p-cat" title="AI กรอกให้ โปรดตรวจสอบ" hidden>AI</span></label>
         <select id="p-cat"></select>
 
         <label class="field-label">ประเภทประกาศ *</label>
@@ -96,7 +96,7 @@
 
       <!-- ขั้น 2 -->
       <section class="step-panel" data-panel="2" hidden>
-        <label class="field-label">สภาพสินค้า *</label>
+        <label class="field-label">สภาพสินค้า * <span class="ai-tag" data-ai-for="p-cond" title="AI กรอกให้ โปรดตรวจสอบ" hidden>AI</span></label>
         <select id="p-cond">
           <option value="ดีมาก">ดีมาก</option>
           <option value="ดี" selected>ดี</option>
@@ -149,12 +149,12 @@
     </div>
   </main>
 
-  <script src="js/config.js?v=22"></script>
-  <script src="js/supabase.js?v=22"></script>
-  <script src="js/demo.js?v=22"></script>
-  <script src="js/data.js?v=22"></script>
-  <script src="js/app.js?v=22"></script>
-  <script src="js/post.js?v=22"></script>
-  <script src="js/ai-listing.js?v=22"></script>
+  <script src="js/config.js?v=23"></script>
+  <script src="js/supabase.js?v=23"></script>
+  <script src="js/demo.js?v=23"></script>
+  <script src="js/data.js?v=23"></script>
+  <script src="js/app.js?v=23"></script>
+  <script src="js/post.js?v=23"></script>
+  <script src="js/ai-listing.js?v=23"></script>
 </body>
 </html>

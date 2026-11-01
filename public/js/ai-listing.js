@@ -10,6 +10,8 @@ let aiPhotos = [];                // data URL ที่ย่อแล้ว
 let aiBusy = false;
 let aiProducts = null;            // ประกาศทั้งหมด โหลดครั้งเดียวต่อการเปิดหน้า
 let aiShowPrice = false;
+let aiFilled = {};                // ช่องที่ AI กรอกและผู้ใช้ยังไม่แก้ → ค่าก่อน AI กรอก
+let aiListingPhoto = "";          // รูปประกาศที่ดึงมาจากกล่อง AI
 const aiCache = new Map();        // รูปและคำอธิบายเดิม → ผลเดิม ไม่เรียก AI ซ้ำ
 
 $("ai-panel").hidden = !SUPABASE_MODE;
@@ -78,7 +80,8 @@ $("ai-photos").addEventListener("change", async e => {
 $("ai-thumbs").addEventListener("click", e => {
   const btn = e.target.closest("[data-remove]");
   if (!btn || aiBusy) return;
-  aiPhotos.splice(Number(btn.dataset.remove), 1);
+  const [removed] = aiPhotos.splice(Number(btn.dataset.remove), 1);
+  if (removed === aiListingPhoto) aiClearListingPhoto();
   aiError("");
   aiRenderPhotos();
 });
@@ -106,7 +109,7 @@ async function aiRenderPrice() {
     box.textContent = "โหลดข้อมูลราคาไม่สำเร็จ กรอกราคาเองได้เลย";
     return;
   }
-  if (category !== $("p-cat").value) return;     // เปลี่ยนหมวดระหว่างรอโหลด
+  if (!aiShowPrice || category !== $("p-cat").value) return;     // ผลเปลี่ยนหรือเปลี่ยนหมวดระหว่างรอโหลด
   const s = priceSuggestion(aiProducts, category);
   if (!s) {
     box.textContent = "ข้อมูลราคายังไม่พอ";
@@ -141,19 +144,57 @@ function aiValid(r) {
     && CATEGORIES.some(c => c.id === r.category && c.id !== "all") && !!CONDITION_INFO[r.condition];
 }
 
+/* ---------- ช่องที่ AI กรอก: มีป้าย AI และล้างได้ จนกว่าผู้ใช้จะแก้เอง ---------- */
+function aiSetField(id, value) {
+  if (!(id in aiFilled)) aiFilled[id] = $(id).value;
+  $(id).value = value;
+  document.querySelector(`[data-ai-for="${id}"]`).hidden = false;
+}
+
+function aiReleaseField(id) {
+  delete aiFilled[id];
+  document.querySelector(`[data-ai-for="${id}"]`).hidden = true;
+  if (id === "p-cond") $("ai-cond-note").hidden = true;
+}
+
+$("p-title").addEventListener("input", () => aiReleaseField("p-title"));
+["p-cat", "p-cond"].forEach(id => $(id).addEventListener("change", () => aiReleaseField(id)));
+
+function aiClearListingPhoto() {
+  if (imgData === aiListingPhoto) clearPhoto();      // ผู้ใช้เปลี่ยนรูปเองแล้วจะไม่ตรงกัน
+  aiListingPhoto = "";
+}
+
+/* ผลรอบใหม่ใช้ไม่ได้: คืนค่าก่อน AI กรอก ช่องที่ผู้ใช้แก้เองไม่อยู่ใน aiFilled จึงไม่ถูกแตะ */
+function aiClearForm() {
+  Object.keys(aiFilled).forEach(id => {
+    $(id).value = aiFilled[id];
+    aiReleaseField(id);
+  });
+  renderCondGuide();
+  $("ai-cond-note").hidden = true;
+  aiShowPrice = false;
+  $("ai-price").hidden = true;
+  aiClearListingPhoto();
+}
+
 function aiFillForm(r) {
-  $("p-title").value = r.title;
-  $("p-cat").value = r.category;
-  $("p-cond").value = r.condition;
-  $("p-cond").dispatchEvent(new Event("change"));
+  aiSetField("p-title", r.title);
+  aiSetField("p-cat", r.category);
+  aiSetField("p-cond", r.condition);
+  renderCondGuide();
   $("ai-cond-note").textContent = `ผลจาก AI โปรดตรวจสอบ: ประเมินว่า "${r.condition}" เพราะ ${r.condition_reason}`;
   $("ai-cond-note").hidden = false;
-  if (!imgData) setPhoto(aiPhotos[0]);
+  if (!imgData) {
+    aiListingPhoto = aiPhotos[0];
+    setPhoto(aiListingPhoto);
+  }
 }
 
 function aiShowResult(r) {
   const box = $("ai-result");
   box.hidden = false;
+  if (!r.is_product || r.need_more_info) aiClearForm();
   if (!r.is_product) {
     box.className = "ai-result warn";
     box.innerHTML = `<b>วิเคราะห์ไม่ได้</b><p>${esc(r.message)}</p>`;
