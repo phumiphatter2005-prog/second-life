@@ -7,7 +7,7 @@ let type = "sell";
 userReady.then(() => { if (!currentUser) goLogin(); });
 
 /* ---------- ตั้งค่าเริ่มต้น ---------- */
-$("p-cat").innerHTML = CATEGORIES
+$("p-cat").innerHTML = `<option value="" disabled selected>เลือกหมวดหมู่</option>` + CATEGORIES
   .filter(c => c.id !== "all")
   .map(c => `<option value="${c.id}">${c.name}</option>`)
   .join("");
@@ -121,12 +121,14 @@ $("p-photo").addEventListener("change", e => {
 function validate() {
   if (step === 1) {
     if ($("p-title").value.trim() === "") return "กรุณากรอกชื่อสินค้า";
+    if (!$("p-cat").value) return "กรุณาเลือกหมวดหมู่";
     if (type !== "free") {
       const v = $("p-price").value;
       if (v === "" || Number(v) < 0) return "กรุณากรอกราคาให้ถูกต้อง";
     }
   }
   if (step === 2) {
+    if (!$("p-cond").value) return "กรุณาเลือกสภาพสินค้า";
     if (!pickupValue()) return "กรุณาระบุจุดนัดรับ";
     if ($("p-contact").value.trim() === "") return "กรุณาระบุช่องทางติดต่อ";
   }
