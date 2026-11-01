@@ -80,6 +80,13 @@ document.querySelectorAll("#p-type .chip").forEach(btn => {
 });
 
 /* ---------- อัปโหลดรูป (ย่อขนาดก่อนเก็บ) ---------- */
+function setPhoto(data) {
+  imgData = data;
+  $("photo-preview").src = imgData;
+  $("photo-preview").hidden = false;
+  $("photo-hint").hidden = true;
+}
+
 $("p-photo").addEventListener("change", e => {
   const file = e.target.files[0];
   if (!file) return;
@@ -95,10 +102,7 @@ $("p-photo").addEventListener("change", e => {
       canvas.height = img.height * scale;
       canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
 
-      imgData = canvas.toDataURL("image/jpeg", 0.7);
-      $("photo-preview").src = imgData;
-      $("photo-preview").hidden = false;
-      $("photo-hint").hidden = true;
+      setPhoto(canvas.toDataURL("image/jpeg", 0.7));
     };
     img.src = reader.result;
   };

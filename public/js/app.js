@@ -168,7 +168,7 @@ function decorateNav() {
           </div>
           <p class="footer-sdg-note">ตอบโจทย์ SDG 12.5 และ SDG 11.6</p>
         </div>
-        <p class="footer-tag">Second Life for a Better Tomorrow</p>
+        <p class="footer-tag">Second Life for a Better Tomorrow · <a href="privacy.html">นโยบายความเป็นส่วนตัว</a></p>
       </div>
     </footer>`);
 }

@@ -5,6 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "test": "node --experimental-strip-types --test tests/analyze-listing.test.mjs",
     "make-admin": "node make-admin.js"
   },
   "engines": {

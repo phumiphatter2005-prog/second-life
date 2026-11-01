@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600&family=IBM+Plex+Sans+Thai:wght@400;600&family=JetBrains+Mono&display=swap">
-  <link rel="stylesheet" href="css/style.css?v=21">
+  <link rel="stylesheet" href="css/style.css?v=22">
 </head>
 <body>
 
@@ -37,6 +37,31 @@
 
       <!-- ขั้น 1 -->
       <section class="step-panel" data-panel="1">
+        <div class="ai-panel" id="ai-panel" hidden>
+          <h3>AI ช่วยวิเคราะห์ประกาศ</h3>
+          <p class="field-hint">เลือกรูปสินค้า 1–3 รูป แล้วให้ AI ช่วยกรอกชื่อ หมวดหมู่ และสภาพสินค้า</p>
+
+          <div class="ai-thumbs">
+            <div id="ai-thumbs" class="ai-thumbs"></div>
+            <label class="ai-add" id="ai-add" for="ai-photos">
+              <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              <span>เพิ่มรูป</span>
+            </label>
+          </div>
+          <input id="ai-photos" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden>
+          <p class="field-hint"><span id="ai-count">0/3 รูป</span> · JPG PNG หรือ WebP ไม่เกินรูปละ 5MB</p>
+
+          <label class="field-label" for="ai-note">คำอธิบายสั้นๆ (ไม่บังคับ)</label>
+          <input id="ai-note" type="text" maxlength="300" placeholder="เช่น ใช้มา 1 ปี มีรอยที่มุม">
+
+          <p class="ai-notice" id="ai-notice">เมื่อกดปุ่มด้านล่าง รูปและคำอธิบายจะถูกส่งไป Google Gemini เพื่อวิเคราะห์ <b>ห้ามใส่ใบหน้าหรือข้อมูลส่วนตัวในรูป</b> เช่น บัตรนักศึกษา เบอร์โทร ที่อยู่ (<a href="privacy.html" target="_blank" rel="noopener">นโยบายความเป็นส่วนตัว</a>)</p>
+
+          <p class="ai-error" id="ai-error" role="alert" hidden></p>
+          <button type="button" class="btn-outline" id="ai-run" aria-describedby="ai-notice">ให้ AI ช่วยกรอก</button>
+          <p class="ai-status" id="ai-status" role="status" hidden><span class="spinner" aria-hidden="true"></span>AI กำลังวิเคราะห์...</p>
+          <div class="ai-result" id="ai-result" aria-live="polite" hidden></div>
+        </div>
+
         <label class="photo-box" for="p-photo">
           <img id="photo-preview" alt="" hidden>
           <div id="photo-hint">
@@ -61,6 +86,7 @@
 
         <label class="field-label" id="price-label">ราคา (บาท)</label>
         <input id="p-price" type="number" inputmode="numeric" min="0" placeholder="เช่น 150">
+        <div class="ai-price" id="ai-price" aria-live="polite" hidden></div>
 
         <p class="form-error" hidden></p>
         <div class="btn-row">
@@ -77,6 +103,7 @@
           <option value="พอใช้">พอใช้</option>
         </select>
         <ul id="cond-guide" class="cond-guide" aria-label="คำอธิบายระดับสภาพสินค้า"></ul>
+        <p class="field-hint" id="ai-cond-note" hidden></p>
 
         <label class="field-label">รายละเอียดสินค้า</label>
         <textarea id="p-desc" rows="4" placeholder="เช่น ใช้งานน้อย มีรอยขีดเล็กน้อย"></textarea>
@@ -122,11 +149,12 @@
     </div>
   </main>
 
-  <script src="js/config.js?v=21"></script>
-  <script src="js/supabase.js?v=21"></script>
-  <script src="js/demo.js?v=21"></script>
-  <script src="js/data.js?v=21"></script>
-  <script src="js/app.js?v=21"></script>
-  <script src="js/post.js?v=21"></script>
+  <script src="js/config.js?v=22"></script>
+  <script src="js/supabase.js?v=22"></script>
+  <script src="js/demo.js?v=22"></script>
+  <script src="js/data.js?v=22"></script>
+  <script src="js/app.js?v=22"></script>
+  <script src="js/post.js?v=22"></script>
+  <script src="js/ai-listing.js?v=22"></script>
 </body>
 </html>

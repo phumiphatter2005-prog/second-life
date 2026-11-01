@@ -51,6 +51,7 @@ async function setMode(next) {
   submit.querySelector(".btn-label").textContent = TEXT[mode].button;
   document.getElementById("name-field").hidden = !isRegister;
   document.getElementById("strength").hidden = !isRegister;
+  document.getElementById("register-notice").hidden = !isRegister;
   passInput.autocomplete = isRegister ? "new-password" : "current-password";
   showError("");
   updateStrength();

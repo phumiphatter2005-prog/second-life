@@ -1,0 +1,6 @@
+project_id = "fqyalbbogakntrqfvkxz"
+
+# ฟังก์ชันตรวจผู้ใช้เองผ่าน is_active_user() จึงปิดการตรวจ JWT ของ gateway
+# (เว็บใช้คีย์ publishable ซึ่งไม่ใช่ JWT และต้องให้ preflight ของเบราว์เซอร์ผ่าน)
+[functions.analyze-listing]
+verify_jwt = false

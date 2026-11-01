@@ -183,6 +183,21 @@ async function supabaseApi(path, options = {}) {
     return { fav: await rpc("sl_toggle_fav", { p_id: Number(m[1]) }) };
   }
 
+  /* ---------- AI ช่วยวิเคราะห์ประกาศ (supabase/functions/analyze-listing) ---------- */
+  if (path === "/ai/analyze") {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) throw sbError(401, "กรุณาเข้าสู่ระบบก่อน");
+    const res = await fetch(`${SB.supabaseUrl}/functions/v1/analyze-listing`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: SB.supabaseAnonKey, Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify(b),
+      signal: options.signal
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw sbError(res.status, data.message || "ใช้ AI ไม่ได้ในขณะนี้ กรอกข้อมูลเองได้เลย");
+    return data.result;
+  }
+
   /* ---------- โปรไฟล์ของฉัน (supabase/004_avatars.sql) ---------- */
   if (path === "/profile" && method === "POST") return rpc("profile_update", { p_name: String(b.name || "") });
   if (path === "/profile/avatar") {
