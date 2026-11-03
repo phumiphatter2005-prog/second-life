@@ -49,13 +49,42 @@ async function sbProfile(sb) {
   return { id: p.id, studentId: p.student_id, name: p.name, role: p.role, avatarUrl: p.avatar_url || null };
 }
 
-/* รูปจากหน้าลงประกาศเป็น data URL → อัปโหลดเข้า Storage แล้วเก็บเป็นลิงก์ */
-async function sbUploadImage(sb, folder, dataUrl, bucket = "product-images") {
+/* รูปจากหน้าลงประกาศเป็น data URL → อัปโหลดเข้า Storage แล้วคืน path ของไฟล์ */
+async function sbUploadFile(sb, folder, dataUrl, bucket) {
   const blob = await (await fetch(dataUrl)).blob();
   if (blob.size > 2 * 1024 * 1024) throw sbError(400, "รูปภาพใหญ่เกินไป");
   const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
   sbCheck(await sb.storage.from(bucket).upload(path, blob, { contentType: blob.type }));
+  return path;
+}
+
+/* bucket สาธารณะ → เก็บเป็นลิงก์ */
+async function sbUploadImage(sb, folder, dataUrl, bucket = "product-images") {
+  const path = await sbUploadFile(sb, folder, dataUrl, bucket);
   return sb.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+}
+
+/* chat-images เป็น bucket ส่วนตัว (supabase/005_security.sql) ข้อความเก็บแค่ path
+   รูปที่ส่งก่อนหน้านั้นเก็บเป็นลิงก์ public เต็ม → ตัดเหลือ path เหมือนกัน */
+const CHAT_IMG_MARKER = "/storage/v1/object/public/chat-images/";
+const CHAT_IMG_TTL = 6 * 60 * 60;   // วินาที — นานพอให้เปิดห้องแชตค้างไว้ได้ทั้งวันเรียน
+function chatImagePath(img) {
+  const s = String(img || "");
+  if (s.includes(CHAT_IMG_MARKER)) return decodeURIComponent(s.split(CHAT_IMG_MARKER)[1].split("?")[0]);
+  return /^[\w-]+\/[\w.-]+$/.test(s) ? s : null;
+}
+
+/* เปลี่ยนรูปในข้อความเป็น signed URL ก่อนส่งให้ chat.js (ไฟล์ที่ไม่มีสิทธิ์ดู → ไม่แสดงรูป) */
+async function sbSignChatImages(sb, messages) {
+  const list = messages.filter(m => m && m.data && chatImagePath(m.data.img));
+  if (!list.length) return messages;
+  const paths = [...new Set(list.map(m => chatImagePath(m.data.img)))];
+  const { data, error } = await sb.storage.from("chat-images").createSignedUrls(paths, CHAT_IMG_TTL);
+  if (error) console.warn("สร้างลิงก์รูปในแชตไม่สำเร็จ", error);
+  const signed = {};
+  (data || []).forEach(x => { if (x.signedUrl) signed[x.path] = x.signedUrl; });
+  list.forEach(m => { m.data = { ...m.data, img: signed[chatImagePath(m.data.img)] || "" }; });
+  return messages;
 }
 
 /* ลบไฟล์ใน Storage จากลิงก์ (ข้ามรูปที่อยู่ในเว็บ เช่น images/cat-book.svg) */
@@ -236,7 +265,7 @@ async function supabaseApi(path, options = {}) {
       rpc("chat_room", { p_room: room }),
       rpc("chat_messages_list", { p_room: room, p_after: Number(m[3]) || 0 })
     ]);
-    return { room: info, messages, typing: null };   // กำลังพิมพ์ส่งผ่าน Realtime broadcast (chat.js)
+    return { room: info, messages: await sbSignChatImages(sb, messages), typing: null };   // กำลังพิมพ์ส่งผ่าน Realtime broadcast (chat.js)
   }
   if ((m = /^\/chats\/(\d+)\/(messages|read|give|passed|block|report|typing)$/.exec(path))) {
     const room = Number(m[1]);
@@ -245,9 +274,10 @@ async function supabaseApi(path, options = {}) {
       const data = { ...(b.data || {}) };
       if (typeof data.img === "string" && data.img.startsWith("data:")) {
         const user = await needUser();
-        data.img = await sbUploadImage(sb, user.id, data.img, "chat-images");
+        data.img = await sbUploadFile(sb, user.id, data.img, "chat-images");
       }
-      return rpc("chat_send", { p_room: room, p_kind: String(b.kind || ""), p_body: String(b.body || ""), p_data: data });
+      const sent = await rpc("chat_send", { p_room: room, p_kind: String(b.kind || ""), p_body: String(b.body || ""), p_data: data });
+      return (await sbSignChatImages(sb, [sent]))[0];
     }
     if (action === "read") await rpc("chat_mark_read", { p_room: room });
     if (action === "give") await rpc("chat_give", { p_room: room });
