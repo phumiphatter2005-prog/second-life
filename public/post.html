@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600&family=IBM+Plex+Sans+Thai:wght@400;600&family=JetBrains+Mono&display=swap">
-  <link rel="stylesheet" href="css/style.css?v=24">
+  <link rel="stylesheet" href="css/style.css?v=25">
 </head>
 <body>
 
@@ -74,7 +74,7 @@
         <input id="p-photo" type="file" accept="image/*" hidden>
 
         <label class="field-label">ชื่อสินค้า * <span class="ai-tag" data-ai-for="p-title" title="AI กรอกให้ โปรดตรวจสอบ" hidden>AI</span></label>
-        <input id="p-title" type="text" placeholder="เช่น เสื้อฮู้ด Oversize">
+        <input id="p-title" type="text" maxlength="100" placeholder="เช่น เสื้อฮู้ด Oversize">
 
         <label class="field-label">หมวดหมู่ * <span class="ai-tag" data-ai-for="p-cat" title="AI กรอกให้ โปรดตรวจสอบ" hidden>AI</span></label>
         <select id="p-cat"></select>
@@ -87,7 +87,7 @@
         </div>
 
         <label class="field-label" id="price-label">ราคา (บาท)</label>
-        <input id="p-price" type="number" inputmode="numeric" min="0" placeholder="เช่น 150">
+        <input id="p-price" type="number" inputmode="numeric" min="0" max="1000000" step="1" placeholder="เช่น 150">
         <div class="ai-price" id="ai-price" aria-live="polite" hidden></div>
 
         <p class="form-error" hidden></p>
@@ -109,15 +109,15 @@
         <p class="field-hint" id="ai-cond-note" hidden></p>
 
         <label class="field-label">รายละเอียดสินค้า</label>
-        <textarea id="p-desc" rows="4" placeholder="เช่น ใช้งานน้อย มีรอยขีดเล็กน้อย"></textarea>
+        <textarea id="p-desc" rows="4" maxlength="1000" placeholder="เช่น ใช้งานน้อย มีรอยขีดเล็กน้อย"></textarea>
 
         <label class="field-label" for="p-pickup-select">จุดนัดรับในมหาวิทยาลัย *</label>
         <select id="p-pickup-select"></select>
-        <input id="p-pickup" type="text" placeholder="ระบุจุดนัดรับ เช่น หน้าอาคาร 3" hidden>
+        <input id="p-pickup" type="text" maxlength="100" placeholder="ระบุจุดนัดรับ เช่น หน้าอาคาร 3" hidden>
         <p class="field-hint">เลือกจุดที่มีคนพลุกพล่านและนัดในเวลากลางวัน</p>
 
         <label class="field-label">ช่องทางติดต่อ *</label>
-        <input id="p-contact" type="text" placeholder="เช่น Line: yourid หรือเบอร์โทร">
+        <input id="p-contact" type="text" maxlength="100" placeholder="เช่น Line: yourid หรือเบอร์โทร">
         <p class="field-hint">แสดงเฉพาะสมาชิกที่เข้าสู่ระบบแล้วเท่านั้น</p>
 
         <p class="form-error" hidden></p>
@@ -152,12 +152,12 @@
     </div>
   </main>
 
-  <script src="js/config.js?v=24"></script>
-  <script src="js/supabase.js?v=24"></script>
-  <script src="js/demo.js?v=24"></script>
-  <script src="js/data.js?v=24"></script>
-  <script src="js/app.js?v=24"></script>
-  <script src="js/post.js?v=24"></script>
-  <script src="js/ai-listing.js?v=24"></script>
+  <script src="js/config.js?v=25"></script>
+  <script src="js/supabase.js?v=25"></script>
+  <script src="js/demo.js?v=25"></script>
+  <script src="js/data.js?v=25"></script>
+  <script src="js/app.js?v=25"></script>
+  <script src="js/post.js?v=25"></script>
+  <script src="js/ai-listing.js?v=25"></script>
 </body>
 </html>

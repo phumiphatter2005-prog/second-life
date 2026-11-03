@@ -11,7 +11,13 @@ const SID_LENGTH = 8;
 /* กลับไปหน้าเดิมหลังเข้าสู่ระบบ (เฉพาะลิงก์ภายในเว็บเท่านั้น) ถ้าไม่มีไปหน้าแรก */
 function nextUrl() {
   const next = new URLSearchParams(location.search).get("next") || "";
-  return next.startsWith("/") && !next.startsWith("//") ? next : "index.html";
+  if (!next.startsWith("/")) return "index.html";
+  /* แปลงเป็น URL จริงแล้วเทียบโดเมน กัน "/\evil.com" หรือ "//evil.com" ที่เบราว์เซอร์มองเป็นเว็บอื่น */
+  try {
+    const u = new URL(next, location.href);
+    if (u.origin === location.origin) return u.pathname + u.search + u.hash;
+  } catch (e) { /* ลิงก์เสีย → ไปหน้าแรก */ }
+  return "index.html";
 }
 
 userReady.then(() => { if (currentUser) location.href = nextUrl(); });
