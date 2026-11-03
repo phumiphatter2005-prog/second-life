@@ -53,6 +53,7 @@ function render(p) {
         <h1>${esc(p.title)}</h1>
         ${ratingLine(p.rating, p.ratingCount)}
         <div class="detail-price">${formatPrice(p)}</div>
+        ${p.type === "swap" && Number(p.price) ? `<p class="muted">มูลค่าโดยประมาณ ใช้เทียบของที่จะแลก</p>` : ""}
 
         <ul class="detail-list">
           <li><span>หมวดหมู่</span>${categoryName(p.category)}</li>
@@ -132,6 +133,11 @@ function render(p) {
       try {
         const { passed } = await api(`/products/${p.id}/passed`, { method: "POST" });
         passedBtn.textContent = passedText(passed);
+        /* ป้าย "ส่งต่อแล้ว" ข้างประเภทประกาศ เปลี่ยนตามทันทีไม่ต้องรีเฟรช */
+        const badges = detail.querySelector(".detail-badges");
+        const badge = badges.querySelector(".status-ok");
+        if (passed && !badge) badges.insertAdjacentHTML("beforeend", `<span class="status status-ok">ส่งต่อแล้ว</span>`);
+        if (!passed && badge) badge.remove();
         if (passed) celebratePassed(passedBtn);
       } catch (err) { showError(err.message); }
     });
@@ -252,6 +258,8 @@ async function renderReviews(p) {
     reviews = await api(`/products/${p.id}/reviews`);
   } catch (e) {
     listEl.innerHTML = `<p class="empty">โหลดรีวิวไม่สำเร็จ</p>`;
+    renderReviewForm(p, null);
+    return;
   }
 
   listEl.innerHTML = reviews.length

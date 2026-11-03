@@ -76,8 +76,12 @@ function ratingLine(rating, count) {
 }
 
 /* ---------- การ์ดสินค้า ---------- */
+/* แลกเปลี่ยน: ตัวเลขคือมูลค่าโดยประมาณ ไม่ใช่ราคาขาย จึงขึ้นต้นด้วย ≈ */
 function formatPrice(p) {
-  return p.type === "free" ? "ฟรี" : "฿" + p.price.toLocaleString();
+  if (p.type === "free") return "ฟรี";
+  const price = Number(p.price) || 0;
+  if (p.type === "swap") return price ? "≈฿" + price.toLocaleString() : "แลกเปลี่ยน";
+  return "฿" + price.toLocaleString();
 }
 
 function categoryName(id) {

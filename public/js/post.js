@@ -99,38 +99,40 @@ $("p-photo").addEventListener("change", e => {
   const file = e.target.files[0];
   if (!file) return;
 
-  const reader = new FileReader();
-  reader.onload = () => {
-    const img = new Image();
-    img.onload = () => {
-      const maxW = 600;
-      const scale = Math.min(1, maxW / img.width);
-      const canvas = document.createElement("canvas");
-      canvas.width = img.width * scale;
-      canvas.height = img.height * scale;
-      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
-
-      setPhoto(canvas.toDataURL("image/jpeg", 0.7));
-    };
-    img.src = reader.result;
-  };
-  reader.readAsDataURL(file);
+  /* resizeImage (app.js) แจ้ง error เมื่อเปิดไฟล์ไม่ได้ เช่น HEIC จาก iPhone ที่เบราว์เซอร์อ่านไม่ออก */
+  resizeImage(file, 600)
+    .then(data => { setError(""); setPhoto(data); })
+    .catch(err => {
+      clearPhoto();
+      setError(err.message === "เปิดไฟล์รูปไม่สำเร็จ"
+        ? "เปิดไฟล์รูปนี้ไม่ได้ ลองใช้ไฟล์ JPG หรือ PNG"
+        : err.message);
+    });
 });
 
 /* ---------- ตรวจข้อมูลแต่ละขั้น ---------- */
 function validate() {
   if (step === 1) {
-    if ($("p-title").value.trim() === "") return "กรุณากรอกชื่อสินค้า";
+    /* เพดานความยาวตรงกับ check ใน supabase/schema.sql (AI อาจกรอกเกิน maxlength ได้) */
+    const title = $("p-title").value.trim();
+    if (title === "") return "กรุณากรอกชื่อสินค้า";
+    if (title.length > 100) return "ชื่อสินค้ายาวได้ไม่เกิน 100 ตัวอักษร";
     if (!$("p-cat").value) return "กรุณาเลือกหมวดหมู่";
     if (type !== "free") {
       const v = $("p-price").value;
-      if (v === "" || Number(v) < 0) return "กรุณากรอกราคาให้ถูกต้อง";
+      const n = Number(v);
+      if (v === "" || !Number.isInteger(n) || n < 0) return "กรุณากรอกราคาเป็นจำนวนเต็มบาท";
+      if (n > 1000000) return "ราคาต้องไม่เกิน 1,000,000 บาท";
+      if (type === "sell" && n === 0) return "ราคาขายต้องมากกว่า 0 ถ้าต้องการให้ฟรี เลือก \"แจกฟรี\"";
     }
   }
   if (step === 2) {
     if (!$("p-cond").value) return "กรุณาเลือกสภาพสินค้า";
+    if ($("p-desc").value.trim().length > 1000) return "รายละเอียดยาวได้ไม่เกิน 1,000 ตัวอักษร";
     if (!pickupValue()) return "กรุณาระบุจุดนัดรับ";
+    if (pickupValue().length > 100) return "จุดนัดรับยาวได้ไม่เกิน 100 ตัวอักษร";
     if ($("p-contact").value.trim() === "") return "กรุณาระบุช่องทางติดต่อ";
+    if ($("p-contact").value.trim().length > 100) return "ช่องทางติดต่อยาวได้ไม่เกิน 100 ตัวอักษร";
   }
   return "";
 }
