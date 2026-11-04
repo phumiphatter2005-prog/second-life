@@ -75,7 +75,9 @@ document.querySelectorAll("#p-type .chip").forEach(btn => {
     price.disabled = isFree;
     if (isFree) price.value = "";
     $("price-label").textContent =
-      type === "swap" ? "มูลค่าโดยประมาณ (บาท)" : "ราคา (บาท)";
+      type === "swap" ? "มูลค่าโดยประมาณ (ไม่บังคับ)" : "ราคา (บาท)";
+    price.placeholder = type === "swap" ? "เช่น 300 (บาท)" : "เช่น 150";
+    $("swap-wish-field").hidden = type !== "swap";
   });
 });
 
@@ -121,10 +123,14 @@ function validate() {
     if (type !== "free") {
       const v = $("p-price").value;
       const n = Number(v);
-      if (v === "" || !Number.isInteger(n) || n < 0) return "กรุณากรอกราคาเป็นจำนวนเต็มบาท";
-      if (n > 1000000) return "ราคาต้องไม่เกิน 1,000,000 บาท";
+      const what = type === "swap" ? "มูลค่าโดยประมาณ" : "ราคา";
+      /* แลกเปลี่ยนเว้นว่างได้ · input type=number ที่พิมพ์ไม่ใช่ตัวเลขให้ค่า "" แต่ validity.badInput = true */
+      const blankSwap = type === "swap" && v === "" && !$("p-price").validity.badInput;
+      if (!blankSwap && (v === "" || !Number.isInteger(n) || n < 0)) return `กรุณากรอก${what}เป็นจำนวนเต็มบาท`;
+      if (n > 1000000) return `${what}ต้องไม่เกิน 1,000,000 บาท`;
       if (type === "sell" && n === 0) return "ราคาขายต้องมากกว่า 0 ถ้าต้องการให้ฟรี เลือก \"แจกฟรี\"";
     }
+    if (type === "swap" && $("p-want-swap").value.trim().length > 60) return "\"อยากแลกกับอะไร\" ยาวได้ไม่เกิน 60 ตัวอักษร";
   }
   if (step === 2) {
     if (!$("p-cond").value) return "กรุณาเลือกสภาพสินค้า";
@@ -140,8 +146,9 @@ function validate() {
 function buildItem() {
   return {
     title: $("p-title").value.trim(),
-    price: type === "free" ? 0 : Number($("p-price").value),
+    price: type === "free" ? 0 : Number($("p-price").value) || 0,
     type: type,
+    wantSwap: type === "swap" ? $("p-want-swap").value.trim() : "",
     category: $("p-cat").value,
     condition: $("p-cond").value,
     pickup: pickupValue(),
@@ -159,7 +166,10 @@ function renderSummary() {
       <ul class="detail-list">
         <li><span>ชื่อสินค้า</span>${esc(item.title)}</li>
         <li><span>ประเภท</span>${TYPE_LABEL[item.type]}</li>
-        <li><span>ราคา</span>${formatPrice(item)}</li>
+        ${item.type === "swap"
+          ? `<li><span>มูลค่าโดยประมาณ</span>${swapValue(item) || "ไม่ระบุ"}</li>
+             <li><span>อยากแลกกับ</span>${esc(swapWish(item)) || "ไม่ระบุ"}</li>`
+          : `<li><span>ราคา</span>${formatPrice(item)}</li>`}
         <li><span>หมวดหมู่</span>${categoryName(item.category)}</li>
         <li><span>สภาพสินค้า</span>${esc(item.condition)}</li>
         <li><span>จุดนัดรับ</span>${esc(item.pickup)}</li>

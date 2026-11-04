@@ -163,6 +163,10 @@ async function supabaseApi(path, options = {}) {
     if (!Number.isFinite(item.price) || item.price < 0 || item.price > 1000000) throw sbError(400, "กรุณากรอกราคาให้ถูกต้อง");
     if (!item.pickup) throw sbError(400, "กรุณาระบุจุดนัดรับ");
     if (!item.contact) throw sbError(400, "กรุณาระบุช่องทางติดต่อ");
+    /* คอลัมน์ want_swap มาจาก supabase/006_swap_wish.sql — ส่งเฉพาะเมื่อกรอก ประกาศอื่นจึงยังลงได้แม้ยังไม่รันไฟล์นั้น */
+    const wantSwap = item.type === "swap" ? String(b.wantSwap || "").trim() : "";
+    if (wantSwap.length > 60) throw sbError(400, "\"อยากแลกกับอะไร\" ยาวได้ไม่เกิน 60 ตัวอักษร");
+    if (wantSwap) item.want_swap = wantSwap;
     item.img = b.img ? await sbUploadImage(sb, user.id, b.img) : `images/cat-${item.category}.svg`;
     const row = sbCheck(await sb.from("products").insert({ ...item, user_id: user.id }).select("id").single());
     return { id: row.id };
@@ -223,7 +227,11 @@ async function supabaseApi(path, options = {}) {
       signal: options.signal
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw sbError(res.status, data.message || "ใช้ AI ไม่ได้ในขณะนี้ กรอกข้อมูลเองได้เลย");
+    if (!res.ok) {
+      const err = sbError(res.status, data.message || "ใช้ AI ไม่ได้ในขณะนี้ กรอกข้อมูลเองได้เลย");
+      err.code = data.error;            // busy / quota / timeout ... (ai-listing.js เลือกข้อความตามนี้)
+      throw err;
+    }
     return data.result;
   }
 

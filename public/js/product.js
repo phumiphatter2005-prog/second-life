@@ -52,8 +52,12 @@ function render(p) {
         </div>
         <h1>${esc(p.title)}</h1>
         ${ratingLine(p.rating, p.ratingCount)}
-        <div class="detail-price">${formatPrice(p)}</div>
-        ${p.type === "swap" && Number(p.price) ? `<p class="muted">มูลค่าโดยประมาณ ใช้เทียบของที่จะแลก</p>` : ""}
+        <div class="detail-price price-${p.type}">${formatPrice(p)}</div>
+        ${swapValue(p) || swapWish(p) ? `
+          <ul class="swap-facts">
+            ${swapValue(p) ? `<li>มูลค่าประมาณ <b>${swapValue(p)}</b></li>` : ""}
+            ${swapWish(p) ? `<li>อยากแลก: <b>${esc(swapWish(p))}</b></li>` : ""}
+          </ul>` : ""}
 
         <ul class="detail-list">
           <li><span>หมวดหมู่</span>${categoryName(p.category)}</li>

@@ -83,6 +83,7 @@ function toProduct(row, user) {
     pickup: row.pickup,
     contact: user ? row.contact : null,
     desc: row.description,
+    wantSwap: row.want_swap || "",
     img: row.img,
     passed: !!row.passed,
     sellerName: row.seller_name || "Second Life",
@@ -196,7 +197,8 @@ app.post("/api/products", requireLogin, (req, res) => {
     condition: b.condition,
     pickup: cleanText(b.pickup, 100),
     contact: cleanText(b.contact, 100),
-    desc: cleanText(b.desc, 1000) || "ไม่มีรายละเอียดเพิ่มเติม"
+    desc: cleanText(b.desc, 1000) || "ไม่มีรายละเอียดเพิ่มเติม",
+    wantSwap: b.type === "swap" ? cleanText(b.wantSwap, 60) : ""
   };
   item.price = item.type === "free" ? 0 : Math.round(Number(b.price));
 
@@ -217,10 +219,10 @@ app.post("/api/products", requireLogin, (req, res) => {
   }
 
   const { lastInsertRowid } = db.prepare(`
-    INSERT INTO products (user_id, title, price, type, category, condition, pickup, contact, description, img, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    INSERT INTO products (user_id, title, price, type, category, condition, pickup, contact, description, want_swap, img, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(req.user.id, item.title, item.price, item.type, item.category, item.condition,
-        item.pickup, item.contact, item.desc, img, Date.now());
+        item.pickup, item.contact, item.desc, item.wantSwap, img, Date.now());
 
   res.status(201).json({ id: Number(lastInsertRowid) });
 });

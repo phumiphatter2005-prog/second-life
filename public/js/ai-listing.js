@@ -2,7 +2,8 @@
    AI แค่เติมฟอร์มให้ผู้ใช้ตรวจ ไม่ลงประกาศเอง · ราคาแนะนำคำนวณจากประกาศจริง ไม่ได้มาจาก AI */
 const AI_MAX_PHOTOS = 3;
 const AI_MAX_BYTES = 5 * 1024 * 1024;
-const AI_TIMEOUT_MS = 10000;
+/* Edge Function นานสุด 61.5 วินาที (20 วิ + รอ 1.5 วิ + ลองซ้ำ 20 วิ + โมเดลสำรอง 20 วิ) จึงรอเผื่อไว้ */
+const AI_TIMEOUT_MS = 75000;
 const AI_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const AI_MIN_PRICE_SAMPLES = 3;
 
@@ -16,9 +17,12 @@ const aiCache = new Map();        // รูปและคำอธิบาย�
 
 $("ai-panel").hidden = !SUPABASE_MODE;
 
-function aiError(msg) {
+/* canRetry: เรียก AI ไม่สำเร็จ → ปุ่ม "ลองอีกครั้ง" แทนปุ่มเดิม (ข้อผิดพลาดของไฟล์/ข้อมูลไม่ต้องมี) */
+function aiError(msg, canRetry = false) {
   $("ai-error").textContent = msg;
   $("ai-error").hidden = !msg;
+  $("ai-retry").hidden = !(msg && canRetry);
+  $("ai-run").hidden = !$("ai-retry").hidden;
 }
 
 /* ---------- เลือกรูป: ตรวจก่อน ไฟล์ไม่ผ่านจะไม่ถูกส่งไป AI ---------- */
@@ -38,7 +42,10 @@ function aiShrink(file) {
       const canvas = document.createElement("canvas");
       canvas.width = Math.round(img.width * scale);
       canvas.height = Math.round(img.height * scale);
-      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#fff";                         // PNG โปร่งใสแปลงเป็น JPEG แล้วไม่กลายเป็นพื้นดำ
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       URL.revokeObjectURL(url);
       resolve(canvas.toDataURL("image/jpeg", 0.8));
     };
@@ -222,18 +229,34 @@ function aiShowResult(r) {
 }
 
 /* ---------- ปุ่มให้ AI ช่วยกรอก ---------- */
+/* ล็อกเฉพาะกล่อง AI ส่วนฟอร์มประกาศยังกรอกเองได้ระหว่างรอ */
+let aiTick = null;
 function aiSetBusy(on) {
   aiBusy = on;
   $("ai-run").disabled = on;
   $("ai-photos").disabled = on;
   $("ai-note").disabled = on;
   $("ai-status").hidden = !on;
+  $("ai-wait-hint").hidden = !on;
+  clearInterval(aiTick);
+  if (!on) return;
+  const start = Date.now();
+  $("ai-elapsed").textContent = "0 วินาที";
+  aiTick = setInterval(() => {
+    $("ai-elapsed").textContent = `${Math.floor((Date.now() - start) / 1000)} วินาที`;
+  }, 1000);
 }
 
+/* ข้อความตามสาเหตุ: error มาจาก Edge Function (supabase.js ใส่ e.code ให้) */
+const AI_FAIL = {
+  busy: "AI ไม่ว่างในขณะนี้ ลองใหม่อีกครั้ง หรือกรอกข้อมูลเองได้เลย",
+  timeout: "AI ใช้เวลานานเกินไป (หมดเวลา) ลองใหม่อีกครั้ง หรือกรอกข้อมูลเองได้เลย",
+  quota: "โควตา AI วันนี้เต็มแล้ว ลองใหม่ภายหลัง หรือกรอกข้อมูลเองได้เลย"
+};
 function aiMessage(e) {
-  if (e.name === "AbortError") return "AI ใช้เวลานานเกิน 10 วินาที ลองใหม่อีกครั้งหรือกรอกข้อมูลเองได้เลย";
-  if (e instanceof TypeError) return "เชื่อมต่อ AI ไม่สำเร็จ กรอกข้อมูลเองได้เลย";
-  return e.message || "ใช้ AI ไม่ได้ในขณะนี้ กรอกข้อมูลเองได้เลย";
+  if (e.name === "AbortError") return AI_FAIL.timeout;
+  if (e instanceof TypeError) return "เชื่อมต่อ AI ไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วลองอีกครั้ง หรือกรอกข้อมูลเองได้เลย";
+  return AI_FAIL[e.code] || e.message || "ใช้ AI ไม่ได้ในขณะนี้ กรอกข้อมูลเองได้เลย";
 }
 
 $("ai-run").addEventListener("click", async () => {
@@ -252,14 +275,20 @@ $("ai-run").addEventListener("click", async () => {
     const result = await api("/ai/analyze", {
       method: "POST", body: { images: aiPhotos, description }, signal: timer.signal
     });
-    if (!aiValid(result)) return aiError("AI ตอบกลับในรูปแบบที่ใช้ไม่ได้ ลองใหม่อีกครั้งหรือกรอกข้อมูลเองได้เลย");
+    if (!aiValid(result)) return aiError("AI ตอบกลับในรูปแบบที่ใช้ไม่ได้ ลองใหม่อีกครั้งหรือกรอกข้อมูลเองได้เลย", true);
     aiCache.set(key, result);
     aiShowResult(result);
   } catch (e) {
     if (e.status === 401) return goLogin();
-    aiError(aiMessage(e));
+    /* ข้อมูลที่ส่งไม่ผ่าน (400/413) ลองซ้ำก็ไม่ผ่าน ต้องแก้รูปหรือคำอธิบายก่อน */
+    aiError(aiMessage(e), !(e.status === 400 || e.status === 413));
   } finally {
     clearTimeout(timeout);
     aiSetBusy(false);
   }
+});
+
+$("ai-retry").addEventListener("click", () => {
+  aiError("");
+  $("ai-run").click();
 });

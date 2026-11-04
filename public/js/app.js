@@ -76,12 +76,22 @@ function ratingLine(rating, count) {
 }
 
 /* ---------- การ์ดสินค้า ---------- */
-/* แลกเปลี่ยน: ตัวเลขคือมูลค่าโดยประมาณ ไม่ใช่ราคาขาย จึงขึ้นต้นด้วย ≈ */
+/* แลกเปลี่ยน: ไม่แสดงราคา (ตัวเลขเป็นแค่มูลค่าโดยประมาณ ดู swapValue) */
 function formatPrice(p) {
   if (p.type === "free") return "ฟรี";
+  if (p.type === "swap") return "แลกเปลี่ยน";
+  return "฿" + (Number(p.price) || 0).toLocaleString();
+}
+
+/* มูลค่าโดยประมาณของประกาศแลกเปลี่ยน ("" = ไม่ได้ระบุ) */
+function swapValue(p) {
   const price = Number(p.price) || 0;
-  if (p.type === "swap") return price ? "≈฿" + price.toLocaleString() : "แลกเปลี่ยน";
-  return "฿" + price.toLocaleString();
+  return p.type === "swap" && price ? "฿" + price.toLocaleString() : "";
+}
+
+/* "อยากแลกกับอะไร" ของประกาศแลกเปลี่ยน ("" = ไม่ได้ระบุ) */
+function swapWish(p) {
+  return p.type === "swap" ? String(p.wantSwap || "").trim() : "";
 }
 
 function categoryName(id) {
@@ -95,6 +105,7 @@ function productCard(p) {
     ? `<span class="card-tag tag-passed">${icon("recycle")}ส่งต่อแล้ว</span>`
     : `<span class="card-tag tag-${p.type}">${TYPE_LABEL[p.type]}</span>`;
   const sub = [p.pickup, p.condition].filter(Boolean).map(esc).join(" · ");
+  const wish = swapWish(p);
   return `
     <div class="card-wrap">
       <button class="fav-btn ${p.isFav ? "on" : ""}" data-id="${p.id}" aria-label="รายการโปรด">${icon("heart")}</button>
@@ -102,9 +113,10 @@ function productCard(p) {
         <div class="card-img">${tag}<img src="${esc(p.img)}" alt="${esc(p.title)}" loading="lazy"></div>
         <div class="card-body">
           <h3>${esc(p.title)}</h3>
+          ${wish ? `<div class="card-wish">อยากแลก: ${esc(wish)}</div>` : ""}
           <div class="card-sub">${sub}</div>
           <div class="card-meta">
-            <span class="price">${formatPrice(p)}</span>
+            <span class="price price-${p.type}">${formatPrice(p)}</span>
             ${p.ratingCount ? `<span class="card-rating" title="คะแนนผู้ขาย ${p.rating.toFixed(1)} จาก ${p.ratingCount} รีวิว"><span aria-hidden="true">★</span>${p.rating.toFixed(1)}</span>` : ""}
           </div>
         </div>
@@ -712,7 +724,7 @@ function renderConveyor(list) {
   const card = (p, hidden) => `
     <a class="belt-card" href="product.html?id=${p.id}" ${hidden ? 'aria-hidden="true" tabindex="-1"' : ""}>
       <img src="${esc(p.img)}" alt="${hidden ? "" : esc(p.title)}" loading="lazy">
-      <div><strong>${esc(p.title)}</strong><span class="price">${formatPrice(p)}</span></div>
+      <div><strong>${esc(p.title)}</strong><span class="price price-${p.type}">${formatPrice(p)}</span></div>
     </a>`;
   /* ต่อรายการให้ยาวพอเต็มจอ แล้วซ้ำอีกชุดเพื่อให้วนต่อเนื่องไม่สะดุด */
   let row = [...items];

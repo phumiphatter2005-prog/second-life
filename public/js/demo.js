@@ -16,7 +16,7 @@ const DEMO_PRODUCTS = [
     desc: "ใช้งานปกติ แบตอยู่ได้ประมาณ 3 ชม.", img: "images/sample-laptop.jpg" },
   { title: "กระเป๋าเป้", price: 350, type: "swap", category: "dorm",
     condition: "ดีมาก", pickup: "หอพักนักศึกษา", contact: "ติดต่อผ่านเว็บ",
-    desc: "อยากแลกกับกระเป๋าใบเล็กกว่า", img: "images/sample-backpack.jpg" },
+    desc: "อยากแลกกับกระเป๋าใบเล็กกว่า", wantSwap: "กระเป๋าสะพายข้างใบเล็ก", img: "images/sample-backpack.jpg" },
   { title: "โคมไฟตั้งโต๊ะ", price: 120, type: "sell", category: "dorm",
     condition: "ดี", pickup: "หอพักนักศึกษา", contact: "ติดต่อผ่านเว็บ",
     desc: "ไฟ LED ปรับความสว่างได้", img: "images/sample-lamp.jpg" },
@@ -153,9 +153,11 @@ async function demoApi(path, options = {}) {
       type: b.type, category: b.category, condition: b.condition,
       pickup: String(b.pickup || "").trim(),
       contact: String(b.contact || "").trim(),
-      desc: String(b.desc || "").trim() || "ไม่มีรายละเอียดเพิ่มเติม"
+      desc: String(b.desc || "").trim() || "ไม่มีรายละเอียดเพิ่มเติม",
+      wantSwap: b.type === "swap" ? String(b.wantSwap || "").trim() : ""
     };
     if (!item.title) throw demoError(400, "กรุณากรอกชื่อสินค้า");
+    if (item.wantSwap.length > 60) throw demoError(400, "\"อยากแลกกับอะไร\" ยาวได้ไม่เกิน 60 ตัวอักษร");
     if (!TYPE_LABEL[item.type]) throw demoError(400, "ประเภทประกาศไม่ถูกต้อง");
     if (!CATEGORIES.some(c => c.id === item.category && c.id !== "all")) throw demoError(400, "หมวดหมู่ไม่ถูกต้อง");
     if (!Number.isFinite(item.price) || item.price < 0) throw demoError(400, "กรุณากรอกราคาให้ถูกต้อง");
