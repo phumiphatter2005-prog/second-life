@@ -123,7 +123,7 @@ function roomHead() {
         <span>
           <strong>${esc(r.productTitle)}</strong>
           <span class="room-product-meta">
-            <span class="price">${formatPrice({ type: r.productType, price: r.productPrice })}</span>
+            <span class="price price-${r.productType}">${formatPrice({ type: r.productType, price: r.productPrice })}</span>
             <span class="badge badge-${r.productType}">${TYPE_LABEL[r.productType]}</span>
             ${r.productPassed ? `<span class="status status-ok">ส่งต่อแล้ว</span>` : ""}
           </span>

@@ -101,7 +101,7 @@ function renderProducts(list) {
             <a class="admin-title" href="product.html?id=${p.id}">${esc(p.title)}</a>
             <div class="admin-meta">
               <span class="badge badge-${p.type}">${TYPE_LABEL[p.type]}</span>
-              <span>${formatPrice(p)}</span>
+              <span class="price-${p.type}">${formatPrice(p)}</span>
               <span>${esc(p.sellerName)}${p.sellerStudentId ? ` · <code>${esc(p.sellerStudentId)}</code>` : ""}</span>
               <span>${formatDay(p.createdAt)}</span>
               ${p.passed ? `<span class="status status-ok">ส่งต่อแล้ว</span>` : `<span class="status">เปิดอยู่</span>`}

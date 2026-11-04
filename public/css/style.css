@@ -40,7 +40,14 @@
   --error: #EF4444;
   --error-ink: #B91C1C;
   --error-soft: #FEF2F2;
-  --swap: #2563A6;                   /* คำว่า "แลกเปลี่ยน" แทนราคา */
+  /* สีประเภทประกาศ — ใช้ชุดเดียวทั้งเว็บ: ป้ายมุมรูป, badge, ราคา/ข้อความแทนราคา, จุดในตัวกรอง (DESIGN.md) */
+  --type-sell: #7E2A8C;              /* ขาย: ป้ายพื้นม่วงตัวขาว / ราคาสีม่วง */
+  --type-sell-bg: #7E2A8C;
+  --type-sell-on: var(--on-primary); /* ตัวขาว (#FAFAFA ตามกฎ On Primary) */
+  --type-swap: #2563A6;              /* แลกเปลี่ยน: ห้ามใช้สีส้ม */
+  --type-swap-bg: #E8F0FA;
+  --type-free: #1F7A4D;              /* แจกฟรี */
+  --type-free-bg: #E8F5EE;
   --star: #F59E0B;
   --star-off: #E4E4E7;
 
@@ -567,7 +574,10 @@ code, kbd {
 .card-sub:empty { display: none; }
 .card-meta { display: flex; align-items: center; gap: 8px; }
 .price { font-family: var(--font-display); font-weight: 600; font-size: 18px; letter-spacing: -.02em; }
-.price-swap, .detail-price.price-swap { color: var(--swap); font-weight: 700; }
+/* ราคา/ข้อความแทนราคา ตามประเภท (ใช้กับ .price, .detail-price หรือ span ธรรมดาก็ได้) */
+.price-sell { color: var(--type-sell); }
+.price-swap, .detail-price.price-swap { color: var(--type-swap); font-weight: 700; }
+.price-free, .detail-price.price-free { color: var(--type-free); font-weight: 700; }
 .card-rating { display: inline-flex; align-items: center; gap: 2px; font-size: 12px; color: var(--text-2); }
 .card-rating span { color: var(--star); }
 
@@ -588,8 +598,10 @@ code, kbd {
   border-radius: var(--r-full);
 }
 .card-tag .ic { width: 14px; height: 14px; }
-.tag-swap { color: var(--warning-ink); }
-.tag-free, .tag-passed { color: var(--success-ink); }
+.tag-sell { background: var(--type-sell-bg); color: var(--type-sell-on); }
+.tag-swap { background: var(--type-swap-bg); color: var(--type-swap); }
+.tag-free { background: var(--type-free-bg); color: var(--type-free); }
+.tag-passed { color: var(--success-ink); }          /* สถานะ ไม่ใช่ประเภท: แคปซูลขาวเหมือนเดิม */
 
 /* ---------- แถวสินค้าในหน้าแรก (เลื่อนซ้ายขวา) ---------- */
 /* เปลี่ยนหมวดในหน้าแรก: แถวสินค้าจางออกแล้วจางเข้า */
@@ -656,9 +668,9 @@ code, kbd {
   border-radius: var(--r-xs);
   white-space: nowrap;
 }
-.badge-sell { background: var(--chip); color: var(--chip-text); }
-.badge-swap { background: var(--warning-soft); color: var(--warning-ink); }
-.badge-free { background: var(--success-soft); color: var(--success-ink); }
+.badge-sell { background: var(--type-sell-bg); color: var(--type-sell-on); }
+.badge-swap { background: var(--type-swap-bg); color: var(--type-swap); }
+.badge-free { background: var(--type-free-bg); color: var(--type-free); }
 
 .status { border-radius: var(--r-full); padding: 0 12px; background: var(--chip); color: var(--chip-text); }
 .status::before { content: ""; width: 6px; height: 6px; border-radius: var(--r-full); background: currentColor; }
@@ -905,9 +917,9 @@ input[type="checkbox"]:checked::after { opacity: 1; }
 .type-seg button:hover { color: var(--text); }
 .type-seg button[aria-pressed="true"] { background: var(--surface); border-color: var(--primary); color: var(--primary); font-weight: 600; }
 .dot { flex-shrink: 0; width: 6px; height: 6px; border-radius: var(--r-full); background: var(--neutral); }
-.dot-sell { background: var(--text); }
-.dot-swap { background: var(--warning); }
-.dot-free { background: var(--success); }
+.dot-sell { background: var(--type-sell); }
+.dot-swap { background: var(--type-swap); }
+.dot-free { background: var(--type-free); }
 
 /* สภาพสินค้า: ช่องติ๊ก + คำอธิบายสั้น */
 .f-checks { display: flex; flex-direction: column; }
