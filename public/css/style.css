@@ -1564,8 +1564,8 @@ button.admin-title { border: none; background: none; padding: 0; font-size: inhe
     --tabbar-border: rgba(255, 255, 255, .08);
     --tabbar-ink: rgba(255, 255, 255, .78);     /* ไอคอนปุ่มที่ไม่ได้เลือก (contrast 9:1 บนพื้นแถบ) */
     --tabbar-h: 60px;
-    /* พื้นที่ที่ต้องเว้นใต้เนื้อหา = ความสูงแถบ + ระยะลอย 12px + ช่องว่าง 8px + safe-area ของ iPhone */
-    --tabbar-space: calc(var(--tabbar-h) + 20px + env(safe-area-inset-bottom, 0px));
+    /* พื้นที่ที่ต้องเว้นใต้เนื้อหา = ความสูงแถบ + 24px (ระยะลอย 12px + ช่องว่าง 12px) + safe-area ของ iPhone */
+    --tabbar-space: calc(var(--tabbar-h) + 24px + env(safe-area-inset-bottom, 0px));
   }
   .nav-links {
     position: fixed;
@@ -1928,8 +1928,20 @@ button.admin-title { border: none; background: none; padding: 0; font-size: inhe
   transform-origin: left top;
   transition: transform .2s ease, color .2s ease;
 }
+/* ป้ายขยับขึ้นเมื่อ focus มีค่า หรือบราวเซอร์กรอกอัตโนมัติ (แยกกฎ :autofill เพราะบราวเซอร์ที่ไม่รู้จักจะทิ้งทั้งกฎ) */
 .float-field input:focus + label,
-.float-field input:not(:placeholder-shown) + label { transform: translateY(-10px) scale(.78); }
+.float-field input:not(:placeholder-shown) + label,
+.float-field.has-value label { transform: translateY(-10px) scale(.78); }
+.float-field input:-webkit-autofill + label { transform: translateY(-10px) scale(.78); }
+.float-field input:autofill + label { transform: translateY(-10px) scale(.78); }
+/* autofill: คงพื้นขาวและสีตัวหนังสือเดิม + ยิง animationstart ให้ login.js รู้ว่ามีค่าแล้ว */
+.float-field input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 40px #FFFFFF inset;
+  -webkit-text-fill-color: var(--text);
+  caret-color: var(--text);
+  animation: sl-autofill .01s;
+}
+@keyframes sl-autofill { from { opacity: 1; } to { opacity: 1; } }
 .float-field input:focus + label { color: var(--primary); }
 .float-field input.invalid + label { color: var(--error-ink); }
 .float-field.has-eye input[type] { padding-right: 48px; }
@@ -2856,7 +2868,11 @@ a.history-item:hover { border-color: var(--border-strong); }
 .auth-box .eye-btn { right: 8px; border-radius: var(--r-full); }
 
 /* ปุ่มเข้าสู่ระบบทรงแคปซูลเต็มความกว้าง */
-.auth-box .auth-submit { width: 100%; height: 52px; border-radius: var(--r-full); font-size: 16px; }
+.auth-box .auth-submit { width: 100%; height: 52px; border-radius: var(--r-full); font-size: 16px; background: #7E2A8C; color: #FFFFFF; }
+.auth-box .auth-submit:hover:not(:disabled) { background: var(--primary-hover); }
+/* ยังกดไม่ได้: ไม่ใช้ความโปร่ง (ตัวหนังสือจะจาง) ใช้พื้นม่วงอ่อน + ตัวม่วงเข้ม contrast 8:1 */
+.auth-box .auth-submit:disabled:not(.loading):not(.done) { opacity: 1; background: #EFE3F1; color: #5A1D65; }
+.auth-box .auth-submit.done { background: var(--success); }
 
 @media (max-width: 1023px) {
   .auth-hero { gap: 32px; }
@@ -2865,7 +2881,7 @@ a.history-item:hover { border-color: var(--border-strong); }
 
 /* มือถือ: ซ่อนส่วนซ้าย เหลือโลโก้เล็กด้านบน + กล่องฟอร์มเต็มจอ */
 @media (max-width: 767px) {
-  .auth-hero { display: block; padding: 16px; }
+  .auth-hero { display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
   .auth-brand { display: none; }
   .auth-photos { grid-template-columns: repeat(2, 1fr); }
   .auth-ring.r1 { width: 300px; height: 300px; left: -120px; top: -110px; }
@@ -2873,7 +2889,7 @@ a.history-item:hover { border-color: var(--border-strong); }
   .auth-ring.r3 { display: none; }
   /* เต็มจอส่วนที่เหลือ ไม่รวมแถบเมนูล่าง (body เว้นที่ไว้ --tabbar-space) */
   .auth-hero { min-height: calc(100vh - var(--nav-h) - var(--tabbar-space)); min-height: calc(100dvh - var(--nav-h) - var(--tabbar-space)); }
-  .auth-panel { min-height: calc(100dvh - var(--nav-h) - var(--tabbar-space) - 32px); align-items: stretch; }
+  .auth-panel { width: 100%; }
   .auth-box { max-width: none; padding: 24px 20px 28px; }
   .auth-logo-sm {
     display: inline-flex;

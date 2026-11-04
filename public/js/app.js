@@ -125,6 +125,10 @@ function productCard(p) {
 }
 
 /* ---------- แถบเมนู + ส่วนท้าย (เหมือนกันทุกหน้า) ---------- */
+const NAV_ITEMS = [
+  ["index.html", "หน้าแรก"], ["search.html", "หมวดหมู่"], ["post.html", "ลงประกาศ"],
+  ["messages.html", "ข้อความ"], ["favorites.html", "รายการโปรด"]
+];
 const NAV_ICONS = { "index.html": "home", "search.html": "grid", "post.html": "plus", "messages.html": "chat", "favorites.html": "heart" };
 
 const SHORTCUT = /Mac|iPhone|iPad/.test(navigator.platform) ? "⌘K" : "Ctrl K";
@@ -136,12 +140,10 @@ function decorateNav() {
   const nav = document.querySelector(".nav-links");
   if (nav) {
     nav.id = "nav-links";
-    /* เมนู "ข้อความ" (แชต) ก่อนรายการโปรด */
-    const favLink = nav.querySelector('a[href="favorites.html"]');
-    if (CHAT_ENABLED && favLink && !nav.querySelector('a[href="messages.html"]')) {
-      const onMessages = location.pathname.endsWith("messages.html");
-      favLink.insertAdjacentHTML("beforebegin", `<a href="messages.html" class="${onMessages ? "active" : ""}">ข้อความ</a>`);
-    }
+    /* เมนูชุดเดียวทุกหน้า (คอม = เมนูบน · มือถือ = แถบลอยด้านล่าง) สร้างจาก NAV_ITEMS ไม่ใช้ลิงก์ที่เขียนไว้ในแต่ละไฟล์ HTML */
+    const page = location.pathname.split("/").pop() || "index.html";
+    nav.innerHTML = NAV_ITEMS.filter(([href]) => href !== "messages.html" || CHAT_ENABLED)
+      .map(([href, label]) => `<a href="${href}"${href === page ? ' class="active"' : ""}>${label}</a>`).join("");
     nav.querySelectorAll("a").forEach(a => {
       const href = a.getAttribute("href");
       /* ชื่อเมนูไว้ใช้เป็น tooltip และสำหรับโปรแกรมอ่านหน้าจอ เมื่อจอแคบแสดงแค่ไอคอน */
@@ -478,7 +480,8 @@ function renderNavUser() {
   }
 
   if (!currentUser) {
-    slot.innerHTML = `<a href="login.html" class="btn btn-primary btn-sm">เข้าสู่ระบบ</a>`;
+    /* อยู่หน้าเข้าสู่ระบบอยู่แล้ว ไม่ต้องมีปุ่ม "เข้าสู่ระบบ" มุมขวาบน */
+    slot.innerHTML = location.pathname.endsWith("login.html") ? "" : `<a href="login.html" class="btn btn-primary btn-sm">เข้าสู่ระบบ</a>`;
     return;
   }
 

@@ -22,6 +22,23 @@ function nextUrl() {
 
 userReady.then(() => { if (currentUser) location.href = nextUrl(); });
 
+/* ---------- ป้ายลอยขยับขึ้นเมื่อช่องมีค่า รวมถึงตอนบราวเซอร์กรอกรหัสที่จำไว้ (autofill) ----------
+   autofill บางบราวเซอร์ใส่ค่าโดยไม่ยิง event input จึงเช็กซ้ำหลังโหลด 100ms / 500ms
+   และฟัง animationstart ของ :-webkit-autofill (ดู @keyframes sl-autofill ใน style.css) */
+const isAutofilled = el => ["autofill", "-webkit-autofill"].some(p => { try { return el.matches(":" + p); } catch (e) { return false; } });
+function syncFilled() {
+  form.querySelectorAll(".float-field input").forEach(el =>
+    el.closest(".float-field").classList.toggle("has-value", el.value !== "" || isAutofilled(el)));
+  /* รหัสนักศึกษาที่กรอกอัตโนมัติ: ตรวจด้วยฟังก์ชันเดิม ปุ่มจะได้กดได้ทันที */
+  if (sidInput.value) validateSid(false);
+}
+form.querySelectorAll(".float-field input").forEach(el => {
+  ["input", "change", "blur"].forEach(t => el.addEventListener(t, syncFilled));
+  el.addEventListener("animationstart", e => { if (e.animationName === "sl-autofill") syncFilled(); });
+});
+[0, 100, 500].forEach(ms => setTimeout(syncFilled, ms));
+addEventListener("pageshow", syncFilled);
+
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
