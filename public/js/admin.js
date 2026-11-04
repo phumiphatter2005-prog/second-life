@@ -1,6 +1,8 @@
 /* ---------- ระบบหลังบ้าน ---------- */
 const adminParams = new URLSearchParams(location.search);
 let adminTab = adminParams.get("tab") || "overview";
+let adminSection = adminParams.get("section") || "";     // "images" = เมนู "จัดการรูป" (อยู่ในตั้งค่าเว็บ)
+const ADMIN_LABELS = { overview: "แดชบอร์ด", products: "ประกาศ", users: "ผู้ใช้", reviews: "รีวิว", reports: "รายงาน", settings: "ตั้งค่าเว็บ" };
 let adminRows = [];
 const adminBody = document.getElementById("admin-body");
 const adminQ = document.getElementById("admin-q");
@@ -53,16 +55,27 @@ function confirmed(btn, text) {
 }
 
 /* ---------- ภาพรวม ---------- */
+const STAT_ICONS = {
+  package: '<path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 8.7 5 8.7-5"/>',
+  recycle: '<path d="M7 19H4.8a1.8 1.8 0 0 1-1.6-2.7L7.2 9.7"/><path d="m11 19 3 3 3-3"/><path d="M14 22v-7"/><path d="M12.6 3.8a1.8 1.8 0 0 1 3 0l3.6 6.2"/><path d="m21 6-.8 4.4-4.3-1"/><path d="M19.6 13.5 21 16.3a1.8 1.8 0 0 1-1.6 2.7H17"/><path d="M8.8 2.9 5.6 8.2"/><path d="m2.4 7.2 3.2 1 1.2-4.3"/>',
+  users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  flag: '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/>'
+};
+const statNum = n => (typeof n === "number" ? n.toLocaleString() : "–");
+
 function renderOverview(o) {
+  /* ตัวเลขทั้งหมดมาจาก /admin/overview (ฐานข้อมูลจริง) ไม่มีค่า = แสดง "–" */
+  const cards = [
+    ["ประกาศทั้งหมด", o.items, "package", "products"],
+    ["ส่งต่อแล้ว", o.passed, "recycle", "products"],
+    ["ผู้ใช้", o.users, "users", "users"],
+    ["รายงานรอตรวจ", o.reportsOpen, "flag", "reports"]
+  ];
   const tiles = [
-    ["สินค้าทั้งหมด", o.items],
-    ["ส่งต่อแล้ว", o.passed],
-    ["ผู้ใช้งาน", o.users],
     ["รีวิว", o.reviews],
     ["ผู้ดูแลระบบ", o.admins],
     ["บัญชีที่ถูกระงับ", o.banned]
   ];
-  if (o.reportsOpen !== undefined) tiles.push(["รายงานรอตรวจสอบ", o.reportsOpen]);
   if (o.chatRooms !== undefined) tiles.push(["ห้องแชต", o.chatRooms]);
   const rate = o.items ? Math.round(o.passed / o.items * 100) : 0;
   const breakdown = (title, entries) => `
@@ -75,9 +88,17 @@ function renderOverview(o) {
     </div>`;
 
   adminBody.innerHTML = `
-    <div class="kpis">
+    <div class="stat-cards">
+      ${cards.map(([label, n, ic, tab]) => `
+        <button type="button" class="stat-card" data-goto="${tab}">
+          <span class="stat-card-ic stat-${ic}"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${STAT_ICONS[ic]}</svg></span>
+          <span class="stat-card-label">${label}</span>
+          <strong class="stat-card-num">${statNum(n)}</strong>
+        </button>`).join("")}
+    </div>
+    <div class="kpis kpis-sm">
       ${tiles.map(([label, n]) => `
-        <div class="kpi"><span>${label}</span><strong>${(n || 0).toLocaleString()}</strong></div>`).join("")}
+        <div class="kpi"><span>${label}</span><strong>${statNum(n)}</strong></div>`).join("")}
     </div>
     <p class="muted kpi-note">อัตราการส่งต่อสำเร็จ <b>${rate}%</b> ของประกาศทั้งหมด</p>
     <div class="admin-split">
@@ -449,7 +470,7 @@ async function refreshReportBadge() {
   /* นับรวมรายงานประกาศและรายงานแชตที่รอตรวจ */
   try {
     const o = await api("/admin/overview");
-    document.getElementById("report-badge").textContent = o.reportsOpen ? ` (${o.reportsOpen})` : "";
+    document.getElementById("report-badge").textContent = o.reportsOpen ? String(o.reportsOpen) : "";
   } catch (e) { /* ไม่แสดงตัวเลขถ้าโหลดไม่ได้ */ }
 }
 
@@ -500,6 +521,12 @@ function renderSettings(s) {
         </div>
       </form>
     </div></div>`;
+
+  if (adminSection === "images") {
+    const box = document.getElementById("banner-slot").closest(".full");
+    box.classList.add("admin-focus");
+    requestAnimationFrame(() => box.scrollIntoView({ block: "start", behavior: "smooth" }));
+  }
 
   const renderBanner = () => {
     document.getElementById("banner-slot").innerHTML = settingsBanner
@@ -562,9 +589,10 @@ function renderSettings(s) {
 async function loadTab() {
   const tab = ADMIN_TABS[adminTab] ? adminTab : "overview";
   const conf = ADMIN_TABS[tab];
-  document.querySelectorAll("#admin-tabs .chip").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
-  document.getElementById("admin-toolbar").hidden = !conf.search;
-  adminQ.placeholder = conf.search || "";
+  markAdminNav(tab);
+  document.getElementById("admin-toolbar").hidden = !conf.filter;
+  /* หน้าที่ไม่มีรายการให้ค้น (แดชบอร์ด/ตั้งค่า): พิมพ์แล้วกด Enter = ค้นหาประกาศ */
+  adminQ.placeholder = conf.search || "ค้นหาประกาศ แล้วกด Enter";
   adminFilter.hidden = !conf.filter;
   adminFilter.querySelector("span").textContent = conf.filter || "";
   adminError("");
@@ -578,20 +606,42 @@ async function loadTab() {
   }
 }
 
-document.querySelectorAll("#admin-tabs .chip").forEach(btn => {
-  btn.addEventListener("click", () => {
-    adminTab = btn.dataset.tab;
-    adminQ.value = "";
-    adminFilterCheck.checked = false;
-    history.replaceState(null, "", "?tab=" + adminTab);
-    loadTab();
+/* เมนูที่เลือกอยู่ + หัวข้อ + ตำแหน่งหน้า (หลังบ้าน / ...) */
+function markAdminNav(tab) {
+  document.querySelectorAll("#admin-tabs [data-tab]").forEach(b => {
+    const on = b.dataset.tab === tab && (b.dataset.section || "") === (tab === "settings" ? adminSection : "");
+    b.classList.toggle("active", on);
+    if (on) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
   });
+  const label = tab === "settings" && adminSection === "images" ? "จัดการรูป" : ADMIN_LABELS[tab] || "แดชบอร์ด";
+  document.getElementById("admin-crumb").textContent = label;
+  document.getElementById("admin-title").textContent = label;
+  document.title = label + " · หลังบ้าน | Second Life";
+}
+
+function goAdminTab(tab, section = "", keepQuery = false) {
+  adminTab = tab;
+  adminSection = section;
+  if (!keepQuery) adminQ.value = "";
+  adminFilterCheck.checked = false;
+  history.replaceState(null, "", "?tab=" + adminTab + (section ? "&section=" + section : ""));
+  closeAdminSide();
+  loadTab();
+}
+
+document.querySelectorAll("#admin-tabs [data-tab]").forEach(btn => {
+  btn.addEventListener("click", () => goAdminTab(btn.dataset.tab, btn.dataset.section || ""));
 });
 
-adminQ.addEventListener("input", () => ADMIN_TABS[adminTab].render(adminRows));
+adminQ.addEventListener("input", () => { if (ADMIN_TABS[adminTab].search) ADMIN_TABS[adminTab].render(adminRows); });
+adminQ.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !ADMIN_TABS[adminTab].search && adminQ.value.trim()) goAdminTab("products", "", true);
+});
 adminFilterCheck.addEventListener("change", () => ADMIN_TABS[adminTab].render(adminRows));
 
 adminBody.addEventListener("click", async e => {
+  const go = e.target.closest("[data-goto]");
+  if (go) return goAdminTab(go.dataset.goto);
   const btn = e.target.closest("[data-act]");
   if (!btn) return;
   const row = btn.closest(".admin-row");
@@ -651,13 +701,59 @@ userReady.then(() => {
     : (DEMO_MODE ? "โหมดสาธิต — ข้อมูลเก็บในเบราว์เซอร์นี้เท่านั้น" : "ฐานข้อมูลบนเซิร์ฟเวอร์ (SQLite)") +
       " · แก้ไขประกาศ รายงาน และตั้งค่าเว็บ ใช้ได้เมื่อเชื่อมต่อ Supabase";
   document.getElementById("admin-app").hidden = false;
+  document.body.classList.add("is-admin");
+  document.getElementById("admin-me").innerHTML = `
+    <span class="admin-me-text"><strong>${esc(currentUser.name)}</strong><small>ผู้ดูแลระบบ</small></span>
+    <a href="profile.html" class="admin-me-avatar" aria-label="โปรไฟล์ของ ${esc(currentUser.name)}">${avatarHtml(currentUser.name, currentUser.avatarUrl, "avatar-lg")}</a>`;
   refreshReportBadge();
   const editId = adminParams.get("edit");
   if (editId) {
     adminTab = "products";
-    document.querySelectorAll("#admin-tabs .chip").forEach(b => b.classList.toggle("active", b.dataset.tab === "products"));
+    markAdminNav("products");
     openEditor(editId);
   } else {
     loadTab();
   }
 });
+
+/* ---------- หน้าตาหลังบ้าน: เมนูซ้าย (มือถือเลื่อนออกมา) · ธีม · ออกจากระบบ ---------- */
+const adminSide = document.getElementById("admin-side");
+const adminMenuBtn = document.getElementById("admin-menu-btn");
+const adminBackdrop = document.getElementById("admin-backdrop");
+const ADMIN_MOBILE = matchMedia("(max-width: 767px)");
+
+function openAdminSide() {
+  adminSide.classList.add("open");
+  adminBackdrop.hidden = false;
+  adminMenuBtn.setAttribute("aria-expanded", "true");
+  document.documentElement.classList.add("drawer-lock");
+  (adminSide.querySelector(".admin-nav-item.active") || adminSide.querySelector(".admin-nav-item")).focus();
+}
+function closeAdminSide(restoreFocus = false) {
+  if (!adminSide.classList.contains("open")) return;
+  adminSide.classList.remove("open");
+  adminBackdrop.hidden = true;
+  adminMenuBtn.setAttribute("aria-expanded", "false");
+  document.documentElement.classList.remove("drawer-lock");
+  if (restoreFocus) adminMenuBtn.focus();
+}
+adminMenuBtn.addEventListener("click", openAdminSide);
+document.getElementById("admin-side-close").addEventListener("click", () => closeAdminSide(true));
+adminBackdrop.addEventListener("click", () => closeAdminSide(true));
+adminSide.addEventListener("keydown", e => {
+  if (e.key === "Escape" && adminSide.classList.contains("open")) { e.preventDefault(); closeAdminSide(true); }
+  if (e.key !== "Tab" || !adminSide.classList.contains("open")) return;
+  const items = [...adminSide.querySelectorAll("a[href], button")].filter(el => el.offsetParent);
+  const first = items[0], last = items[items.length - 1];
+  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+});
+ADMIN_MOBILE.addEventListener("change", e => { if (!e.matches) closeAdminSide(); });
+
+document.getElementById("admin-theme").innerHTML = `<span class="admin-theme-label">ธีมสี</span>${themeChoices()}`;
+syncThemeUI();
+document.getElementById("admin-logout").addEventListener("click", async () => {
+  await api("/logout", { method: "POST" }).catch(() => {});
+  location.href = "index.html";
+});
+markAdminNav(ADMIN_TABS[adminTab] ? adminTab : "overview");
