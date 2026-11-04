@@ -1,5 +1,8 @@
 /* ---------- ไอคอน (SVG เส้น) ---------- */
 const ICONS = {
+  sun:    '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  moon:   '<path d="M20.5 14.5A8.5 8.5 0 1 1 9.5 3.5a7 7 0 0 0 11 11Z"/>',
+  monitor:'<rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/>',
   leaf:   '<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.5 19 2c1 2 2 4.2 2 8 0 5.5-4.8 10-10 10Z"/><path d="M2 21c0-3 1.9-5.4 5.1-6C9.5 14.5 12 13 13 12"/>',
   home:   '<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1Z"/>',
   grid:   '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
@@ -124,6 +127,97 @@ function productCard(p) {
     </div>`;
 }
 
+/* ---------- โหมดสว่าง / มืด / ตามเครื่อง ----------
+   ค่าเลือกเก็บใน localStorage "sl-theme" (light | dark · ไม่มีค่า = ตามเครื่อง)
+   สคริปต์เล็กใน <head> ของทุกหน้าตั้ง <html data-theme> ก่อนวาดหน้า จอจึงไม่กระพริบขาว */
+const THEME_KEY = "sl-theme";
+const THEME_OPTIONS = [["light", "sun", "สว่าง"], ["dark", "moon", "มืด"], ["system", "monitor", "ตามเครื่อง"]];
+const DARK_MQ = matchMedia("(prefers-color-scheme: dark)");
+
+function themePref() {
+  try {
+    const t = localStorage.getItem(THEME_KEY);
+    return t === "light" || t === "dark" ? t : "system";
+  } catch (e) { return "system"; }
+}
+const themeIsDark = pref => pref === "dark" || (pref === "system" && DARK_MQ.matches);
+
+function setTheme(pref) {
+  const root = document.documentElement;
+  if (pref === "system") delete root.dataset.theme; else root.dataset.theme = pref;
+  try {
+    if (pref === "system") localStorage.removeItem(THEME_KEY); else localStorage.setItem(THEME_KEY, pref);
+  } catch (e) { /* เก็บไม่ได้ก็ยังเปลี่ยนในหน้านี้ */ }
+  syncThemeUI();
+}
+
+/* ปุ่ม 3 ตัวเลือก ใช้ทั้งในเมนูลิ้นชักและเมนูโปรไฟล์ */
+function themeChoices(cls = "theme-seg") {
+  return `<div class="${cls}" role="radiogroup" aria-label="ธีมสี">${THEME_OPTIONS.map(([v, ic, label]) =>
+    `<button type="button" role="radio" data-theme-pick="${v}" aria-checked="false">${icon(ic)}<span>${label}</span></button>`).join("")}</div>`;
+}
+
+function syncThemeUI() {
+  const pref = themePref();
+  document.querySelectorAll("[data-theme-pick]").forEach(b => b.setAttribute("aria-checked", b.dataset.themePick === pref));
+  const btn = document.querySelector(".nav-theme");
+  if (btn) {
+    const [, ic, label] = THEME_OPTIONS.find(o => o[0] === pref);
+    btn.innerHTML = icon(pref === "system" ? (DARK_MQ.matches ? "moon" : "sun") : ic);
+    btn.setAttribute("aria-label", `ธีมสี: ${label}`);
+    btn.title = `ธีมสี: ${label}`;
+  }
+  /* สีแถบบนของบราวเซอร์มือถือ */
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = themeIsDark(pref) ? "#1A1422" : "#7E2A8C";
+}
+
+document.addEventListener("click", e => {
+  const pick = e.target.closest("[data-theme-pick]");
+  if (pick) {
+    setTheme(pick.dataset.themePick);
+    const pop = pick.closest(".theme-pop");
+    if (pop) closeThemePop(true);
+    return;
+  }
+  if (!e.target.closest(".theme-wrap")) closeThemePop(false);
+});
+DARK_MQ.addEventListener("change", syncThemeUI);
+/* เปลี่ยนธีมในอีกแท็บ → แท็บนี้เปลี่ยนตาม */
+addEventListener("storage", e => { if (e.key === THEME_KEY) setTheme(themePref()); });
+
+function closeThemePop(focusBtn) {
+  const pop = document.querySelector(".theme-pop");
+  if (!pop || pop.hidden) return;
+  pop.hidden = true;
+  const btn = document.querySelector(".nav-theme");
+  btn.setAttribute("aria-expanded", "false");
+  if (focusBtn) btn.focus();
+}
+
+function setupThemeButton(navRight) {
+  navRight.insertAdjacentHTML("afterbegin", `
+    <div class="theme-wrap">
+      <button class="nav-theme" type="button" aria-haspopup="true" aria-expanded="false"></button>
+      <div class="theme-pop" hidden>${themeChoices("theme-list")}</div>
+    </div>`);
+  const btn = navRight.querySelector(".nav-theme");
+  const pop = navRight.querySelector(".theme-pop");
+  btn.addEventListener("click", () => {
+    const open = pop.hidden;
+    pop.hidden = !open;
+    btn.setAttribute("aria-expanded", open);
+    if (open) (pop.querySelector('[aria-checked="true"]') || pop.querySelector("button")).focus();
+  });
+  pop.addEventListener("keydown", e => {
+    const items = [...pop.querySelectorAll("button")];
+    const i = items.indexOf(document.activeElement);
+    if (e.key === "Escape") { e.preventDefault(); closeThemePop(true); }
+    if (e.key === "ArrowDown") { e.preventDefault(); items[(i + 1) % items.length].focus(); }
+    if (e.key === "ArrowUp") { e.preventDefault(); items[(i - 1 + items.length) % items.length].focus(); }
+  });
+}
+
 /* ---------- แถบเมนู + ส่วนท้าย (เหมือนกันทุกหน้า) ---------- */
 const NAV_ITEMS = [
   ["index.html", "หน้าแรก"], ["search.html", "หมวดหมู่"], ["post.html", "ลงประกาศ"],
@@ -167,6 +261,8 @@ function decorateNav() {
         <span class="nav-user"></span>
       </div>`);
     document.querySelector(".nav-search").addEventListener("click", openSearch);
+    setupThemeButton(document.querySelector(".nav-right"));
+    syncThemeUI();
     placeNavPill();
     setupDrawer(logo);
   }
@@ -225,6 +321,7 @@ function setupDrawer(logo) {
       </div>
       <div class="drawer-user" id="drawer-user"></div>
       <nav class="drawer-nav" aria-label="เมนูหลัก">${drawerLinks()}</nav>
+      <div class="drawer-theme"><span class="drawer-theme-label" id="drawer-theme-label">ธีมสี</span>${themeChoices()}</div>
       <div class="drawer-foot" id="drawer-foot" hidden></div>
     </aside>`);
 
@@ -248,6 +345,7 @@ function setupDrawer(logo) {
   /* หมุนจอ/ขยายจอจนเกิน 820px ระหว่างเปิด → ปิดเมนู */
   DRAWER_MQ.addEventListener("change", e => { if (!e.matches) closeDrawer(false); });
   renderDrawerUser();
+  syncThemeUI();
 }
 
 function renderDrawerUser() {
@@ -497,8 +595,10 @@ function renderNavUser() {
       ${CHAT_ENABLED ? `<a role="menuitem" href="messages.html">${icon("chat")}ข้อความ</a>` : ""}
       <a role="menuitem" href="favorites.html">${icon("heart")}รายการโปรด</a>
       ${isAdmin ? `<a role="menuitem" href="admin.html">${icon("shield")}ระบบหลังบ้าน</a>` : ""}
+      <div class="user-menu-theme"><span class="user-menu-label">ธีมสี</span>${themeChoices()}</div>
       <button role="menuitem" type="button" class="danger-item" id="btn-logout">${icon("logout")}ออกจากระบบ</button>
     </div>`;
+  syncThemeUI();
   const btn = slot.querySelector(".avatar-btn");
   const menu = slot.querySelector(".user-menu");
   const setOpen = open => { menu.hidden = !open; btn.setAttribute("aria-expanded", open); };

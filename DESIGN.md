@@ -33,6 +33,26 @@ An editorial precision interface for a university second-hand marketplace. The a
 - **Warning** (#F59E0B): Pending states, caution banners, reported listings
 - **Error** (#EF4444): Destructive actions, validation errors, banned status
 
+
+### Dark mode
+
+Three choices: สว่าง / มืด / ตามเครื่อง (default = follow `prefers-color-scheme`). Stored in localStorage `sl-theme`; a tiny script in every <head> sets `<html data-theme>` before paint (no white flash). The toggle is a sun/moon button on the top bar (desktop) and a 3-way capsule in the drawer and the profile menu (phones). Every color is a CSS variable in `:root`; dark mode only swaps the variables. Product photos are never filtered or dimmed.
+
+| Token | Light | Dark |
+|---|---|---|
+| Background / Surface / Alt | #FAFAFA / #FFFFFF / #F4F4F5 | #120E18 / #1A1422 / #221A2C |
+| Border / Strong | #E8E8EC / #C9C9D1 | #2E2538 / #4A3D57 |
+| Text / Secondary / Neutral | #0A0A0A / #6B6B6B / #707070 | #F4F1F7 / #B4AABF / #948A9F |
+| Primary fill (white text) | #7E2A8C | #9B44AA |
+| Primary text & links (--primary-ink) | #7E2A8C | #D49BE0 |
+| Primary soft | #F6ECF8 | #2D1B36 |
+| ขาย tag / price | #7E2A8C bg / #1C1426 | #7E2A8C bg / #F4F1F7 |
+| แลกเปลี่ยน text / tag bg | #2563A6 / #E8F0FA | #8DBEF5 / #16253A |
+| แจกฟรี text / tag bg | #1F7A4D / #E8F5EE | #5FD49A / #13291E |
+| Bottom tab bar | #2A1540 | #1A1422, border #2E2538 |
+
+All text meets 4.5:1 (3:1 for large text) in both modes.
+
 ## Typography
 - **Display Font**: Prompt — Google Fonts (headings, prices, numbers)
 - **Body Font**: IBM Plex Sans Thai — Google Fonts (body and UI text)
