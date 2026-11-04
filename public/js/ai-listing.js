@@ -2,8 +2,10 @@
    AI แค่เติมฟอร์มให้ผู้ใช้ตรวจ ไม่ลงประกาศเอง · ราคาแนะนำคำนวณจากประกาศจริง ไม่ได้มาจาก AI */
 const AI_MAX_PHOTOS = 3;
 const AI_MAX_BYTES = 5 * 1024 * 1024;
-/* Edge Function นานสุด 61.5 วินาที (20 วิ + รอ 1.5 วิ + ลองซ้ำ 20 วิ + โมเดลสำรอง 20 วิ) จึงรอเผื่อไว้ */
-const AI_TIMEOUT_MS = 75000;
+/* Edge Function นานสุด 20 วินาที (ยิงซ้อนคำขอสุดท้ายที่ 8 วิ + หมดเวลา 12 วิ) จึงรอเผื่อไว้ */
+const AI_TIMEOUT_MS = 30000;
+/* ด้านยาว 768px = 1 tile ของ Gemini ใช้ token น้อยกว่า 1024px ราว 4 เท่า ตอบเร็วขึ้น และยังพอดูสภาพสินค้า */
+const AI_MAX_SIDE = 768;
 const AI_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const AI_MIN_PRICE_SAMPLES = 3;
 
@@ -32,13 +34,13 @@ function aiCheckFile(file) {
   return "";
 }
 
-/* ย่อเหลือด้านยาว 1024px และวาดใหม่บน canvas จึงตัดข้อมูลแฝงในไฟล์ เช่น พิกัด GPS ออกด้วย */
+/* ย่อเหลือด้านยาว AI_MAX_SIDE และวาดใหม่บน canvas จึงตัดข้อมูลแฝงในไฟล์ เช่น พิกัด GPS ออกด้วย */
 function aiShrink(file) {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
     img.onload = () => {
-      const scale = Math.min(1, 1024 / Math.max(img.width, img.height));
+      const scale = Math.min(1, AI_MAX_SIDE / Math.max(img.width, img.height));
       const canvas = document.createElement("canvas");
       canvas.width = Math.round(img.width * scale);
       canvas.height = Math.round(img.height * scale);

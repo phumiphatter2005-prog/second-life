@@ -3,7 +3,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { handle, validateResult, cleanDescription, buildGeminiRequest, parseImages,
-         CANARY, SYSTEM_PROMPT, GEMINI_TIMEOUT_MS, RETRY_DELAY_MS, DEFAULT_MODEL, redact } from "../supabase/functions/analyze-listing/logic.ts";
+         CANARY, SYSTEM_PROMPT, GEMINI_TIMEOUT_MS, HEDGE_MS, DEFAULT_MODEL, redact } from "../supabase/functions/analyze-listing/logic.ts";
 
 const JPEG = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ==";
 const PNG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUg==";
@@ -212,29 +212,50 @@ function captureLogs(t) {
   return logs;
 }
 
-test("timeout: 20 วินาทีต่อครั้ง ลองซ้ำ 1 ครั้งหลังรอ 1.5 วินาที แล้วตอบ 504", async t => {
+const flush = async () => { for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r)); };
+
+test("timeout: ยิงคำขอซ้อนที่ 4 วินาที หมดเวลา 12 วินาทีต่อครั้ง รวมนานสุด 16 วินาที แล้วตอบ 504", async t => {
   captureLogs(t);
   t.mock.timers.enable({ apis: ["setTimeout"] });
-  assert.equal(GEMINI_TIMEOUT_MS, 20000);
-  assert.equal(RETRY_DELAY_MS, 1500);
+  assert.equal(GEMINI_TIMEOUT_MS, 12000);
+  assert.equal(HEDGE_MS, 4000);
   const m = mock({ onGemini: hang });
   let done = false;
   const pending = handle(post({ images: [JPEG] }), { geminiKey: "test-key", supabaseUrl: "https://sb.test" }, m.fetchImpl)
     .then(r => { done = true; return r; });
-  const flush = async () => { for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r)); };
   await flush();
-  t.mock.timers.tick(GEMINI_TIMEOUT_MS - 1); await flush();
-  assert.equal(m.calls.length, 1);                      // ยังไม่หมดเวลา
-  t.mock.timers.tick(1); await flush();                 // ครั้งที่ 1 หมดเวลา → เริ่มรอ
-  t.mock.timers.tick(RETRY_DELAY_MS - 1); await flush();
-  assert.equal(m.calls.length, 1);                      // ยังรอไม่ครบ 1.5 วินาที
+  assert.equal(m.calls.length, 1);
+  t.mock.timers.tick(HEDGE_MS - 1); await flush();
+  assert.equal(m.calls.length, 1);                      // ยังไม่ครบ 4 วินาที
   t.mock.timers.tick(1); await flush();
-  assert.equal(m.calls.length, 2);                      // ลองซ้ำ
-  t.mock.timers.tick(GEMINI_TIMEOUT_MS); await flush();
+  assert.equal(m.calls.length, 2);                      // ยิงซ้อนโดยไม่ยกเลิกครั้งแรก
+  t.mock.timers.tick(GEMINI_TIMEOUT_MS - HEDGE_MS); await flush();
+  assert.ok(!done);                                     // ครั้งแรกหมดเวลา (12 วิ) แต่ครั้งที่ 2 ยังรออยู่
+  t.mock.timers.tick(HEDGE_MS); await flush();          // 16 วิ: ครั้งที่ 2 หมดเวลา
   assert.ok(done);
   const res = await pending;
   assert.equal(res.status, 504);
   assert.equal((await res.json()).error, "timeout");
+});
+
+test("ยิงซ้อน: คำขอที่ตอบก่อนชนะ และคำขอที่ค้างถูกยกเลิก", async t => {
+  captureLogs(t);
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const aborted = [];
+  const m = mock({
+    onGemini: init => m.calls.length === 1
+      ? new Promise((_, reject) => init.signal.addEventListener("abort", () => { aborted.push(1); reject(Object.assign(new Error("aborted"), { name: "AbortError" })); }))
+      : gemini(GOOD)
+  });
+  const pending = handle(post({ images: [JPEG] }), { ...ENV, fallbackModel: "backup-model" }, m.fetchImpl);
+  await flush();
+  t.mock.timers.tick(HEDGE_MS); await flush();
+  const res = await pending;
+  assert.equal(res.status, 200);
+  assert.equal((await res.json()).result.title, GOOD.title);
+  assert.equal(m.calls.length, 2);
+  assert.ok(m.calls[1].url.includes("backup-model"));   // คำขอซ้อนใช้โมเดลสำรอง
+  assert.equal(aborted.length, 1);                      // คำขอแรกที่ค้างถูกยกเลิก
 });
 
 test("429 / 500 / 503: ลองซ้ำ 1 ครั้ง ถ้ายังไม่ได้แจ้ง AI ไม่ว่าง", async t => {
@@ -273,7 +294,7 @@ test("โควตารายวันเต็ม: ไม่ลองซ้ำ
   assert.equal(data.error, "quota");
 });
 
-test("โมเดลสำรอง: ใช้เมื่อโมเดลหลักล้มเหลวหลังลองซ้ำ และข้ามเมื่อไม่ได้ตั้ง secret", async t => {
+test("โมเดลสำรอง: เป็นคำขอถัดจากโมเดลหลัก และข้ามเมื่อไม่ได้ตั้ง secret", async t => {
   captureLogs(t);
   const env = { ...ENV, fallbackModel: "backup-model" };
   const urls = [];
@@ -284,7 +305,16 @@ test("โมเดลสำรอง: ใช้เมื่อโมเดลห
   };
   const res = await handle(post({ images: [JPEG] }), env, fetchImpl);
   assert.equal(res.status, 200);
-  assert.deepEqual(urls.map(u => u.includes("backup-model")), [false, false, true]);
+  assert.deepEqual(urls.map(u => u.includes("backup-model")), [false, true]);
+
+  // ล้มเหลวทั้งหมด: โมเดลหลัก → สำรอง → โมเดลหลักอีกครั้ง
+  const urlsAll = [];
+  await handle(post({ images: [JPEG] }), env, async url => {
+    if (String(url).includes("/rpc/is_active_user")) return Response.json(true);
+    urlsAll.push(String(url));
+    return new Response("{}", { status: 503 });
+  });
+  assert.deepEqual(urlsAll.map(u => u.includes("backup-model")), [false, true, false]);
 
   // โควตาเต็ม: ไปโมเดลสำรองเลย
   const urls2 = [];
