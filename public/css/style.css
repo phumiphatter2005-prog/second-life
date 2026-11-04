@@ -2663,3 +2663,102 @@ body.drawer-open .drawer-backdrop { opacity: 1; }
   .card-wrap:hover .card-img img, .belt-card:hover img { transform: none; }
   .leaf-burst { display: none; }
 }
+
+/* ---------- ส่งต่อให้ใคร: หน้าต่างเลือกผู้รับ (ใช้กรอบเดียวกับหน้าต่างครอปรูป) ---------- */
+.pass-card { max-height: calc(100vh - 32px); overflow-y: auto; }
+.pass-help { font-size: 14px; }
+.pass-list { display: flex; flex-direction: column; gap: 8px; }
+.pass-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  cursor: pointer;
+}
+.pass-option:hover { border-color: var(--border-strong); }
+.pass-option:has(input:checked) { border-color: var(--primary); background: var(--primary-soft); }
+.pass-option input { flex-shrink: 0; width: 18px; height: 18px; margin: 0; accent-color: var(--primary); }
+.pass-option .avatar { width: 36px; height: 36px; }
+.pass-name { display: flex; flex-direction: column; min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
+.pass-name small { font-weight: 400; font-size: 12px; color: var(--text-2); }
+.pass-outside { font-size: 16px; }
+
+/* บรรทัด "ส่งต่อให้ ..." ในหน้ารายละเอียด (เห็นเฉพาะเจ้าของ ผู้รับ แอดมิน) */
+.passed-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 8px 12px;
+  border-radius: var(--r-md);
+  background: var(--success-soft);
+  color: var(--success-ink);
+  font-size: 14px;
+}
+.passed-line .ic { flex-shrink: 0; width: 18px; height: 18px; }
+
+/* หน้ารายละเอียดของประกาศที่ส่งต่อแล้ว สำหรับคนที่ไม่มีสิทธิ์ดู */
+.passed-gone { margin: 32px auto; max-width: 480px; }
+.passed-gone h1 { font-size: 22px; color: var(--text); margin-bottom: 8px; }
+.passed-gone-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 12px;
+  border-radius: var(--r-full);
+  background: var(--success-soft);
+  color: var(--success-ink);
+}
+.passed-gone-icon .ic { width: 28px; height: 28px; }
+
+/* ---------- หน้าโปรไฟล์: แท็บ และประวัติการส่งต่อ ---------- */
+.profile-tabs { justify-content: center; }
+.subtabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 16px;
+  background: var(--chip);
+  border-radius: var(--r-full);
+}
+.subtab {
+  flex: 1;
+  min-height: 40px;
+  padding: 4px 12px;
+  border: 0;
+  border-radius: var(--r-full);
+  background: transparent;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.subtab.active { background: var(--surface); color: var(--text); font-weight: 600; box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,.08)); }
+.subtab-count { color: var(--text-2); font-weight: 400; }
+.subtab-count:empty { display: none; }
+.history-list { display: flex; flex-direction: column; gap: 8px; }
+.history-list .empty-state { padding: 40px 16px; }
+.history-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  color: inherit;
+  text-decoration: none;
+}
+a.history-item:hover { border-color: var(--border-strong); }
+.history-item img { flex-shrink: 0; width: 64px; height: 64px; object-fit: cover; border-radius: var(--r-md); }
+.history-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.history-body strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.history-who { font-size: 14px; overflow-wrap: anywhere; }
+.history-when { font-size: 13px; }
+.history-when .price-sell, .history-when .price-swap, .history-when .price-free { font-weight: 600; }
+.history-cta { flex-shrink: 0; font-size: 13px; color: var(--primary); white-space: nowrap; }
+.history-item .status { flex-shrink: 0; font-size: 12px; white-space: nowrap; }

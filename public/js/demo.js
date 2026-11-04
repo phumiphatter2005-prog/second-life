@@ -75,13 +75,19 @@ async function demoApi(path, options = {}) {
   const isAdmin = !!user && user.role === "admin";
   const pub = u => ({ id: u.id, studentId: u.studentId, name: u.name, role: u.role || "user" });
   const avg = list => list.length ? list.reduce((t, r) => t + r.stars, 0) / list.length : null;
+  /* ประกาศที่ส่งต่อแล้ว เห็นได้เฉพาะเจ้าของ ผู้รับ และแอดมิน */
+  const canSee = p => !p.passed || (!!user && (p.userId === user.id || p.passedTo === user.id || isAdmin));
   const view = p => {
     const seller = s.users.find(u => u.id === p.userId);
     const own = s.reviews.filter(r => r.productId === p.id);
     const sellerIds = p.userId === null ? [] : s.products.filter(x => x.userId === p.userId).map(x => x.id);
     const sellerReviews = s.reviews.filter(r => sellerIds.includes(r.productId));
+    if (!canSee(p)) return { id: p.id, passed: true, restricted: true };
+    const to = p.passed && p.passedTo ? s.users.find(u => u.id === p.passedTo) : null;
     return {
       ...p,
+      passedToName: to ? to.name : null,
+      isRecipient: !!user && !!p.passed && p.passedTo === user.id,
       contact: user ? p.contact : null,
       sellerName: seller ? seller.name : "Second Life",
       isOwner: !!user && p.userId === user.id,
@@ -142,7 +148,7 @@ async function demoApi(path, options = {}) {
   }
 
   if (path === "/products" && method === "GET") {
-    return [...s.products].sort((a, b) => a.passed - b.passed || byNewest(a, b)).map(view);
+    return s.products.filter(p => !p.passed).sort(byNewest).map(view);
   }
 
   if (path === "/products" && method === "POST") {
@@ -191,9 +197,39 @@ async function demoApi(path, options = {}) {
   if ((m = /^\/products\/(\d+)\/passed$/.exec(path))) {
     needLogin();
     const p = findOwn(Number(m[1]));
+    /* โหมดสาธิตไม่มีแชต จึงเลือกผู้รับได้แค่ "คนนอกระบบ / ไม่ระบุ" (to = null) */
+    if (options.body && "to" in b) {
+      if (p.passed) throw demoError(400, "ประกาศนี้ส่งต่อไปแล้ว");
+      if (b.to !== null) throw demoError(400, "เลือกได้เฉพาะคนที่เคยแชตเรื่องสินค้านี้");
+      Object.assign(p, { passed: true, passedTo: null, passedAt: Date.now() });
+      demoSave(s);
+      return { passed: true, passedTo: null };
+    }
     p.passed = !p.passed;
+    p.passedTo = null;
+    p.passedAt = p.passed ? Date.now() : null;
     demoSave(s);
     return { passed: p.passed };
+  }
+
+  if ((m = /^\/products\/(\d+)\/candidates$/.exec(path))) {
+    needLogin();
+    findOwn(Number(m[1]));
+    return [];
+  }
+
+  if (path === "/pass-history") {
+    needLogin();
+    const item = (p, other) => ({ id: p.id, title: p.title, img: p.img, type: p.type, price: p.price,
+      passedAt: p.passedAt || p.createdAt, otherName: other ? other.name : null, otherAvatar: null });
+    const newest = (a, b) => (b.passedAt || b.createdAt) - (a.passedAt || a.createdAt);
+    return {
+      given: s.products.filter(p => p.passed && p.userId === user.id).sort(newest)
+        .map(p => item(p, s.users.find(u => u.id === p.passedTo))),
+      received: s.products.filter(p => p.passed && p.passedTo === user.id).sort(newest)
+        .map(p => ({ ...item(p, s.users.find(u => u.id === p.userId) || { name: "Second Life" }),
+                     reviewed: s.reviews.some(r => r.productId === p.id && r.userId === user.id) }))
+    };
   }
 
   if ((m = /^\/products\/(\d+)\/reviews$/.exec(path))) {
@@ -209,6 +245,7 @@ async function demoApi(path, options = {}) {
     const p = s.products.find(p => p.id === pid);
     if (!p) throw demoError(404, "ไม่พบสินค้านี้");
     if (p.userId === user.id) throw demoError(403, "ให้ดาวประกาศของตัวเองไม่ได้");
+    if (!p.passed || p.passedTo !== user.id) throw demoError(403, "ให้ดาวได้เฉพาะผู้ที่ได้รับของชิ้นนี้");
     const stars = Number(b.stars);
     if (!Number.isInteger(stars) || stars < 1 || stars > 5) throw demoError(400, "กรุณาเลือกดาว 1–5 ดวง");
     s.reviews = s.reviews.filter(r => !(r.productId === pid && r.userId === user.id));
@@ -226,7 +263,7 @@ async function demoApi(path, options = {}) {
   if (path === "/favorites") {
     needLogin();
     const ids = s.favorites.filter(f => f.userId === user.id).map(f => f.productId);
-    return s.products.filter(p => ids.includes(p.id)).sort(byNewest).map(view);
+    return s.products.filter(p => ids.includes(p.id) && canSee(p)).sort(byNewest).map(view);
   }
 
   if ((m = /^\/favorites\/(\d+)$/.exec(path))) {

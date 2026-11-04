@@ -29,7 +29,30 @@ function actionButtons(p) {
     <p id="contact-box" class="contact-box" hidden>ช่องทางติดต่อ: ${esc(p.contact)}</p>`;
 }
 
+/* ประกาศที่ส่งต่อแล้ว: คนที่ไม่ใช่เจ้าของ ผู้รับ หรือแอดมิน เห็นแค่ข้อความนี้ */
+function renderRestricted() {
+  document.title = "ประกาศนี้ส่งต่อไปแล้ว | Second Life";
+  detail.innerHTML = `
+    <div class="empty-state passed-gone">
+      <span class="passed-gone-icon">${icon("recycle")}</span>
+      <h1>ประกาศนี้ส่งต่อไปแล้ว</h1>
+      <p class="muted">ของชิ้นนี้ได้เจ้าของใหม่แล้ว ลองดูของชิ้นอื่นที่ยังรอส่งต่ออยู่</p>
+      <a class="btn-primary inline" href="search.html">กลับไปหน้าค้นหา</a>
+    </div>`;
+}
+
+/* บรรทัด "ส่งต่อให้ ... เมื่อ ..." เห็นเฉพาะเจ้าของ ผู้รับ และแอดมิน (ข้อมูลมาเฉพาะคนที่มีสิทธิ์อยู่แล้ว) */
+function passedLine(p) {
+  if (!p.passed) return "";
+  const when = p.passedAt ? ` เมื่อ ${formatDate(p.passedAt)}` : "";
+  const text = p.isRecipient ? `คุณได้รับของชิ้นนี้${when}`
+    : p.passedToName ? `ส่งต่อให้ <b>${esc(p.passedToName)}</b>${when}`
+    : `ส่งต่อให้คนนอกระบบ / ไม่ระบุผู้รับ${when}`;
+  return `<p class="passed-line">${icon("recycle")}<span>${text}</span></p>`;
+}
+
 function render(p) {
+  if (p.restricted) return renderRestricted();
   document.title = p.title + " | Second Life";
   const gallery = Array.isArray(p.images) && p.images.length ? p.images : [p.img];
 
@@ -53,6 +76,7 @@ function render(p) {
         <h1>${esc(p.title)}</h1>
         ${ratingLine(p.rating, p.ratingCount)}
         <div class="detail-price price-${p.type}">${formatPrice(p)}</div>
+        ${passedLine(p)}
         ${swapValue(p) || swapWish(p) ? `
           <ul class="swap-facts">
             ${swapValue(p) ? `<li>มูลค่าประมาณ <b>${swapValue(p)}</b></li>` : ""}
@@ -134,15 +158,11 @@ function render(p) {
   if (p.isOwner) {
     const passedBtn = document.getElementById("btn-passed");
     passedBtn.addEventListener("click", async () => {
+      /* ยังไม่ส่งต่อ → เลือกก่อนว่าส่งต่อให้ใคร */
+      if (!p.passed) return openPassDialog(p, passedBtn, showError);
       try {
-        const { passed } = await api(`/products/${p.id}/passed`, { method: "POST" });
-        passedBtn.textContent = passedText(passed);
-        /* ป้าย "ส่งต่อแล้ว" ข้างประเภทประกาศ เปลี่ยนตามทันทีไม่ต้องรีเฟรช */
-        const badges = detail.querySelector(".detail-badges");
-        const badge = badges.querySelector(".status-ok");
-        if (passed && !badge) badges.insertAdjacentHTML("beforeend", `<span class="status status-ok">ส่งต่อแล้ว</span>`);
-        if (!passed && badge) badge.remove();
-        if (passed) celebratePassed(passedBtn);
+        await api(`/products/${p.id}/passed`, { method: "POST" });   // ยกเลิก: ล้างผู้รับด้วย
+        render(await api("/products/" + p.id));
       } catch (err) { showError(err.message); }
     });
 
@@ -198,6 +218,99 @@ function render(p) {
   }
 
   renderReviews(p);
+}
+
+/* ---------- หน้าต่าง "ส่งต่อให้ใคร" ----------
+   รายชื่อคนที่เคยแชตเรื่องสินค้านี้ + "คนนอกระบบ / ไม่ระบุ" แล้วบันทึกผู้รับและเวลาที่ส่งต่อ */
+async function openPassDialog(p, opener, showError) {
+  showError("");
+  opener.disabled = true;
+  let people = [];
+  try {
+    people = await api(`/products/${p.id}/candidates`);
+  } catch (e) {
+    /* โหลดรายชื่อไม่ได้ (เช่น ยังไม่ได้รันไฟล์ SQL) ยังเลือก "ไม่ระบุ" ได้ */
+    people = [];
+  } finally {
+    opener.disabled = false;
+  }
+
+  const OUTSIDE = "outside";
+  const wrap = document.createElement("div");
+  wrap.className = "crop-backdrop pass-backdrop";
+  wrap.innerHTML = `
+    <form class="crop-card pass-card" role="dialog" aria-modal="true" aria-labelledby="pass-title" aria-describedby="pass-help">
+      <div class="sheet-head">
+        <strong id="pass-title">ส่งต่อให้ใคร?</strong>
+        <button type="button" class="btn btn-ghost btn-sm" data-close aria-label="ปิด">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+      <p class="muted pass-help" id="pass-help">${people.length
+        ? `เลือกคนที่ได้รับ “${esc(p.title)}” ผู้รับเท่านั้นที่ให้ดาวรีวิวชิ้นนี้ได้`
+        : "ยังไม่มีใครแชตเรื่องสินค้านี้ ถ้าส่งต่อให้คนที่ไม่ได้ใช้เว็บ เลือก “คนนอกระบบ / ไม่ระบุ”"}</p>
+      <div class="pass-list" role="radiogroup" aria-labelledby="pass-title">
+        ${people.map(u => `
+          <label class="pass-option">
+            <input type="radio" name="pass-to" value="${esc(u.userId)}">
+            ${avatarHtml(u.name, u.avatar)}
+            <span class="pass-name">${esc(u.name)}<small>แชตล่าสุด ${formatDate(u.lastAt)}</small></span>
+          </label>`).join("")}
+        <label class="pass-option">
+          <input type="radio" name="pass-to" value="${OUTSIDE}">
+          <span class="avatar pass-outside" aria-hidden="true">?</span>
+          <span class="pass-name">คนนอกระบบ / ไม่ระบุ<small>ไม่มีใครให้ดาวรีวิวชิ้นนี้ได้</small></span>
+        </label>
+      </div>
+      <p class="form-error" role="alert" hidden></p>
+      <div class="btn-row">
+        <button type="button" class="btn btn-secondary" data-close>ยกเลิก</button>
+        <button type="submit" class="btn-primary">ยืนยันส่งต่อแล้ว</button>
+      </div>
+    </form>`;
+  document.body.appendChild(wrap);
+  document.documentElement.classList.add("drawer-lock");
+  document.querySelectorAll("body > header, body > main, body > footer").forEach(el => { el.inert = true; });
+
+  const form = wrap.querySelector("form");
+  const err = form.querySelector(".form-error");
+  const close = () => {
+    wrap.remove();
+    document.documentElement.classList.remove("drawer-lock");
+    document.querySelectorAll("[inert]").forEach(el => { el.inert = false; });
+    opener.focus();
+  };
+  wrap.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", close));
+  wrap.addEventListener("click", e => { if (e.target === wrap) close(); });
+  wrap.addEventListener("keydown", e => {
+    if (e.key === "Escape") { e.preventDefault(); close(); }
+    if (e.key === "Tab") {
+      const items = [...form.querySelectorAll("button, input")].filter(el => el.offsetParent);
+      const first = items[0], last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  });
+  form.querySelector("input[name=pass-to]").focus();
+
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const picked = form.querySelector("input[name=pass-to]:checked");
+    if (!picked) { err.textContent = "กรุณาเลือกผู้รับ"; err.hidden = false; return; }
+    const submit = form.querySelector("[type=submit]");
+    submit.disabled = true;
+    try {
+      const to = picked.value === OUTSIDE ? null : people.find(u => String(u.userId) === picked.value).userId;
+      await api(`/products/${p.id}/passed`, { method: "POST", body: { to } });
+      close();
+      render(await api("/products/" + p.id));
+      celebratePassed(document.getElementById("btn-passed"));
+    } catch (ex) {
+      err.textContent = ex.message;
+      err.hidden = false;
+      submit.disabled = false;
+    }
+  });
 }
 
 /* ---------- รายงานประกาศ ---------- */
@@ -293,6 +406,11 @@ function renderReviewForm(p, mine) {
   if (!currentUser) {
     slot.innerHTML = `<button class="btn-outline review-login">เข้าสู่ระบบเพื่อให้ดาว</button>`;
     slot.querySelector("button").addEventListener("click", goLogin);
+    return;
+  }
+  /* กันรีวิวปลอม: ให้ดาวได้เฉพาะผู้รับของชิ้นนี้ */
+  if (!p.isRecipient) {
+    slot.innerHTML = `<p class="muted review-note">ให้ดาวได้เฉพาะผู้ที่ได้รับของชิ้นนี้ หลังผู้ประกาศยืนยันว่าส่งต่อให้คุณแล้ว</p>`;
     return;
   }
 

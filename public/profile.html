@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600&family=IBM+Plex+Sans+Thai:wght@400;600&family=JetBrains+Mono&display=swap">
-  <link rel="stylesheet" href="css/style.css?v=31">
+  <link rel="stylesheet" href="css/style.css?v=32">
 </head>
 <body>
 
@@ -33,6 +33,21 @@
     </div>
 
     <div id="profile-app" hidden>
+      <div class="chips tabs profile-tabs" role="tablist" aria-label="ส่วนของโปรไฟล์">
+        <button type="button" class="chip active" role="tab" id="tab-info" aria-controls="pf-info" aria-selected="true" data-tab="info">ข้อมูลโปรไฟล์</button>
+        <button type="button" class="chip" role="tab" id="tab-history" aria-controls="pf-history" aria-selected="false" data-tab="history">ประวัติการส่งต่อ</button>
+      </div>
+
+      <!-- ประวัติการส่งต่อ: เห็นเฉพาะเจ้าของบัญชี (ของที่ฉันส่งต่อ และของที่ฉันได้รับ) -->
+      <section id="pf-history" class="pass-history" role="tabpanel" aria-labelledby="tab-history" hidden>
+        <div class="subtabs" role="group" aria-label="ประเภทประวัติ">
+          <button type="button" class="subtab active" data-dir="given" aria-pressed="true">ฉันส่งต่อให้ <span class="subtab-count" id="count-given"></span></button>
+          <button type="button" class="subtab" data-dir="received" aria-pressed="false">ฉันได้รับ <span class="subtab-count" id="count-received"></span></button>
+        </div>
+        <div id="history-list" class="history-list" aria-live="polite"></div>
+      </section>
+
+      <div id="pf-info" role="tabpanel" aria-labelledby="tab-info" class="profile-info">
       <section class="profile-card" aria-labelledby="pf-photo-title">
         <h2 class="visually-hidden" id="pf-photo-title">รูปโปรไฟล์</h2>
         <div class="profile-avatar-wrap">
@@ -73,6 +88,7 @@
         <a href="favorites.html">รายการโปรด →</a>
         <a href="messages.html">ข้อความ →</a>
       </nav>
+      </div>
     </div>
   </main>
 
@@ -102,11 +118,11 @@
     </div>
   </div>
 
-  <script src="js/config.js?v=31"></script>
-  <script src="js/supabase.js?v=31"></script>
-  <script src="js/demo.js?v=31"></script>
-  <script src="js/data.js?v=31"></script>
-  <script src="js/app.js?v=31"></script>
-  <script src="js/profile.js?v=31"></script>
+  <script src="js/config.js?v=32"></script>
+  <script src="js/supabase.js?v=32"></script>
+  <script src="js/demo.js?v=32"></script>
+  <script src="js/data.js?v=32"></script>
+  <script src="js/app.js?v=32"></script>
+  <script src="js/profile.js?v=32"></script>
 </body>
 </html>

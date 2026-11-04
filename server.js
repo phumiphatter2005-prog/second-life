@@ -86,6 +86,9 @@ function toProduct(row, user) {
     wantSwap: row.want_swap || "",
     img: row.img,
     passed: !!row.passed,
+    passedAt: row.passed_at || null,
+    passedToName: row.passed && row.passed_to ? row.passed_to_name || null : null,
+    isRecipient: !!user && !!row.passed && row.passed_to === user.id,
     sellerName: row.seller_name || "Second Life",
     sellerAvatar: row.seller_avatar || null,
     hasOwner: row.user_id !== null,
@@ -101,7 +104,7 @@ function toProduct(row, user) {
 
 /* คะแนนดาวของสินค้า และคะแนนรวมของผู้ขาย (จากทุกประกาศของเขา) */
 const PRODUCT_SELECT = `
-  SELECT p.*, u.name AS seller_name, u.avatar AS seller_avatar,
+  SELECT p.*, u.name AS seller_name, u.avatar AS seller_avatar, t.name AS passed_to_name,
          EXISTS (SELECT 1 FROM favorites f WHERE f.product_id = p.id AND f.user_id = ?) AS is_fav,
          (SELECT AVG(stars) FROM reviews r WHERE r.product_id = p.id) AS rating_avg,
          (SELECT COUNT(*) FROM reviews r WHERE r.product_id = p.id) AS rating_count,
@@ -109,7 +112,12 @@ const PRODUCT_SELECT = `
            WHERE p2.user_id = p.user_id) AS seller_avg,
          (SELECT COUNT(*) FROM reviews r JOIN products p2 ON p2.id = r.product_id
            WHERE p2.user_id = p.user_id) AS seller_count
-  FROM products p LEFT JOIN users u ON u.id = p.user_id`;
+  FROM products p LEFT JOIN users u ON u.id = p.user_id LEFT JOIN users t ON t.id = p.passed_to`;
+
+/* ประกาศที่ส่งต่อแล้ว เห็นได้เฉพาะเจ้าของ ผู้รับ และแอดมิน */
+function canSee(row, user) {
+  return !row.passed || (!!user && (row.user_id === user.id || row.passed_to === user.id || isAdmin(user)));
+}
 
 function cleanText(v, max) {
   return typeof v === "string" ? v.trim().slice(0, max) : "";
@@ -166,7 +174,8 @@ app.get("/api/me", (req, res) => {
 /* ---------- สินค้า ---------- */
 app.get("/api/products", (req, res) => {
   const uid = req.user ? req.user.id : 0;
-  const rows = db.prepare(`${PRODUCT_SELECT} ORDER BY p.passed ASC, p.created_at DESC`).all(uid);
+  /* หน้าแรก / ค้นหา: เฉพาะของที่ยังไม่ส่งต่อ */
+  const rows = db.prepare(`${PRODUCT_SELECT} WHERE p.passed = 0 ORDER BY p.created_at DESC`).all(uid);
   res.json(rows.map(r => toProduct(r, req.user)));
 });
 
@@ -174,6 +183,7 @@ app.get("/api/products/:id", (req, res) => {
   const uid = req.user ? req.user.id : 0;
   const row = db.prepare(`${PRODUCT_SELECT} WHERE p.id = ?`).get(uid, Number(req.params.id));
   if (!row) return res.status(404).json({ error: "ไม่พบสินค้านี้" });
+  if (!canSee(row, req.user)) return res.json({ id: row.id, passed: true, restricted: true });
   res.json(toProduct(row, req.user));
 });
 
@@ -234,13 +244,57 @@ function ownProduct(req, res) {
   return row;
 }
 
-/* เจ้าของกดยืนยันว่า "ส่งต่อแล้ว" (กดซ้ำเพื่อยกเลิก) */
+/* คนที่เคยแชตเรื่องสินค้านี้ ให้เจ้าของเลือกเป็นผู้รับ */
+app.get("/api/products/:id/candidates", requireLogin, (req, res) => {
+  const row = ownProduct(req, res);
+  if (!row) return;
+  res.json(chat.passCandidates(row.id).map(({ roomId, ...c }) => c));
+});
+
+/* เจ้าของกดยืนยันว่า "ส่งต่อแล้ว"
+   body.to = id ผู้รับ (ต้องเคยแชตเรื่องสินค้านี้) หรือ null = คนนอกระบบ / ไม่ระบุ
+   ไม่ส่ง to (ปุ่มยกเลิก / หลังบ้าน) = สลับสถานะ ยกเลิกแล้วล้างผู้รับ */
 app.post("/api/products/:id/passed", requireLogin, (req, res) => {
   const row = ownProduct(req, res);
   if (!row) return;
-  const passed = row.passed ? 0 : 1;
-  db.prepare("UPDATE products SET passed = ? WHERE id = ?").run(passed, row.id);
-  res.json({ passed: !!passed });
+  const b = req.body || {};
+  if (!("to" in b)) {
+    const passed = row.passed ? 0 : 1;
+    db.prepare("UPDATE products SET passed = ?, passed_to = NULL, passed_at = ? WHERE id = ?")
+      .run(passed, passed ? Date.now() : null, row.id);
+    return res.json({ passed: !!passed });
+  }
+  if (row.passed) return res.status(400).json({ error: "ประกาศนี้ส่งต่อไปแล้ว" });
+  let room = null;
+  if (b.to !== null) {
+    room = chat.passCandidates(row.id).find(c => c.userId === Number(b.to));
+    if (!room) return res.status(400).json({ error: "เลือกได้เฉพาะคนที่เคยแชตเรื่องสินค้านี้" });
+  }
+  db.prepare("UPDATE products SET passed = 1, passed_to = ?, passed_at = ? WHERE id = ?")
+    .run(room ? room.userId : null, Date.now(), row.id);
+  if (room) chat.notifyPassed(room.roomId, row.user_id);
+  res.json({ passed: true, passedTo: room ? room.userId : null });
+});
+
+/* ประวัติการส่งต่อ: ของที่ฉันส่งต่อให้คนอื่น และของที่ฉันได้รับ */
+app.get("/api/pass-history", requireLogin, (req, res) => {
+  const me = req.user.id;
+  const item = (r, name, avatar) => ({
+    id: r.id, title: r.title, img: r.img, type: r.type, price: r.price,
+    passedAt: r.passed_at || r.created_at, otherName: name, otherAvatar: avatar || null
+  });
+  const given = db.prepare(`
+    SELECT p.*, t.name AS o_name, t.avatar AS o_avatar FROM products p
+    LEFT JOIN users t ON t.id = p.passed_to
+    WHERE p.passed = 1 AND p.user_id = ? ORDER BY COALESCE(p.passed_at, p.created_at) DESC`).all(me)
+    .map(r => item(r, r.o_name || null, r.o_avatar));
+  const received = db.prepare(`
+    SELECT p.*, o.name AS o_name, o.avatar AS o_avatar,
+           EXISTS (SELECT 1 FROM reviews rv WHERE rv.product_id = p.id AND rv.user_id = ?) AS reviewed
+    FROM products p LEFT JOIN users o ON o.id = p.user_id
+    WHERE p.passed = 1 AND p.passed_to = ? ORDER BY COALESCE(p.passed_at, p.created_at) DESC`).all(me, me)
+    .map(r => ({ ...item(r, r.o_name || "Second Life", r.o_avatar), reviewed: !!r.reviewed }));
+  res.json({ given, received });
 });
 
 app.delete("/api/products/:id", requireLogin, (req, res) => {
@@ -264,7 +318,7 @@ app.get("/api/favorites", requireLogin, (req, res) => {
   const rows = db.prepare(`${PRODUCT_SELECT}
     JOIN favorites fav ON fav.product_id = p.id AND fav.user_id = ?
     ORDER BY p.created_at DESC`).all(req.user.id, req.user.id);
-  res.json(rows.map(r => toProduct(r, req.user)));
+  res.json(rows.filter(r => canSee(r, req.user)).map(r => toProduct(r, req.user)));
 });
 
 app.post("/api/favorites/:id", requireLogin, (req, res) => {
@@ -296,9 +350,13 @@ app.get("/api/products/:id/reviews", (req, res) => {
 
 /* ให้ดาวได้คนละ 1 ครั้งต่อสินค้า (ส่งใหม่ = แก้รีวิวเดิม) */
 app.post("/api/products/:id/reviews", requireLogin, (req, res) => {
-  const product = db.prepare("SELECT user_id FROM products WHERE id = ?").get(Number(req.params.id));
+  const product = db.prepare("SELECT user_id, passed, passed_to FROM products WHERE id = ?").get(Number(req.params.id));
   if (!product) return res.status(404).json({ error: "ไม่พบสินค้านี้" });
   if (product.user_id === req.user.id) return res.status(403).json({ error: "ให้ดาวประกาศของตัวเองไม่ได้" });
+  /* กันรีวิวปลอม: ให้ดาวได้เฉพาะผู้รับของชิ้นนี้ */
+  if (!product.passed || product.passed_to !== req.user.id) {
+    return res.status(403).json({ error: "ให้ดาวได้เฉพาะผู้ที่ได้รับของชิ้นนี้" });
+  }
 
   const stars = Number(req.body.stars);
   if (!Number.isInteger(stars) || stars < 1 || stars > 5) return res.status(400).json({ error: "กรุณาเลือกดาว 1–5 ดวง" });

@@ -343,7 +343,11 @@ module.exports = function setupChat(app, { db, requireLogin, requireAdmin, isAdm
     if (db.prepare("SELECT 1 FROM chat_messages WHERE room_id = ? AND kind = 'passed'").get(r.id)) {
       return fail(res, 400, "ยืนยันส่งต่อในห้องนี้ไปแล้ว");
     }
-    db.prepare("UPDATE products SET passed = 1 WHERE id = ?").run(r.product_id);
+    const p = db.prepare("SELECT passed, passed_to FROM products WHERE id = ?").get(r.product_id);
+    if (p.passed && p.passed_to !== r.buyer_id) return fail(res, 400, "ของชิ้นนี้ส่งต่อให้คนอื่นไปแล้ว");
+    /* ผู้รับคือคนในห้องนี้ */
+    db.prepare("UPDATE products SET passed = 1, passed_to = ?, passed_at = COALESCE(passed_at, ?) WHERE id = ?")
+      .run(r.buyer_id, Date.now(), r.product_id);
     addSystem(r.id, "ผู้ประกาศยืนยันว่าส่งต่อแล้ว", "passed", r.seller_id);
     res.json({ ok: true });
   });
@@ -397,6 +401,18 @@ module.exports = function setupChat(app, { db, requireLogin, requireAdmin, isAdm
 
   return {
     openReports: () => db.prepare("SELECT COUNT(*) AS n FROM chat_reports WHERE status = 'open'").get().n,
-    roomCount: () => db.prepare("SELECT COUNT(*) AS n FROM chat_rooms").get().n
+    roomCount: () => db.prepare("SELECT COUNT(*) AS n FROM chat_rooms").get().n,
+    /* คนที่เคยแชตเรื่องสินค้านี้ (ให้เจ้าของเลือกผู้รับตอนกด "ส่งต่อแล้ว") */
+    passCandidates: productId => db.prepare(`
+      SELECT r.id AS room_id, r.buyer_id, r.last_message_at FROM chat_rooms r
+      WHERE r.product_id = ? AND EXISTS (SELECT 1 FROM chat_messages m WHERE m.room_id = r.id)
+      ORDER BY r.last_message_at DESC`).all(productId)
+      .map(x => ({ roomId: x.room_id, userId: x.buyer_id, name: nameOf(x.buyer_id), avatar: avatarOf(x.buyer_id), lastAt: x.last_message_at })),
+    /* ห้องแชตของผู้รับได้การ์ด "ส่งต่อแล้ว" ให้ดาวได้ทันที เหมือนกดในแชต */
+    notifyPassed: (roomId, sellerId) => {
+      if (!db.prepare("SELECT 1 FROM chat_messages WHERE room_id = ? AND kind = 'passed'").get(roomId)) {
+        addSystem(roomId, "ผู้ประกาศยืนยันว่าส่งต่อแล้ว", "passed", sellerId);
+      }
+    }
   };
 };

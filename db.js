@@ -67,6 +67,21 @@ if (!userCols.includes("avatar")) db.exec("ALTER TABLE users ADD COLUMN avatar T
 const productCols = db.prepare("PRAGMA table_info(products)").all().map(c => c.name);
 if (!productCols.includes("want_swap")) db.exec("ALTER TABLE products ADD COLUMN want_swap TEXT NOT NULL DEFAULT ''");
 
+/* ส่งต่อให้ใคร (ผู้รับ) และเมื่อไร — ว่าง = คนนอกระบบ / ไม่ระบุ */
+if (!productCols.includes("passed_to")) {
+  db.exec("ALTER TABLE products ADD COLUMN passed_to INTEGER REFERENCES users(id) ON DELETE SET NULL");
+  db.exec("ALTER TABLE products ADD COLUMN passed_at INTEGER");
+  /* ข้อมูลเดิม: ของที่เคยกด "ส่งต่อแล้ว" ในห้องแชต → ผู้รับคือคนในห้องนั้น */
+  const hasChat = db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'chat_messages'").get();
+  if (hasChat) db.exec(`
+    UPDATE products SET
+      passed_to = (SELECT r.buyer_id FROM chat_rooms r JOIN chat_messages m ON m.room_id = r.id AND m.kind = 'passed'
+                   WHERE r.product_id = products.id ORDER BY m.created_at DESC LIMIT 1),
+      passed_at = (SELECT m.created_at FROM chat_rooms r JOIN chat_messages m ON m.room_id = r.id AND m.kind = 'passed'
+                   WHERE r.product_id = products.id ORDER BY m.created_at DESC LIMIT 1)
+    WHERE passed = 1`);
+}
+
 /* ผู้ดูแลระบบจากตัวแปร ADMIN_STUDENT_IDS (คั่นด้วยจุลภาค) */
 (process.env.ADMIN_STUDENT_IDS || "").split(",").map(s => s.trim()).filter(Boolean).forEach(sid =>
   db.prepare("UPDATE users SET role = 'admin' WHERE student_id = ?").run(sid));

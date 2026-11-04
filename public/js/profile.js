@@ -233,6 +233,84 @@ $p("pf-name-form").addEventListener("submit", async e => {
   }
 });
 
+/* ---------- แท็บ: ข้อมูลโปรไฟล์ / ประวัติการส่งต่อ ---------- */
+let passHist = null;         // { given, received } โหลดครั้งแรกที่เปิดแท็บ
+let historyDir = "given";
+
+function historyItem(h, dir) {
+  const when = new Date(h.passedAt).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" });
+  const who = dir === "given"
+    ? (h.otherName ? `ส่งต่อให้ <b>${esc(h.otherName)}</b>` : "ส่งต่อให้คนนอกระบบ / ไม่ระบุ")
+    : `ได้รับจาก <b>${esc(h.otherName)}</b>`;
+  const review = dir === "received"
+    ? (h.reviewed ? `<span class="status status-ok">รีวิวแล้ว</span>` : `<span class="history-cta">ให้ดาวรีวิว →</span>`)
+    : "";
+  return `
+    <a class="history-item" href="product.html?id=${h.id}">
+      <img src="${esc(h.img)}" alt="" loading="lazy">
+      <span class="history-body">
+        <strong>${esc(h.title)}</strong>
+        <span class="history-who">${who}</span>
+        <span class="muted history-when">${when} · <span class="price-${h.type}">${formatPrice(h)}</span></span>
+      </span>
+      ${review}
+    </a>`;
+}
+
+function renderHistory() {
+  const listEl = $p("history-list");
+  if (!passHist) return;
+  $p("count-given").textContent = passHist.given.length;
+  $p("count-received").textContent = passHist.received.length;
+  const list = passHist[historyDir];
+  listEl.innerHTML = list.length
+    ? list.map(h => historyItem(h, historyDir)).join("")
+    : `<div class="empty-state"><p>${historyDir === "given"
+        ? "ยังไม่มีของที่คุณส่งต่อ กด “ยืนยันว่าส่งต่อแล้ว” ในหน้าประกาศของคุณเมื่อส่งของเสร็จ"
+        : "ยังไม่มีของที่คุณได้รับ เมื่อผู้ประกาศยืนยันว่าส่งต่อให้คุณ ของจะขึ้นที่นี่"}</p></div>`;
+}
+
+async function loadHistory() {
+  const listEl = $p("history-list");
+  listEl.innerHTML = `<div aria-hidden="true">${'<div class="history-item"><div class="sk" style="width:64px;height:64px;border-radius:8px"></div><div style="flex:1"><div class="sk sk-line w-80" style="margin-top:0"></div><div class="sk sk-line w-30"></div></div></div>'.repeat(2)}</div>`;
+  try {
+    passHist = await api("/pass-history");
+    renderHistory();
+  } catch (e) {
+    listEl.innerHTML = `<p class="empty">โหลดประวัติไม่สำเร็จ: ${esc(e.message)}</p>`;
+  }
+}
+
+function showTab(tab) {
+  document.querySelectorAll(".profile-tabs [data-tab]").forEach(b => {
+    const on = b.dataset.tab === tab;
+    b.classList.toggle("active", on);
+    b.setAttribute("aria-selected", on);
+  });
+  $p("pf-info").hidden = tab !== "info";
+  $p("pf-history").hidden = tab !== "history";
+  if (tab === "history" && !passHist) loadHistory();
+  const url = new URL(location.href);
+  if (tab === "history") url.searchParams.set("tab", "history"); else url.searchParams.delete("tab");
+  replaceUrl(url);
+}
+/* เก็บแท็บไว้ใน URL (กดกลับจากหน้าสินค้าแล้วยังอยู่แท็บเดิม) */
+function replaceUrl(url) {
+  try { window.history.replaceState(null, "", url); } catch (e) { /* ไม่เป็นไร */ }
+}
+
+document.querySelectorAll(".profile-tabs [data-tab]").forEach(b =>
+  b.addEventListener("click", () => showTab(b.dataset.tab)));
+document.querySelectorAll(".subtabs [data-dir]").forEach(b =>
+  b.addEventListener("click", () => {
+    historyDir = b.dataset.dir;
+    document.querySelectorAll(".subtabs [data-dir]").forEach(x => {
+      x.classList.toggle("active", x === b);
+      x.setAttribute("aria-pressed", x === b);
+    });
+    renderHistory();
+  }));
+
 userReady.then(() => {
   if (!currentUser) return goLogin();
   if (!CHAT_ENABLED) {
@@ -242,4 +320,7 @@ userReady.then(() => {
   }
   renderProfile();
   $p("profile-app").hidden = false;
+  const params = new URLSearchParams(location.search);
+  if (params.get("dir") === "received") document.querySelector(".subtabs [data-dir=received]").click();
+  if (params.get("tab") === "history") showTab("history");
 });

@@ -186,8 +186,20 @@ async function supabaseApi(path, options = {}) {
     return p;
   }
 
+  /* ส่งต่อให้ใคร (supabase/007_passed_to.sql) */
+  if ((m = /^\/products\/(\d+)\/candidates$/.exec(path))) {
+    return rpc("sl_pass_candidates", { p_id: Number(m[1]) });
+  }
+
   if ((m = /^\/products\/(\d+)\/passed$/.exec(path))) {
+    /* มี to (id ผู้รับ หรือ null = คนนอกระบบ) = ยืนยันส่งต่อ · ไม่มี = สลับสถานะ (ยกเลิก / หลังบ้าน) */
+    if (options.body && "to" in b) return rpc("sl_pass_to", { p_id: Number(m[1]), p_to: b.to });
     return { passed: await rpc("sl_toggle_passed", { p_id: Number(m[1]) }) };
+  }
+
+  if (path === "/pass-history") {
+    await needUser();
+    return rpc("sl_pass_history");
   }
 
   if ((m = /^\/products\/(\d+)\/report$/.exec(path))) {
