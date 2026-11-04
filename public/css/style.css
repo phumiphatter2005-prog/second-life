@@ -1614,15 +1614,8 @@ button.admin-title { border: none; background: none; padding: 0; font-size: inhe
 }
 
 /* ---------- Mobile (ทดสอบที่ 360px) ---------- */
-/* ---------- แท็บเล็ต (821–1100px): เมนูด้านบนแสดงเฉพาะไอคอน (ชื่ออยู่ใน tooltip) ---------- */
-@media (min-width: 821px) and (max-width: 1100px) {
-  .nav-links > a { padding: 0 10px; }
-  .nav-links .nav-label { display: none; }
-  .nav-links .ic { width: 20px; height: 20px; }
-}
-
-/* ---------- มือถือ (≤ 820px): แถบเมนูล่าง 4 ปุ่ม + เมนูลิ้นชักด้านซ้าย ---------- */
-@media (max-width: 820px) {
+/* ---------- มือถือ (< 768px): แถบเมนูล่าง 5 ปุ่ม + เมนูลิ้นชักด้านซ้าย ---------- */
+@media (max-width: 767px) {
   /* แถบเมนูล่างแบบลอย: แคปซูลม่วงเข้ม ห่างขอบล่างและข้าง 12px
      ปุ่มที่ไม่ได้เลือก = ไอคอนกลม · ปุ่มของหน้าปัจจุบัน = แคปซูลขาว ไอคอนในวงกลมม่วง + ชื่อหน้า (ยืดออก 200ms) */
   /* backdrop-filter ทำให้ position: fixed ของแถบล่างผิดตำแหน่ง จึงปิดบนจอเล็ก */
@@ -2379,21 +2372,24 @@ button.admin-title { border: none; background: none; padding: 0; font-size: inhe
 /* หลังบ้าน: หัวข้อย่อยในแท็บรายงาน */
 .admin-subhead { margin: 24px 0 12px; font-size: 18px; }
 
-@media (max-width: 820px) {
+@media (max-width: 767px) {
   /* มือถือ: "หลังบ้าน" อยู่ในเมนูบัญชี เพื่อให้แถบล่างไม่แน่นเกิน */
   .nav-links > a[href="admin.html"] { display: none; }
   .nav-badge { position: absolute; top: 2px; right: 2px; margin: 0; box-shadow: 0 0 0 2px var(--tabbar-bg); }
   .nav-links > a.nav-on .nav-badge { top: -2px; right: -2px; box-shadow: 0 0 0 2px #FFFFFF; }
+}
 
+@media (max-width: 820px) {
+  /* แชตแบบคอลัมน์เดียว (768–820px ไม่มีแถบล่าง จึงเว้นแค่ 24px) */
   .chat-page {
     grid-template-columns: minmax(0, 1fr);
-    height: calc(100vh - var(--nav-h) - var(--tabbar-space));
-    height: calc(100dvh - var(--nav-h) - var(--tabbar-space));
+    height: calc(100vh - var(--nav-h) - var(--tabbar-space, 24px));
+    height: calc(100dvh - var(--nav-h) - var(--tabbar-space, 24px));
     margin: 0 -16px;
     border: none;
     border-radius: 0;
   }
-  .chat-body { padding-bottom: var(--tabbar-space); }
+  .chat-body { padding-bottom: var(--tabbar-space, 24px); }
   .chat-page .chat-room { display: none; }
   .chat-page.has-room .chat-list-pane { display: none; }
   .chat-page.has-room .chat-room { display: flex; }
@@ -2410,7 +2406,7 @@ button.admin-title { border: none; background: none; padding: 0; font-size: inhe
 }
 
 /* =====================================================================
-   เมนูลิ้นชักด้านซ้าย (มือถือ ≤ 820px)
+   เมนูลิ้นชักด้านซ้าย (มือถือ < 768px)
    ===================================================================== */
 .nav-burger {
   display: none;
@@ -2526,14 +2522,14 @@ body.drawer-open .drawer-backdrop { opacity: 1; }
 .drawer-foot { padding: 12px 16px 16px; border-top: 1px solid var(--border); }
 .drawer-logout { width: 100%; }
 
-@media (max-width: 820px) {
+@media (max-width: 767px) {
   .nav-burger { display: grid; }
   .only-desk { display: none; }
   .only-mob { display: inline; }
   /* แถบล่าง 5 ปุ่ม: หน้าแรก หมวดหมู่ ลงประกาศ ข้อความ รายการโปรด ("หลังบ้าน" อยู่ในเมนูบัญชี) */
   .navbar .container { gap: 12px; }
 }
-@media (min-width: 821px) {
+@media (min-width: 768px) {
   .drawer, .drawer-backdrop { display: none !important; }
 }
 
@@ -2983,10 +2979,10 @@ a.history-item:hover { border-color: var(--border-strong); }
 }
 
 /* แถบเมนูล่างในโหมดมืด (เลือกเอง หรือตามเครื่อง) */
-@media (max-width: 820px) {
+@media (max-width: 767px) {
   :root[data-theme="dark"] { --tabbar-bg: #1A1422; --tabbar-border: #2E2538; }
 }
-@media (max-width: 820px) and (prefers-color-scheme: dark) {
+@media (max-width: 767px) and (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) { --tabbar-bg: #1A1422; --tabbar-border: #2E2538; }
 }
 
@@ -3071,9 +3067,149 @@ a.history-item:hover { border-color: var(--border-strong); }
 .user-menu-theme .theme-seg button { min-height: 36px; font-size: 12px; }
 
 /* มือถือ: ปุ่มธีมอยู่ในเมนูลิ้นชักและเมนูโปรไฟล์แทน แถบบนจะได้ไม่แน่น */
-@media (max-width: 820px) {
+@media (max-width: 767px) {
   .theme-wrap { display: none; }
 }
 @media (prefers-reduced-motion: no-preference) {
   body { transition: background-color .2s ease, color .2s ease; }
+}
+
+/* ---------- แถบเมนูบนแบบลอย (คอมพิวเตอร์ ≥ 768px) ----------
+   แคปซูลพื้นขาว ห่างขอบบน 16px กว้างเท่าเนื้อหาใน container · ซ้ายโลโก้ · กลางเมนู · ขวา ค้นหา + ลงประกาศ + เข้าสู่ระบบ
+   มือถือ (< 768px) ใช้แถบเดิม (ปุ่มค้นหา + เมนูลิ้นชัก + แถบลอยด้านล่าง) */
+:root {
+  --hdr-bg: #FFFFFF;
+  --hdr-ink: #5F566B;          /* เมนูที่ไม่ได้เปิด (6.8:1 บนขาว) */
+  --hdr-hover: #F2EFF5;
+  --hdr-active-bg: #1C1426;
+  --hdr-active-ink: #FFFFFF;
+  --hdr-line: #E9E4EE;
+  --hdr-field: #F2EFF5;
+  --hdr-shadow: 0 6px 24px rgba(28, 20, 38, .07);
+}
+:root[data-theme="dark"] {
+  --hdr-bg: #1A1422; --hdr-ink: #C4BBCE; --hdr-hover: #261E30; --hdr-active-bg: #F3EEF7; --hdr-active-ink: #1C1426;
+  --hdr-line: #3A3144; --hdr-field: #261E30; --hdr-shadow: 0 6px 24px rgba(0, 0, 0, .35);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --hdr-bg: #1A1422; --hdr-ink: #C4BBCE; --hdr-hover: #261E30; --hdr-active-bg: #F3EEF7; --hdr-active-ink: #1C1426;
+    --hdr-line: #3A3144; --hdr-field: #261E30; --hdr-shadow: 0 6px 24px rgba(0, 0, 0, .35);
+  }
+}
+.nav-search-form, .nav-post { display: none; }
+
+@media (min-width: 768px) {
+  :root { --nav-h: 72px; }     /* ระยะบน 16px + แคปซูล 56px (หน้าที่คำนวณความสูงจอใช้ค่านี้) */
+  .navbar {
+    padding: 16px 24px 0;
+    background: transparent;
+    border-bottom: 0;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    pointer-events: none;      /* ช่องว่างใสด้านบนแคปซูลไม่บังการคลิกเนื้อหา */
+  }
+  .navbar .container {
+    pointer-events: auto;
+    max-width: calc(1280px - 48px);
+    height: 56px;
+    padding: 0 8px 0 20px;
+    gap: 12px;
+    background: var(--hdr-bg);
+    border-radius: 999px;
+    box-shadow: var(--hdr-shadow);
+  }
+  .logo { flex: 0 0 auto; }
+  .nav-right { flex: 1 1 0; min-width: 0; gap: 8px; }
+  .nav-links { flex: 0 1 auto; gap: 4px; }
+
+  /* เมนูกลาง: หน้าแรก / หมวดหมู่ / ข้อความ / รายการโปรด ("ลงประกาศ" อยู่ขวาเป็นปุ่ม) */
+  .nav-links > a[href="post.html"] { display: none; }
+  .nav-links > a {
+    height: 40px;
+    padding: 0 16px;
+    border-radius: 999px;
+    color: var(--hdr-ink);
+    font-weight: 400;
+    transition: background-color .2s ease, color .2s ease;
+  }
+  .nav-links > a:hover { background: var(--hdr-hover); color: var(--hdr-ink); }
+  .nav-links > a.active, .nav-links > a.active:hover { background: var(--hdr-active-bg); color: var(--hdr-active-ink); font-weight: 600; }
+  .nav-links > a:focus-visible { outline: 2px solid var(--primary-ink); outline-offset: 2px; }
+
+  /* ช่องค้นหาแคปซูล 220px (≥ 1100px) · แคบกว่านั้นเหลือปุ่มกลม */
+  .nav-search-form { position: relative; display: flex; align-items: center; flex: 0 0 220px; }
+  .nav-search-form .ic { position: absolute; left: 14px; width: 16px; height: 16px; color: var(--hdr-ink); pointer-events: none; }
+  .nav-search-form input[type="search"] {
+    width: 100%;
+    height: 40px;
+    padding: 0 14px 0 38px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: var(--hdr-field);
+    color: var(--text);
+    font-size: 14px;
+  }
+  .nav-search-form input[type="search"]::placeholder { color: var(--hdr-ink); }
+  .nav-search-form input[type="search"]:focus { border-color: var(--primary); box-shadow: var(--ring); outline: none; }
+  .nav-search {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    justify-content: center;
+    border: 1px solid var(--hdr-line);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--hdr-ink);
+  }
+  .nav-search span { display: none; }
+  .nav-search .ic { width: 18px; height: 18px; }
+  .nav-search:hover { border-color: var(--hdr-line); background: var(--hdr-hover); color: var(--hdr-ink); }
+
+  /* + ลงประกาศ: ขอบบาง · เข้าสู่ระบบ: พื้นม่วงตัวขาว · ทั้งคู่ทรงแคปซูล */
+  .nav-post {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    height: 40px;
+    padding: 0 16px;
+    border: 1px solid var(--hdr-line);
+    border-radius: 999px;
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: background-color .2s ease;
+  }
+  .nav-post:hover { background: var(--hdr-hover); }
+  .nav-post .ic { width: 16px; height: 16px; }
+  .nav-post[aria-current="page"] { background: var(--hdr-active-bg); border-color: var(--hdr-active-bg); color: var(--hdr-active-ink); }
+  .nav-user .btn-primary {
+    height: 40px;
+    padding: 0 18px;
+    border-radius: 999px;
+    background: #7E2A8C;
+    color: #FFFFFF;
+    font-size: 14px;
+  }
+  .nav-user .btn-primary:hover { background: #65216F; }
+  .theme-wrap { flex-shrink: 0; }
+  .nav-theme { width: 40px; height: 40px; border-color: var(--hdr-line); background: transparent; color: var(--hdr-ink); }
+}
+@media (min-width: 1100px) {
+  .nav-search { display: none; }
+}
+/* 768–1279px: เมนูกลางเหลือไอคอนในแคปซูล (ชื่ออยู่ใน tooltip และ aria-label) — เมนูมีชื่อ + ช่องค้นหา 220px ต้องกว้าง ~1240px */
+@media (min-width: 768px) and (max-width: 1279px) {
+  .nav-links > a { width: 40px; padding: 0; justify-content: center; }
+  .nav-links .nav-label { display: none; }
+  .nav-links .ic { width: 20px; height: 20px; }
+}
+/* 768–1099px: ช่องค้นหาเหลือปุ่มกลม กดแล้วไปหน้าค้นหา */
+@media (min-width: 768px) and (max-width: 1099px) {
+  .nav-search-form { display: none; }
+}
+@media (min-width: 768px) and (max-width: 860px) {
+  .navbar { padding: 16px 16px 0; }   /* container ช่วงนี้เว้นข้าง 16px */
 }

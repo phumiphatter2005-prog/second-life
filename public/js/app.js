@@ -255,12 +255,31 @@ function decorateNav() {
     }
 
     /* ขวา: ปุ่มค้นหา + บัญชีผู้ใช้ */
+    /* ขวา: ช่องค้นหา (คอม ≥ 1100px) / ปุ่มค้นหา + "+ ลงประกาศ" (คอม) + บัญชีผู้ใช้ */
+    const onPost = page === "post.html";
     nav.insertAdjacentHTML("afterend", `
       <div class="nav-right">
+        <form class="nav-search-form" role="search" action="search.html">
+          <label class="visually-hidden" for="nav-q">ค้นหาสินค้า</label>
+          ${icon("search")}
+          <input id="nav-q" name="q" type="search" placeholder="ค้นหาสินค้า" autocomplete="off" enterkeyhint="search">
+        </form>
         <button class="nav-search" type="button" title="ค้นหา (${SHORTCUT})" aria-label="ค้นหา">${icon("search")}<span>ค้นหา</span></button>
+        <a class="nav-post" href="post.html"${onPost ? ' aria-current="page"' : ""}>${icon("plus")}ลงประกาศ</a>
         <span class="nav-user"></span>
       </div>`);
-    document.querySelector(".nav-search").addEventListener("click", openSearch);
+    document.querySelector(".nav-search").addEventListener("click", () => {
+      /* คอม (768–1099px): ปุ่มกลมพาไปหน้าค้นหา · มือถือ: ค้นหาแบบเดิม */
+      if (!DESKTOP_MQ.matches) return openSearch();
+      const f = document.getElementById("f-q");
+      if (f && f.offsetParent) { f.focus(); f.select(); } else location.href = "search.html?focus=1";
+    });
+    /* Enter ในช่องค้นหา → search.html?q=... (ช่องว่าง = หน้าค้นหาทั้งหมด) */
+    document.querySelector(".nav-search-form").addEventListener("submit", e => {
+      e.preventDefault();
+      const q = document.getElementById("nav-q").value.trim();
+      location.href = q ? "search.html?q=" + encodeURIComponent(q) : "search.html";
+    });
     setupThemeButton(document.querySelector(".nav-right"));
     syncThemeUI();
     placeNavPill();
@@ -282,8 +301,9 @@ function decorateNav() {
     </footer>`);
 }
 
-/* ---------- เมนูลิ้นชักด้านซ้าย (มือถือ ≤ 820px) ---------- */
-const DRAWER_MQ = matchMedia("(max-width: 820px)");
+/* ---------- เมนูลิ้นชักด้านซ้าย (มือถือ < 768px) ---------- */
+const DRAWER_MQ = matchMedia("(max-width: 767px)");
+const DESKTOP_MQ = matchMedia("(min-width: 768px)");
 let drawerReturnFocus = null;
 
 function drawerLinks() {
@@ -342,7 +362,7 @@ function setupDrawer(logo) {
     if (e.shiftKey && (document.activeElement === first || document.activeElement === drawer)) { e.preventDefault(); last.focus(); }
     else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
   });
-  /* หมุนจอ/ขยายจอจนเกิน 820px ระหว่างเปิด → ปิดเมนู */
+  /* หมุนจอ/ขยายจอจนถึง 768px ระหว่างเปิด → ปิดเมนู */
   DRAWER_MQ.addEventListener("change", e => { if (!e.matches) closeDrawer(false); });
   renderDrawerUser();
   syncThemeUI();
@@ -613,7 +633,7 @@ function renderNavUser() {
 
 /* ---------- ค้นหาทั่วเว็บ (⌘K / Ctrl K) ---------- */
 function openSearch() {
-  const input = [...document.querySelectorAll("#hero-q, #f-q, #admin-q")].find(el => el.offsetParent);
+  const input = [...document.querySelectorAll("#hero-q, #f-q, #admin-q, #nav-q")].find(el => el.offsetParent);
   if (input) {
     input.focus();
     input.select();
