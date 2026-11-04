@@ -227,7 +227,11 @@ async function supabaseApi(path, options = {}) {
       signal: options.signal
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw sbError(res.status, data.message || "ใช้ AI ไม่ได้ในขณะนี้ กรอกข้อมูลเองได้เลย");
+    if (!res.ok) {
+      const err = sbError(res.status, data.message || "ใช้ AI ไม่ได้ในขณะนี้ กรอกข้อมูลเองได้เลย");
+      err.code = data.error;            // busy / quota / timeout ... (ai-listing.js เลือกข้อความตามนี้)
+      throw err;
+    }
     return data.result;
   }
 

@@ -5,5 +5,6 @@ import { handle } from "./logic.ts";
 Deno.serve(req => handle(req, {
   geminiKey: Deno.env.get("GEMINI_API_KEY"),
   model: Deno.env.get("GEMINI_MODEL"),
+  fallbackModel: Deno.env.get("GEMINI_FALLBACK_MODEL"),   // ไม่ตั้ง = ไม่มีโมเดลสำรอง
   supabaseUrl: Deno.env.get("SUPABASE_URL")
 }));

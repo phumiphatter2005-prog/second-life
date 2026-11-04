@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600&family=IBM+Plex+Sans+Thai:wght@400;600&family=JetBrains+Mono&display=swap">
-  <link rel="stylesheet" href="css/style.css?v=27">
+  <link rel="stylesheet" href="css/style.css?v=28">
 </head>
 <body>
 
@@ -59,8 +59,10 @@
           <p class="ai-notice" id="ai-notice">เมื่อกดปุ่มด้านล่าง รูปและคำอธิบายจะถูกส่งไป Google Gemini เพื่อวิเคราะห์ <b>ห้ามใส่ใบหน้าหรือข้อมูลส่วนตัวในรูป</b> เช่น บัตรนักศึกษา เบอร์โทร ที่อยู่ (<a href="privacy.html" target="_blank" rel="noopener">นโยบายความเป็นส่วนตัว</a>)</p>
 
           <p class="ai-error" id="ai-error" role="alert" hidden></p>
+          <button type="button" class="btn-outline" id="ai-retry" hidden>ลองอีกครั้ง</button>
           <button type="button" class="btn-outline" id="ai-run" aria-describedby="ai-notice">ให้ AI ช่วยกรอก</button>
-          <p class="ai-status" id="ai-status" role="status" hidden><span class="spinner" aria-hidden="true"></span>AI กำลังวิเคราะห์...</p>
+          <p class="ai-status" id="ai-status" role="status" hidden><span class="spinner" aria-hidden="true"></span>AI กำลังวิเคราะห์... <span id="ai-elapsed" aria-hidden="true">0 วินาที</span></p>
+          <p class="field-hint" id="ai-wait-hint" hidden>ระหว่างรอ กรอกข้อมูลในฟอร์มด้านล่างเองได้ตามปกติ</p>
           <div class="ai-result" id="ai-result" aria-live="polite" hidden></div>
         </div>
 
@@ -158,12 +160,12 @@
     </div>
   </main>
 
-  <script src="js/config.js?v=27"></script>
-  <script src="js/supabase.js?v=27"></script>
-  <script src="js/demo.js?v=27"></script>
-  <script src="js/data.js?v=27"></script>
-  <script src="js/app.js?v=27"></script>
-  <script src="js/post.js?v=27"></script>
-  <script src="js/ai-listing.js?v=27"></script>
+  <script src="js/config.js?v=28"></script>
+  <script src="js/supabase.js?v=28"></script>
+  <script src="js/demo.js?v=28"></script>
+  <script src="js/data.js?v=28"></script>
+  <script src="js/app.js?v=28"></script>
+  <script src="js/post.js?v=28"></script>
+  <script src="js/ai-listing.js?v=28"></script>
 </body>
 </html>

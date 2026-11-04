@@ -3,12 +3,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { handle, validateResult, cleanDescription, buildGeminiRequest, parseImages,
-         CANARY, SYSTEM_PROMPT, GEMINI_TIMEOUT_MS, DEFAULT_MODEL } from "../supabase/functions/analyze-listing/logic.ts";
+         CANARY, SYSTEM_PROMPT, GEMINI_TIMEOUT_MS, RETRY_DELAY_MS, DEFAULT_MODEL, redact } from "../supabase/functions/analyze-listing/logic.ts";
 
 const JPEG = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ==";
 const PNG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUg==";
 const WEBP = "data:image/webp;base64," + btoa("RIFF\0\0\0\0WEBPVP8 ");
-const ENV = { geminiKey: "test-key", supabaseUrl: "https://sb.test" };
+const ENV = { geminiKey: "test-key", supabaseUrl: "https://sb.test", retryDelayMs: 0 };
 
 const GOOD = {
   is_product: true, title: "เสื้อฮู้ดสีเทา", category: "clothes", condition: "ดี",
@@ -197,29 +197,129 @@ test("ตัดความยาวและแท็ก HTML ออกจา�
   assert.ok(!/[<>]/.test(r.title));
 });
 
-test("timeout: ยกเลิกคำขอ Gemini ก่อน 10 วินาที และตอบ 504", async t => {
+/* Gemini ไม่ตอบจนถูกยกเลิก */
+const hang = init => new Promise((_, reject) => {
+  init.signal.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")));
+});
+const status = (code, body = "{}") => () => new Response(body, { status: code });
+const DAILY = JSON.stringify({ error: { code: 429, status: "RESOURCE_EXHAUSTED", message: "You exceeded your current quota",
+  details: [{ violations: [{ quotaId: "GenerateRequestsPerDayPerProjectPerModel-FreeTier" }] }] } });
+
+/* เงียบ console.error ระหว่างทดสอบ และเก็บไว้ตรวจ */
+function captureLogs(t) {
+  const logs = [];
+  t.mock.method(console, "error", (...a) => logs.push(a.join(" ")));
+  return logs;
+}
+
+test("timeout: 20 วินาทีต่อครั้ง ลองซ้ำ 1 ครั้งหลังรอ 1.5 วินาที แล้วตอบ 504", async t => {
+  captureLogs(t);
   t.mock.timers.enable({ apis: ["setTimeout"] });
-  assert.ok(GEMINI_TIMEOUT_MS < 10000);
-  const m = mock({
-    onGemini: init => new Promise((_, reject) => {
-      init.signal.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")));
-    })
-  });
-  const pending = send({ images: [JPEG] }, m);
-  await new Promise(r => setImmediate(r));
-  await new Promise(r => setImmediate(r));
-  t.mock.timers.tick(GEMINI_TIMEOUT_MS);
-  const { status, data } = await pending;
-  assert.equal(status, 504);
-  assert.equal(data.error, "timeout");
+  assert.equal(GEMINI_TIMEOUT_MS, 20000);
+  assert.equal(RETRY_DELAY_MS, 1500);
+  const m = mock({ onGemini: hang });
+  let done = false;
+  const pending = handle(post({ images: [JPEG] }), { geminiKey: "test-key", supabaseUrl: "https://sb.test" }, m.fetchImpl)
+    .then(r => { done = true; return r; });
+  const flush = async () => { for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r)); };
+  await flush();
+  t.mock.timers.tick(GEMINI_TIMEOUT_MS - 1); await flush();
+  assert.equal(m.calls.length, 1);                      // ยังไม่หมดเวลา
+  t.mock.timers.tick(1); await flush();                 // ครั้งที่ 1 หมดเวลา → เริ่มรอ
+  t.mock.timers.tick(RETRY_DELAY_MS - 1); await flush();
+  assert.equal(m.calls.length, 1);                      // ยังรอไม่ครบ 1.5 วินาที
+  t.mock.timers.tick(1); await flush();
+  assert.equal(m.calls.length, 2);                      // ลองซ้ำ
+  t.mock.timers.tick(GEMINI_TIMEOUT_MS); await flush();
+  assert.ok(done);
+  const res = await pending;
+  assert.equal(res.status, 504);
+  assert.equal((await res.json()).error, "timeout");
 });
 
-test("โควตาเต็มหรือเซิร์ฟเวอร์ Gemini ไม่ว่าง: แจ้ง AI ไม่ว่าง ลองใหม่ภายหลัง", async () => {
-  for (const code of [429, 503]) {
-    const { status, data } = await send({ images: [JPEG] }, mock({ onGemini: () => new Response("{}", { status: code }) }));
-    assert.equal(status, code);
-    assert.equal(data.message, "AI ไม่ว่าง ลองใหม่ภายหลัง");
+test("429 / 500 / 503: ลองซ้ำ 1 ครั้ง ถ้ายังไม่ได้แจ้ง AI ไม่ว่าง", async t => {
+  captureLogs(t);
+  for (const code of [429, 500, 503]) {
+    const { status: s, data, calls } = await send({ images: [JPEG] }, mock({ onGemini: status(code) }));
+    assert.equal(calls.length, 2, `HTTP ${code} ต้องลองซ้ำ`);
+    assert.equal(s, 503);
+    assert.equal(data.error, "busy");
   }
+});
+
+test("ลองซ้ำแล้วสำเร็จ: ได้ผลตามปกติ", async t => {
+  captureLogs(t);
+  let n = 0;
+  const { status: s, data, calls } = await send({ images: [JPEG] }, mock({ onGemini: () => ++n === 1 ? new Response("{}", { status: 503 }) : gemini(GOOD) }));
+  assert.equal(calls.length, 2);
+  assert.equal(s, 200);
+  assert.equal(data.result.title, GOOD.title);
+});
+
+test("ผิดพลาดที่ลองซ้ำไม่ช่วย (เช่น 400/403): ไม่ลองซ้ำ", async t => {
+  captureLogs(t);
+  for (const code of [400, 403, 404]) {
+    const { status: s, calls } = await send({ images: [JPEG] }, mock({ onGemini: status(code) }));
+    assert.equal(calls.length, 1);
+    assert.equal(s, 502);
+  }
+});
+
+test("โควตารายวันเต็ม: ไม่ลองซ้ำโมเดลเดิม และแจ้งโควตาเต็ม", async t => {
+  captureLogs(t);
+  const { status: s, data, calls } = await send({ images: [JPEG] }, mock({ onGemini: status(429, DAILY) }));
+  assert.equal(calls.length, 1);
+  assert.equal(s, 429);
+  assert.equal(data.error, "quota");
+});
+
+test("โมเดลสำรอง: ใช้เมื่อโมเดลหลักล้มเหลวหลังลองซ้ำ และข้ามเมื่อไม่ได้ตั้ง secret", async t => {
+  captureLogs(t);
+  const env = { ...ENV, fallbackModel: "backup-model" };
+  const urls = [];
+  const fetchImpl = async (url, init) => {
+    if (String(url).includes("/rpc/is_active_user")) return Response.json(true);
+    urls.push(String(url));
+    return String(url).includes("backup-model") ? gemini(GOOD) : new Response("{}", { status: 503 });
+  };
+  const res = await handle(post({ images: [JPEG] }), env, fetchImpl);
+  assert.equal(res.status, 200);
+  assert.deepEqual(urls.map(u => u.includes("backup-model")), [false, false, true]);
+
+  // โควตาเต็ม: ไปโมเดลสำรองเลย
+  const urls2 = [];
+  const res2 = await handle(post({ images: [JPEG] }), env, async (url) => {
+    if (String(url).includes("/rpc/is_active_user")) return Response.json(true);
+    urls2.push(String(url));
+    return String(url).includes("backup-model") ? gemini(GOOD) : new Response(DAILY, { status: 429 });
+  });
+  assert.equal(res2.status, 200);
+  assert.equal(urls2.length, 2);
+
+  // โมเดลสำรองพังด้วยเหตุอื่น (เช่น ชื่อรุ่นผิด) ยังแจ้งสาเหตุจากโมเดลหลัก
+  const res3 = await handle(post({ images: [JPEG] }), env, async (url) => {
+    if (String(url).includes("/rpc/is_active_user")) return Response.json(true);
+    return new Response("{}", { status: String(url).includes("backup-model") ? 404 : 503 });
+  });
+  assert.equal((await res3.json()).error, "busy");
+
+  // ไม่ได้ตั้ง / ตั้งเป็นรุ่นเดียวกับโมเดลหลัก: ไม่มีครั้งที่ 3
+  for (const e of [ENV, { ...ENV, fallbackModel: DEFAULT_MODEL }]) {
+    const { calls } = await send({ images: [JPEG] }, mock({ onGemini: status(503) }), e);
+    assert.equal(calls.length, 2);
+  }
+});
+
+test("log: บันทึก status และข้อความจาก Gemini โดยไม่มี API key", async t => {
+  const logs = captureLogs(t);
+  const leaky = JSON.stringify({ error: { status: "PERMISSION_DENIED", message: "API key test-key is invalid. See ?key=test-key and AIzaSyA1234567890abcdefghijklmnop" } });
+  await send({ images: [JPEG] }, mock({ onGemini: status(403, leaky) }));
+  assert.equal(logs.length, 1);
+  assert.match(logs[0], /status=403/);
+  assert.match(logs[0], /PERMISSION_DENIED/);
+  assert.ok(!logs[0].includes("test-key"));
+  assert.ok(!logs[0].includes("AIzaSy"));
+  assert.equal(redact("x AIzaSyA1234567890abcdefghijklmnop y"), "x [REDACTED] y");
 });
 
 test("Gemini ผิดพลาดอื่น: ไม่ส่งรายละเอียดจาก Google กลับไปหน้าเว็บ", async () => {

@@ -1,5 +1,5 @@
 // ตรรกะทั้งหมดของ analyze-listing แยกจาก Deno.serve เพื่อให้ทดสอบบน Node ได้ (npm test)
-// ไม่มีการเก็บรูปหรือบันทึกข้อมูลผู้ใช้ลง log
+// ไม่มีการเก็บรูปหรือบันทึกข้อมูลผู้ใช้ลง log (log มีแค่สาเหตุจาก Gemini โดยตัด API key ออก)
 
 export const CATEGORIES = ["book", "clothes", "stationery", "electronic", "dorm", "other"];
 export const CONDITIONS = ["ดีมาก", "ดี", "พอใช้"];
@@ -9,7 +9,10 @@ export const MAX_IMAGES = 3;
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 export const MAX_DESCRIPTION = 300;
 export const MIN_CONFIDENCE = 0.6;              // ต่ำกว่านี้ถือว่ากำกวม ต้องขอรูปเพิ่ม
-export const GEMINI_TIMEOUT_MS = 8500;          // สั้นกว่า 10 วินาทีของหน้าเว็บ เพื่อให้ตอบข้อความเองทัน
+export const GEMINI_TIMEOUT_MS = 20000;         // ต่อการเรียก 1 ครั้ง
+export const RETRY_DELAY_MS = 1500;             // รอก่อนลองซ้ำ
+export const RETRY_STATUS = [429, 500, 503];    // ลองซ้ำ 1 ครั้ง (รวมกรณีหมดเวลา)
+// นานสุด: 20 + 1.5 + 20 (ลองซ้ำ) + 20 (โมเดลสำรอง) = 61.5 วินาที หน้าเว็บจึงรอ 75 วินาที
 const MAX_BODY_BYTES = 21 * 1024 * 1024;
 const MAX_TITLE = 100;
 const MAX_TEXT = 200;
@@ -74,8 +77,9 @@ const MESSAGES = {
   tooLarge: "รูปภาพต้องมีขนาดไม่เกิน 5MB",
   longText: `คำอธิบายยาวได้ไม่เกิน ${MAX_DESCRIPTION} ตัวอักษร`,
   login: "กรุณาเข้าสู่ระบบก่อน",
-  busy: "AI ไม่ว่าง ลองใหม่ภายหลัง",
-  timeout: "AI ใช้เวลานานเกินไป ลองใหม่อีกครั้งหรือกรอกข้อมูลเองได้เลย",
+  busy: "AI ไม่ว่างในขณะนี้ ลองใหม่อีกครั้ง หรือกรอกข้อมูลเองได้เลย",
+  quota: "โควตา AI วันนี้เต็มแล้ว ลองใหม่ภายหลัง หรือกรอกข้อมูลเองได้เลย",
+  timeout: "AI ใช้เวลานานเกินไป (หมดเวลา) ลองใหม่อีกครั้ง หรือกรอกข้อมูลเองได้เลย",
   invalid: "AI ตอบกลับในรูปแบบที่ใช้ไม่ได้ ลองใหม่อีกครั้งหรือกรอกข้อมูลเองได้เลย",
   unavailable: "ใช้ AI ไม่ได้ในขณะนี้ กรอกข้อมูลเองได้เลย",
   notProduct: "วิเคราะห์ไม่ได้ เพราะรูปนี้ไม่ใช่รูปสินค้า กรุณาใช้รูปที่เห็นตัวสินค้าชัดเจน",
@@ -241,7 +245,67 @@ async function isActiveUser(req: Request, supabaseUrl: string, fetchImpl: typeof
 
 /* ---------- ตัวรับคำขอ ---------- */
 
-type Env = { geminiKey?: string; model?: string; supabaseUrl?: string };
+type Env = { geminiKey?: string; model?: string; fallbackModel?: string; supabaseUrl?: string; retryDelayMs?: number };
+
+// ผลของการเรียก Gemini หนึ่งครั้ง: kind บอกสาเหตุที่หน้าเว็บใช้เลือกข้อความ
+type Attempt =
+  | { ok: true; data: any }
+  | { ok: false; kind: "busy" | "quota" | "timeout" | "error"; retryable: boolean };
+
+// ตัด API key ออกจากข้อความก่อนลง log (ทั้งค่าจริง รูปแบบคีย์ของ Google และ ?key=)
+export function redact(text: string, key = "") {
+  let s = String(text ?? "");
+  if (key) s = s.split(key).join("[REDACTED]");
+  return s.replace(/AIza[0-9A-Za-z_-]{20,}/g, "[REDACTED]").replace(/([?&]key=)[^&\s"]+/gi, "$1[REDACTED]");
+}
+
+// ข้อความจาก Gemini เช่น {"error":{"message":"..."}} → ตัดเหลือ 300 ตัวอักษร
+function geminiErrorText(raw: string) {
+  try {
+    const e = JSON.parse(raw)?.error;
+    if (e?.message) return `${e.status || ""} ${e.message}`.trim().slice(0, 300);
+  } catch { /* ไม่ใช่ JSON */ }
+  return raw.replace(/\s+/g, " ").trim().slice(0, 300);
+}
+
+const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+
+async function callGemini(model: string, payload: string, env: Env, fetchImpl: typeof fetch, label: string): Promise<Attempt> {
+  const timer = new AbortController();
+  const timeout = setTimeout(() => timer.abort(), GEMINI_TIMEOUT_MS);
+  const log = (msg: string) => console.error(redact(`analyze-listing: ${label} model=${model} ${msg}`, env.geminiKey));
+  try {
+    const res = await fetchImpl(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": env.geminiKey as string },
+      body: payload,
+      signal: timer.signal
+    });
+    if (res.ok) return { ok: true, data: await res.json() };
+    const raw = await res.text().catch(() => "");
+    log(`status=${res.status} ${geminiErrorText(raw)}`);
+    // 429 แบบโควตารายวันหมด ลองซ้ำทันทีก็ไม่ผ่าน · 429 อื่น (ต่อนาที) / 500 / 503 = ระบบไม่ว่างชั่วคราว
+    if (res.status === 429 && /PerDay/i.test(raw)) return { ok: false, kind: "quota", retryable: false };
+    if (RETRY_STATUS.includes(res.status)) return { ok: false, kind: "busy", retryable: true };
+    return { ok: false, kind: "error", retryable: false };
+  } catch (e) {
+    if ((e as Error).name === "AbortError") {
+      log(`timeout หลัง ${GEMINI_TIMEOUT_MS / 1000} วินาที`);
+      return { ok: false, kind: "timeout", retryable: true };
+    }
+    log(`เรียกไม่สำเร็จ ${(e as Error).name}: ${(e as Error).message}`);
+    return { ok: false, kind: "error", retryable: false };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+const FAILURES = {
+  quota: [429, "quota", MESSAGES.quota],
+  busy: [503, "busy", MESSAGES.busy],
+  timeout: [504, "timeout", MESSAGES.timeout],
+  error: [502, "unavailable", MESSAGES.unavailable]
+} as const;
 
 export async function handle(req: Request, env: Env, fetchImpl: typeof fetch = fetch) {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
@@ -260,29 +324,30 @@ export async function handle(req: Request, env: Env, fetchImpl: typeof fetch = f
     return fail(400, "too_long", MESSAGES.longText);
   }
 
-  const timer = new AbortController();
-  const timeout = setTimeout(() => timer.abort(), GEMINI_TIMEOUT_MS);
-  try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${env.model || DEFAULT_MODEL}:generateContent`;
-    const res = await fetchImpl(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": env.geminiKey },
-      body: JSON.stringify(buildGeminiRequest(input.images, cleanDescription(body.description))),
-      signal: timer.signal
-    });
+  const payload = JSON.stringify(buildGeminiRequest(input.images, cleanDescription(body.description)));
+  const model = env.model || DEFAULT_MODEL;
+  const fallback = env.fallbackModel && env.fallbackModel !== model ? env.fallbackModel : "";
+  const failures: Attempt[] = [];
 
-    if (res.status === 429 || res.status === 503) return fail(res.status, "busy", MESSAGES.busy);
-    if (!res.ok) {
-      console.error("analyze-listing: Gemini ตอบ", res.status);    // บันทึกแค่รหัส ไม่บันทึกเนื้อหา
-      return fail(502, "unavailable", MESSAGES.unavailable);
-    }
-    const result = readGeminiResponse(await res.json());
-    return result ? reply(200, { result }) : fail(502, "invalid", MESSAGES.invalid);
-  } catch (e) {
-    if ((e as Error).name === "AbortError") return fail(504, "timeout", MESSAGES.timeout);
-    console.error("analyze-listing: เรียก Gemini ไม่สำเร็จ");
-    return fail(502, "unavailable", MESSAGES.unavailable);
-  } finally {
-    clearTimeout(timeout);
+  // 1) โมเดลหลัก  2) ไม่ว่าง/หมดเวลา → รอ 1.5 วินาทีแล้วลองซ้ำ 1 ครั้ง  3) ยังไม่ได้ → โมเดลสำรอง (ถ้าตั้งไว้) 1 ครั้ง
+  let attempt = await callGemini(model, payload, env, fetchImpl, "ครั้งที่ 1");
+  if (!attempt.ok && attempt.retryable) {
+    failures.push(attempt);
+    await sleep(env.retryDelayMs ?? RETRY_DELAY_MS);
+    attempt = await callGemini(model, payload, env, fetchImpl, "ลองซ้ำ");
   }
+  if (!attempt.ok && fallback) {
+    failures.push(attempt);
+    attempt = await callGemini(fallback, payload, env, fetchImpl, "โมเดลสำรอง");
+  }
+
+  if (attempt.ok) {
+    const result = readGeminiResponse(attempt.data);
+    return result ? reply(200, { result }) : fail(502, "invalid", MESSAGES.invalid);
+  }
+  failures.push(attempt);
+  // แจ้งสาเหตุที่บอกผู้ใช้ได้ (โควตา/ไม่ว่าง/หมดเวลา) แม้โมเดลสำรองจะพังด้วยเหตุอื่น เช่น ตั้งชื่อรุ่นผิด
+  const cause = [...failures].reverse().find(f => !f.ok && f.kind !== "error") || attempt;
+  const [status, code, message] = FAILURES[(cause as Extract<Attempt, { ok: false }>).kind];
+  return fail(status, code, message);
 }
