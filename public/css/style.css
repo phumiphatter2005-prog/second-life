@@ -3586,3 +3586,12 @@ body.admin-shell-page.tab-overview .page-head { display: none; }
   .dash-card { padding: 16px; }
   .stat-tile .stat-card-num { font-size: 30px; }
 }
+
+/* การ์ด "ส่งต่อแล้ว" ที่ถูกยกเลิก (สีเทา) + กล่องยืนยันการยกเลิก */
+.msg-passed.is-cancelled { background: var(--bg-alt); border-color: var(--border); color: var(--text-2); }
+.msg-passed.is-cancelled strong { color: var(--text); }
+.msg-passed.is-cancelled .ha-check { color: var(--text-2); }
+.confirm-card { width: min(100%, 380px); }
+.confirm-title { font-size: 18px; }
+.confirm-body { color: var(--text-2); font-size: 14px; }
+.confirm-card .btn-row { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }

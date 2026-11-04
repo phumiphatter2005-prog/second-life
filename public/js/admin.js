@@ -347,7 +347,7 @@ function renderProducts(list) {
           </div>
           <div class="admin-actions">
             <button class="btn btn-sm btn-secondary" data-act="edit">แก้ไข</button>
-            <button class="btn btn-sm btn-secondary" data-act="passed">${p.passed ? "เปิดประกาศอีกครั้ง" : "ส่งต่อแล้ว"}</button>
+            <button class="btn btn-sm btn-secondary" data-act="passed" data-label="${p.passed ? "เปิดประกาศอีกครั้ง" : "ส่งต่อแล้ว"}">${p.passed ? "เปิดประกาศอีกครั้ง" : "ส่งต่อแล้ว"}</button>
             <button class="btn btn-sm btn-danger" data-act="delete" data-label="ลบ">ลบ</button>
           </div>
         </div>`).join("") || `<p class="empty">ไม่พบสินค้า</p>`}
@@ -870,6 +870,9 @@ adminBody.addEventListener("click", async e => {
   }
   try {
     if (act === "passed") {
+      /* ยกเลิกการส่งต่อ = รีวิวของผู้รับคนเดิมถูกลบ จึงกดสองครั้งเพื่อยืนยัน */
+      const cur = adminRows.find(p => String(p.id) === row.dataset.id);
+      if (cur && cur.passed && !confirmed(btn, "ยืนยัน? รีวิวผู้รับจะถูกลบ")) return;
       const { passed } = await api(`/products/${row.dataset.id}/passed`, { method: "POST" });
       if (passed) celebratePassed(btn);
     } else if (act === "delete") {

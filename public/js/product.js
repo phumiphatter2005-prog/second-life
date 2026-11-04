@@ -160,6 +160,16 @@ function render(p) {
     passedBtn.addEventListener("click", async () => {
       /* ยังไม่ส่งต่อ → เลือกก่อนว่าส่งต่อให้ใคร */
       if (!p.passed) return openPassDialog(p, passedBtn, showError);
+      /* ยกเลิกการส่งต่อ: ฐานข้อมูลลบรีวิวของผู้รับคนเดิมด้วย จึงต้องยืนยันก่อน */
+      const ok = await confirmDialog({
+        title: "ยกเลิกการส่งต่อ?",
+        body: p.passedToName || p.isRecipient
+          ? `ถ้ายกเลิก รีวิวจากผู้รับคนเดิม${p.passedToName ? ` (${esc(p.passedToName)})` : ""}จะถูกลบ และประกาศจะกลับมาแสดงให้ทุกคนเห็น`
+          : "ถ้ายกเลิก รีวิวจากผู้รับคนเดิมจะถูกลบ และประกาศจะกลับมาแสดงให้ทุกคนเห็น",
+        confirm: "ยกเลิกการส่งต่อ",
+        opener: passedBtn
+      });
+      if (!ok) return;
       try {
         await api(`/products/${p.id}/passed`, { method: "POST" });   // ยกเลิก: ล้างผู้รับด้วย
         render(await api("/products/" + p.id));
@@ -218,6 +228,45 @@ function render(p) {
   }
 
   renderReviews(p);
+}
+
+/* ---------- กล่องยืนยัน (ใช้กรอบเดียวกับหน้าต่างส่งต่อ) → Promise<boolean> ---------- */
+function confirmDialog({ title, body, confirm, opener }) {
+  return new Promise(resolve => {
+    const wrap = document.createElement("div");
+    wrap.className = "crop-backdrop pass-backdrop";
+    wrap.innerHTML = `
+      <div class="crop-card pass-card confirm-card" role="alertdialog" aria-modal="true" aria-labelledby="cf-title" aria-describedby="cf-body">
+        <strong id="cf-title" class="confirm-title">${esc(title)}</strong>
+        <p id="cf-body" class="confirm-body">${body}</p>
+        <div class="btn-row">
+          <button type="button" class="btn btn-secondary" data-no>ไม่ยกเลิก</button>
+          <button type="button" class="btn btn-danger" data-yes>${esc(confirm)}</button>
+        </div>
+      </div>`;
+    document.body.appendChild(wrap);
+    document.documentElement.classList.add("drawer-lock");
+    document.querySelectorAll("body > header, body > main, body > footer").forEach(el => { el.inert = true; });
+    const done = ans => {
+      wrap.remove();
+      document.documentElement.classList.remove("drawer-lock");
+      document.querySelectorAll("[inert]").forEach(el => { el.inert = false; });
+      if (opener) opener.focus();
+      resolve(ans);
+    };
+    wrap.querySelector("[data-no]").addEventListener("click", () => done(false));
+    wrap.querySelector("[data-yes]").addEventListener("click", () => done(true));
+    wrap.addEventListener("click", e => { if (e.target === wrap) done(false); });
+    wrap.addEventListener("keydown", e => {
+      if (e.key === "Escape") { e.preventDefault(); done(false); }
+      if (e.key === "Tab") {
+        const [a, b] = wrap.querySelectorAll("button");
+        if (e.shiftKey && document.activeElement === a) { e.preventDefault(); b.focus(); }
+        else if (!e.shiftKey && document.activeElement === b) { e.preventDefault(); a.focus(); }
+      }
+    });
+    wrap.querySelector("[data-no]").focus();
+  });
 }
 
 /* ---------- หน้าต่าง "ส่งต่อให้ใคร" ----------

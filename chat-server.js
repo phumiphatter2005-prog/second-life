@@ -47,6 +47,29 @@ module.exports = function setupChat(app, { db, requireLogin, requireAdmin, isAdm
     );
   `);
 
+  /* ยกเลิก / เปลี่ยนผู้รับการส่งต่อ (เหมือน supabase/009_pass_cancel.sql):
+     ลบรีวิวของผู้รับคนเดิม · การ์ด "ส่งต่อแล้ว" ในห้องของเขาเป็น cancelled + ข้อความระบบ */
+  db.exec(`
+    CREATE TRIGGER IF NOT EXISTS products_pass_cancelled AFTER UPDATE OF passed, passed_to ON products
+    WHEN old.passed_to IS NOT NULL AND (new.passed = 0 OR new.passed_to IS NULL OR new.passed_to <> old.passed_to)
+    BEGIN
+      DELETE FROM reviews WHERE product_id = new.id AND user_id = old.passed_to;
+      INSERT INTO chat_messages (room_id, sender_id, kind, body, created_at)
+        SELECT r.id, new.user_id, 'system', 'ผู้ประกาศยกเลิกการส่งต่อแล้ว', CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER)
+        FROM chat_rooms r WHERE r.product_id = new.id AND r.buyer_id = old.passed_to
+          AND EXISTS (SELECT 1 FROM chat_messages m WHERE m.room_id = r.id AND m.kind = 'passed'
+                      AND COALESCE(json_extract(m.data, '$.status'), '') <> 'cancelled');
+      UPDATE chat_rooms SET last_message = 'ผู้ประกาศยกเลิกการส่งต่อแล้ว',
+             last_message_at = CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER)
+        WHERE product_id = new.id AND buyer_id = old.passed_to
+          AND EXISTS (SELECT 1 FROM chat_messages m WHERE m.room_id = chat_rooms.id AND m.kind = 'passed'
+                      AND COALESCE(json_extract(m.data, '$.status'), '') <> 'cancelled');
+      UPDATE chat_messages SET data = json_set(COALESCE(data, '{}'), '$.status', 'cancelled')
+        WHERE kind = 'passed' AND COALESCE(json_extract(data, '$.status'), '') <> 'cancelled'
+          AND room_id IN (SELECT id FROM chat_rooms WHERE product_id = new.id AND buyer_id = old.passed_to);
+    END;
+  `);
+
   const typing = new Map();   // roomId → { userId, at }
   const fail = (res, status, error) => { res.status(status).json({ error }); return null; };
   const nameOf = id => (db.prepare("SELECT name FROM users WHERE id = ?").get(id) || {}).name || "ผู้ใช้";
@@ -340,13 +363,14 @@ module.exports = function setupChat(app, { db, requireLogin, requireAdmin, isAdm
     const r = loadRoom(req, res, { allowAdmin: false });
     if (!r) return;
     if (req.user.id !== r.seller_id) return fail(res, 403, "เฉพาะผู้ประกาศเท่านั้น");
-    if (db.prepare("SELECT 1 FROM chat_messages WHERE room_id = ? AND kind = 'passed'").get(r.id)) {
+    /* การ์ดที่ถูกยกเลิกไปแล้วไม่นับ → กด "ส่งต่อแล้ว" ในห้องเดิมได้อีกครั้ง */
+    if (db.prepare("SELECT 1 FROM chat_messages WHERE room_id = ? AND kind = 'passed' AND COALESCE(json_extract(data, '$.status'), '') <> 'cancelled'").get(r.id)) {
       return fail(res, 400, "ยืนยันส่งต่อในห้องนี้ไปแล้ว");
     }
     const p = db.prepare("SELECT passed, passed_to FROM products WHERE id = ?").get(r.product_id);
     if (p.passed && p.passed_to !== r.buyer_id) return fail(res, 400, "ของชิ้นนี้ส่งต่อให้คนอื่นไปแล้ว");
     /* ผู้รับคือคนในห้องนี้ */
-    db.prepare("UPDATE products SET passed = 1, passed_to = ?, passed_at = COALESCE(passed_at, ?) WHERE id = ?")
+    db.prepare("UPDATE products SET passed = 1, passed_to = ?, passed_at = ? WHERE id = ?")
       .run(r.buyer_id, Date.now(), r.product_id);
     addSystem(r.id, "ผู้ประกาศยืนยันว่าส่งต่อแล้ว", "passed", r.seller_id);
     res.json({ ok: true });
@@ -410,7 +434,7 @@ module.exports = function setupChat(app, { db, requireLogin, requireAdmin, isAdm
       .map(x => ({ roomId: x.room_id, userId: x.buyer_id, name: nameOf(x.buyer_id), avatar: avatarOf(x.buyer_id), lastAt: x.last_message_at })),
     /* ห้องแชตของผู้รับได้การ์ด "ส่งต่อแล้ว" ให้ดาวได้ทันที เหมือนกดในแชต */
     notifyPassed: (roomId, sellerId) => {
-      if (!db.prepare("SELECT 1 FROM chat_messages WHERE room_id = ? AND kind = 'passed'").get(roomId)) {
+      if (!db.prepare("SELECT 1 FROM chat_messages WHERE room_id = ? AND kind = 'passed' AND COALESCE(json_extract(data, '$.status'), '') <> 'cancelled'").get(roomId)) {
         addSystem(roomId, "ผู้ประกาศยืนยันว่าส่งต่อแล้ว", "passed", sellerId);
       }
     }

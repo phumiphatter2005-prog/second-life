@@ -212,6 +212,15 @@ function messageInner(m) {
 }
 
 function passedCard(m) {
+  /* ผู้ประกาศยกเลิกการส่งต่อแล้ว (supabase/009_pass_cancel.sql): การ์ดสีเทา ไม่มีช่องให้ดาว */
+  if (m.data && m.data.status === "cancelled") {
+    return `
+    <div class="msg-passed is-cancelled" data-id="${m.id}">
+      <span class="ha-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></span>
+      <strong>ยกเลิกการส่งต่อแล้ว</strong>
+      <span class="muted">${room.isSeller ? "คุณยกเลิกการส่งต่อของชิ้นนี้" : "ผู้ประกาศยกเลิกการส่งต่อ รีวิวเดิมของคุณถูกลบแล้ว"}</span>
+    </div>`;
+  }
   let rate = "";
   if (room.isBuyer && !room.adminView) {
     if (myReview === undefined) {
@@ -659,6 +668,8 @@ async function refresh(full) {
       data.room.productPassed !== room.productPassed || data.room.requesters !== room.requesters;
     const hadNewFromOther = data.messages.some(m => !rendered.has(m.id) && !m.mine);
     const blockChanged = data.room.blocked !== room.blocked || data.room.blockedByMe !== room.blockedByMe;
+    /* ส่งต่อ/ยกเลิกการส่งต่อ → โหลดรีวิวของฉันใหม่ (รีวิวเดิมอาจถูกลบไปแล้ว) */
+    if (data.room.productPassed !== room.productPassed) myReview = undefined;
     room = data.room;
     messages = data.messages;
     if (data.typing) showTyping(data.typing);
