@@ -147,14 +147,10 @@ function decorateNav() {
       /* ชื่อเมนูไว้ใช้เป็น tooltip และสำหรับโปรแกรมอ่านหน้าจอ เมื่อจอแคบแสดงแค่ไอคอน */
       a.title = a.textContent.trim();
       a.setAttribute("aria-label", a.title);
+      if (a.classList.contains("active")) a.setAttribute("aria-current", "page");
       const name = NAV_ICONS[href];
-      if (href === "search.html") {
-        /* แถบล่างบนมือถือเรียกปุ่มนี้ว่า "ค้นหา" (คอมยังเป็น "หมวดหมู่") */
-        a.innerHTML = icon("grid", "ic only-desk") + icon("search", "ic only-mob") +
-          `<span class="only-desk">${a.textContent}</span><span class="only-mob">ค้นหา</span>`;
-      } else if (name) {
-        a.innerHTML = icon(name) + `<span>${a.textContent}</span>`;
-      }
+      /* ไอคอน (มือถือ: อยู่ในวงกลม) + ชื่อเมนู (มือถือ: แสดงเฉพาะปุ่มของหน้าปัจจุบัน) */
+      if (name) a.innerHTML = `<span class="nav-ic">${icon(name)}</span><span class="nav-label">${a.textContent}</span>`;
     });
     const chatLink = nav.querySelector('a[href="messages.html"]');
     if (chatLink) {
@@ -162,8 +158,7 @@ function decorateNav() {
       chatLink.insertAdjacentHTML("beforeend", `<span class="nav-badge" hidden aria-label="ข้อความที่ยังไม่อ่าน"></span>`);
     }
 
-    /* มือถือ: แคปซูลพื้นหลังของแถบเมนูล่าง · ขวา: ปุ่มค้นหา + บัญชีผู้ใช้ */
-    nav.insertAdjacentHTML("afterbegin", `<span class="nav-pill" aria-hidden="true"></span>`);
+    /* ขวา: ปุ่มค้นหา + บัญชีผู้ใช้ */
     nav.insertAdjacentHTML("afterend", `
       <div class="nav-right">
         <button class="nav-search" type="button" title="ค้นหา (${SHORTCUT})" aria-label="ค้นหา">${icon("search")}<span>ค้นหา</span></button>
@@ -310,34 +305,34 @@ function closeDrawer(restoreFocus = true) {
   if (restoreFocus && drawerReturnFocus) drawerReturnFocus.focus();
 }
 
-/* แคปซูลของแถบเมนูล่าง (มือถือ): เลื่อนจากเมนูของหน้าก่อนหน้าไปยังเมนูปัจจุบัน */
 function placeNavPill() {
+  /* แถบเมนูล่าง (มือถือ): ปุ่มของหน้าปัจจุบันยืดเป็นแคปซูลขาว (.nav-on)
+     มาจากหน้าที่เคยเลือกไว้ → เริ่มที่ปุ่มเดิมแล้วค่อยยืดไปปุ่มใหม่ (200ms) */
   const nav = document.querySelector(".nav-links");
-  const pill = nav && nav.querySelector(".nav-pill");
-  if (!pill) return;
-  /* นับเฉพาะเมนูที่แสดงอยู่ (มือถือซ่อน "หลังบ้าน" ไว้ในเมนูบัญชี) */
-  const links = [...nav.querySelectorAll(":scope > a")].filter(a => getComputedStyle(a).display !== "none");
-  const i = links.findIndex(a => a.classList.contains("active"));
-  nav.style.setProperty("--n", links.length);
-  pill.hidden = i < 0;
-  if (i < 0) return;
-  let prev = -1;
-  try { prev = Number(sessionStorage.getItem("nav-i") ?? -1); sessionStorage.setItem("nav-i", i); } catch (e) { /* ไม่มี storage ก็ไม่เลื่อน */ }
-  if (prev >= 0 && prev < links.length && prev !== i) {
-    pill.classList.add("no-anim");
-    pill.style.setProperty("--i", prev);
-    pill.getBoundingClientRect();   // บังคับให้วาดตำแหน่งเดิมก่อน แล้วค่อยเลื่อน
-    pill.classList.remove("no-anim");
-    requestAnimationFrame(() => pill.style.setProperty("--i", i));
-  } else {
-    pill.style.setProperty("--i", i);
+  if (!nav) return;
+  const links = [...nav.querySelectorAll(":scope > a")];
+  const cur = links.find(a => a.classList.contains("active"));
+  let prevHref = null;
+  try {
+    prevHref = sessionStorage.getItem("nav-href");
+    sessionStorage.setItem("nav-href", cur ? cur.getAttribute("href") : "");
+  } catch (e) { /* ไม่มี storage ก็ไม่เลื่อน */ }
+  const prev = prevHref && links.find(a => a.getAttribute("href") === prevHref);
+  links.forEach(a => a.classList.remove("nav-on"));
+  if (cur && prev && prev !== cur) {
+    nav.classList.add("no-anim");
+    prev.classList.add("nav-on");
+    nav.getBoundingClientRect();     // วาดตำแหน่งเดิมก่อน แล้วค่อยเปลี่ยน
+    nav.classList.remove("no-anim");
+    requestAnimationFrame(() => { prev.classList.remove("nav-on"); cur.classList.add("nav-on"); });
+  } else if (cur) {
+    cur.classList.add("nav-on");
   }
-  /* กดเมนูแล้วแคปซูลเลื่อนไปทันทีระหว่างรอหน้าใหม่ */
-  links.forEach((a, k) => {
+  /* กดเมนูแล้วปุ่มนั้นยืดออกทันทีระหว่างรอหน้าใหม่ */
+  links.forEach(a => {
     a.onclick = () => {
-      pill.hidden = false;
-      pill.style.setProperty("--i", k);
-      try { sessionStorage.setItem("nav-i", k); } catch (e) { /* ข้าม */ }
+      links.forEach(x => x.classList.toggle("nav-on", x === a));
+      try { sessionStorage.setItem("nav-href", a.getAttribute("href")); } catch (e) { /* ข้าม */ }
     };
   });
 }
@@ -478,7 +473,7 @@ function renderNavUser() {
   if (isAdmin) {
     const onAdmin = location.pathname.endsWith("admin.html");
     nav.insertAdjacentHTML("beforeend",
-      `<a href="admin.html" title="หลังบ้าน" aria-label="หลังบ้าน" class="${onAdmin ? "active" : ""}">${icon("shield")}<span>หลังบ้าน</span></a>`);
+      `<a href="admin.html" title="หลังบ้าน" aria-label="หลังบ้าน" class="${onAdmin ? "active" : ""}" ${onAdmin ? 'aria-current="page"' : ""}><span class="nav-ic">${icon("shield")}</span><span class="nav-label">หลังบ้าน</span></a>`);
     placeNavPill();
   }
 
