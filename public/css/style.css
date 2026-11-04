@@ -41,7 +41,8 @@
   --error-ink: #B91C1C;
   --error-soft: #FEF2F2;
   /* สีประเภทประกาศ — ใช้ชุดเดียวทั้งเว็บ: ป้ายมุมรูป, badge, ราคา/ข้อความแทนราคา, จุดในตัวกรอง (DESIGN.md) */
-  --type-sell: #7E2A8C;              /* ขาย: ป้ายพื้นม่วงตัวขาว / ราคาสีม่วง */
+  --type-sell: #7E2A8C;              /* ขาย: ป้ายพื้นม่วงตัวขาว */
+  --type-sell-price: #1C1426;        /* ขาย: ตัวเลขราคา ฿ ใช้สีข้อความหลัก ไม่ใช่ม่วง */
   --type-sell-bg: #7E2A8C;
   --type-sell-on: var(--on-primary); /* ตัวขาว (#FAFAFA ตามกฎ On Primary) */
   --type-swap: #2563A6;              /* แลกเปลี่ยน: ห้ามใช้สีส้ม */
@@ -575,7 +576,7 @@ code, kbd {
 .card-meta { display: flex; align-items: center; gap: 8px; }
 .price { font-family: var(--font-display); font-weight: 600; font-size: 18px; letter-spacing: -.02em; }
 /* ราคา/ข้อความแทนราคา ตามประเภท (ใช้กับ .price, .detail-price หรือ span ธรรมดาก็ได้) */
-.price-sell { color: var(--type-sell); }
+.price-sell { color: var(--type-sell-price); }
 .price-swap, .detail-price.price-swap { color: var(--type-swap); font-weight: 700; }
 .price-free, .detail-price.price-free { color: var(--type-free); font-weight: 700; }
 .card-rating { display: inline-flex; align-items: center; gap: 2px; font-size: 12px; color: var(--text-2); }

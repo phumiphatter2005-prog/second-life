@@ -24,7 +24,7 @@ An editorial precision interface for a university second-hand marketplace. The a
 
   | Type | Tag / badge | Price line |
   |---|---|---|
-  | ขาย | Primary #7E2A8C fill, On Primary text (`--type-sell`, `--type-sell-on`) | "฿…" in #7E2A8C |
+  | ขาย | Primary #7E2A8C fill, On Primary text (`--type-sell`, `--type-sell-on`) | "฿…" in #1C1426 (`--type-sell-price`), bold — not purple |
   | แลกเปลี่ยน | #E8F0FA fill, #2563A6 text (`--type-swap-bg`, `--type-swap`) | "แลกเปลี่ยน" in #2563A6, bold |
   | แจกฟรี | #E8F5EE fill, #1F7A4D text (`--type-free-bg`, `--type-free`) | "ฟรี" in #1F7A4D, bold |
 
