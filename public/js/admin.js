@@ -10,7 +10,7 @@ const adminFilter = document.getElementById("admin-filter");
 const adminFilterCheck = document.getElementById("admin-filter-check");
 
 const ADMIN_TABS = {
-  overview: { load: "/admin/overview", render: renderOverview },
+  overview: { load: () => loadDashboard(), render: renderOverview },
   products: { load: "/admin/products", render: renderProducts, search: "ค้นหาชื่อสินค้า ผู้ขาย หรือรหัสนักศึกษา",
               filter: "เฉพาะที่ถูกรายงาน" },
   users:    { load: "/admin/users", render: renderUsers, search: "ค้นหาชื่อหรือรหัสนักศึกษา" },
@@ -55,56 +55,272 @@ function confirmed(btn, text) {
 }
 
 /* ---------- ภาพรวม ---------- */
-const STAT_ICONS = {
+/* ---------- แดชบอร์ด ----------
+   ตัวเลขทั้งหมดมาจากฐานข้อมูลจริง: /admin/overview (ยอดรวม) + /admin/dashboard (รายวัน 14 วัน + กิจกรรมล่าสุด)
+   /admin/dashboard ยังไม่พร้อม (ยังไม่ได้รัน 008) → การ์ดยังแสดงยอดรวม ส่วนกราฟแสดงคำแนะนำแทน ไม่พัง */
+async function loadDashboard() {
+  const [overview, dash] = await Promise.all([
+    api("/admin/overview"),
+    api("/admin/dashboard").catch(e => ({ error: e.message || "โหลดข้อมูลกราฟไม่สำเร็จ" }))
+  ]);
+  return { overview, dash };
+}
+
+const DASH_ICONS = {
   package: '<path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 8.7 5 8.7-5"/>',
   recycle: '<path d="M7 19H4.8a1.8 1.8 0 0 1-1.6-2.7L7.2 9.7"/><path d="m11 19 3 3 3-3"/><path d="M14 22v-7"/><path d="M12.6 3.8a1.8 1.8 0 0 1 3 0l3.6 6.2"/><path d="m21 6-.8 4.4-4.3-1"/><path d="M19.6 13.5 21 16.3a1.8 1.8 0 0 1-1.6 2.7H17"/><path d="M8.8 2.9 5.6 8.2"/><path d="m2.4 7.2 3.2 1 1.2-4.3"/>',
   users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
-  flag: '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/>'
+  flag: '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/>',
+  star: '<path d="M11.5 2.3a.6.6 0 0 1 1 0l2.6 5.3 5.8.8a.6.6 0 0 1 .3 1l-4.2 4.1 1 5.8a.6.6 0 0 1-.9.6L12 17.2l-5.2 2.7a.6.6 0 0 1-.9-.6l1-5.8L2.7 9.4a.6.6 0 0 1 .3-1l5.8-.8z"/>'
 };
+const dashIcon = name => `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${DASH_ICONS[name]}</svg>`;
 const statNum = n => (typeof n === "number" ? n.toLocaleString() : "–");
+const sum = a => (a || []).reduce((t, n) => t + n, 0);
 
-function renderOverview(o) {
-  /* ตัวเลขทั้งหมดมาจาก /admin/overview (ฐานข้อมูลจริง) ไม่มีค่า = แสดง "–" */
+/* เส้นโค้งแบบ monotone (ไม่โค้งเกินจุดข้อมูล จึงไม่ลงต่ำกว่า 0) */
+function smoothPath(pts) {
+  if (pts.length < 2) return pts.length ? `M${pts[0][0]},${pts[0][1]}` : "";
+  const n = pts.length, dx = [], m = [], t = [];
+  for (let i = 0; i < n - 1; i++) { dx[i] = pts[i + 1][0] - pts[i][0]; m[i] = (pts[i + 1][1] - pts[i][1]) / dx[i]; }
+  t[0] = m[0]; t[n - 1] = m[n - 2];
+  for (let i = 1; i < n - 1; i++) t[i] = m[i - 1] * m[i] <= 0 ? 0 : (m[i - 1] + m[i]) / 2;
+  for (let i = 0; i < n - 1; i++) {
+    if (m[i] === 0) { t[i] = 0; t[i + 1] = 0; continue; }
+    const a = t[i] / m[i], b = t[i + 1] / m[i], h = a * a + b * b;
+    if (h > 9) { const k = 3 / Math.sqrt(h); t[i] = k * a * m[i]; t[i + 1] = k * b * m[i]; }
+  }
+  let d = `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
+  for (let i = 0; i < n - 1; i++) {
+    const [x0, y0] = pts[i], [x1, y1] = pts[i + 1], h = dx[i] / 3;
+    d += ` C${(x0 + h).toFixed(1)},${(y0 + t[i] * h).toFixed(1)} ${(x1 - h).toFixed(1)},${(y1 - t[i + 1] * h).toFixed(1)} ${x1.toFixed(1)},${y1.toFixed(1)}`;
+  }
+  return d;
+}
+/* ค่าสูงสุดของแกน: ปัดขึ้นให้หาร 4 ลงตัว อย่างน้อย 4 (ข้อมูลเป็น 0 ทั้งหมดก็ยังวาดได้) */
+const niceMax = v => Math.max(4, Math.ceil(v / 4) * 4);
+
+let dashUid = 0;
+function sparkline(values, color) {
+  const W = 120, H = 36, pad = 3, max = Math.max(1, ...values);
+  const pts = values.map((v, i) => [pad + i * (W - pad * 2) / (values.length - 1), H - pad - v / max * (H - pad * 2)]);
+  const line = smoothPath(pts), id = "sg" + (++dashUid), last = pts[pts.length - 1];
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
+    <defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" style="stop-color:var(${color});stop-opacity:.28"/><stop offset="1" style="stop-color:var(${color});stop-opacity:0"/></linearGradient></defs>
+    <path d="${line} L${last[0]},${H} L${pts[0][0]},${H} Z" fill="url(#${id})"/>
+    <path d="${line}" fill="none" style="stroke:var(${color})" stroke-width="2" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+  </svg>`;
+}
+
+const dayLabel = (start, i, opts = { day: "numeric", month: "short" }) =>
+  new Date(start + i * 864e5 + 12 * 3600e3).toLocaleDateString("th-TH", { ...opts, timeZone: "Asia/Bangkok" });
+
+/* กราฟใหญ่: ประกาศใหม่ + ส่งต่อแล้ว 14 วัน (SVG เขียนเอง · crosshair + tooltip · ปุ่มลูกศรเลื่อนวันได้) */
+function drawTrend(box, dash) {
+  const S = [
+    { key: "products", label: "ประกาศใหม่", color: "--chart-new" },
+    { key: "passed", label: "ส่งต่อแล้ว", color: "--chart-passed" }
+  ];
+  const days = dash.series.products.length;
+  const W = Math.max(280, box.clientWidth), H = W < 520 ? 220 : 280;
+  const L = 32, R = 16, T = 16, B = 30;
+  const max = niceMax(Math.max(...S.flatMap(s => dash.series[s.key])));
+  const x = i => L + i * (W - L - R) / (days - 1);
+  const y = v => T + (1 - v / max) * (H - T - B);
+  const every = W < 520 ? 3 : 2;
+  const grid = [0, 1, 2, 3, 4].map(k => {
+    const v = max * k / 4, yy = y(v).toFixed(1);
+    return `<line x1="${L}" x2="${W - R}" y1="${yy}" y2="${yy}" class="grid-line"/>
+      <text x="${L - 8}" y="${yy}" class="axis-text" text-anchor="end" dominant-baseline="middle">${v}</text>`;
+  }).join("");
+  const xs = Array.from({ length: days }, (_, i) => i)
+    .filter(i => (days - 1 - i) % every === 0)
+    .map(i => `<text x="${x(i).toFixed(1)}" y="${H - 8}" class="axis-text" text-anchor="middle">${dayLabel(dash.start, i)}</text>`).join("");
+  const series = S.map((s, k) => {
+    const pts = dash.series[s.key].map((v, i) => [x(i), y(v)]);
+    const line = smoothPath(pts), id = "tg" + k + (++dashUid);
+    return `<defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" style="stop-color:var(${s.color});stop-opacity:.22"/><stop offset="1" style="stop-color:var(${s.color});stop-opacity:0"/></linearGradient></defs>
+      <path d="${line} L${x(days - 1)},${y(0)} L${x(0)},${y(0)} Z" fill="url(#${id})"/>
+      <path d="${line}" fill="none" style="stroke:var(${s.color})" stroke-width="2" stroke-linecap="round"/>`;
+  }).join("");
+  box.innerHTML = `
+    <svg class="trend-svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img"
+      aria-label="กราฟเส้น ประกาศใหม่และการส่งต่อ 14 วันล่าสุด ดูตัวเลขรายวันได้ในตารางด้านล่าง">
+      ${grid}${xs}${series}
+      <line class="cross" x1="0" x2="0" y1="${T}" y2="${H - B}" visibility="hidden"/>
+      ${S.map((s, k) => `<circle class="cross-dot" data-k="${k}" r="5" style="fill:var(${s.color})" visibility="hidden"/>`).join("")}
+    </svg>
+    <div class="trend-tip" hidden></div>`;
+  const svg = box.querySelector("svg"), tip = box.querySelector(".trend-tip");
+  const cross = svg.querySelector(".cross"), dots = svg.querySelectorAll(".cross-dot");
+  const show = i => {
+    cross.setAttribute("x1", x(i)); cross.setAttribute("x2", x(i)); cross.setAttribute("visibility", "visible");
+    dots.forEach((d, k) => { d.setAttribute("cx", x(i)); d.setAttribute("cy", y(dash.series[S[k].key][i])); d.setAttribute("visibility", "visible"); });
+    tip.innerHTML = `<strong>${dayLabel(dash.start, i, { weekday: "short", day: "numeric", month: "short" })}</strong>
+      ${S.map(s => `<span><i style="background:var(${s.color})"></i>${s.label}<b>${dash.series[s.key][i]}</b></span>`).join("")}`;
+    tip.hidden = false;
+    const px = x(i) / W * box.clientWidth;
+    tip.style.left = Math.min(Math.max(px, tip.offsetWidth / 2 + 4), box.clientWidth - tip.offsetWidth / 2 - 4) + "px";
+    box.dataset.i = i;
+  };
+  const hide = () => { cross.setAttribute("visibility", "hidden"); dots.forEach(d => d.setAttribute("visibility", "hidden")); tip.hidden = true; };
+  const nearest = e => {
+    const r = svg.getBoundingClientRect(), px = (e.clientX - r.left) / r.width * W;
+    return Math.round(Math.min(Math.max((px - L) / (W - L - R) * (days - 1), 0), days - 1));
+  };
+  svg.addEventListener("pointermove", e => show(nearest(e)));
+  svg.addEventListener("pointerdown", e => show(nearest(e)));
+  svg.addEventListener("pointerleave", hide);
+  box.onkeydown = e => {
+    const cur = box.dataset.i === undefined ? days - 1 : Number(box.dataset.i);
+    if (e.key === "ArrowLeft") { e.preventDefault(); show(Math.max(0, cur - 1)); }
+    if (e.key === "ArrowRight") { e.preventDefault(); show(Math.min(days - 1, cur + 1)); }
+    if (e.key === "Escape") hide();
+  };
+  box.onfocus = () => show(box.dataset.i === undefined ? days - 1 : Number(box.dataset.i));
+  box.onblur = hide;
+}
+
+function timeAgo(ms) {
+  const s = Math.max(0, (Date.now() - ms) / 1000);
+  if (s < 60) return "เมื่อสักครู่";
+  if (s < 3600) return `${Math.floor(s / 60)} นาทีที่แล้ว`;
+  if (s < 86400) return `${Math.floor(s / 3600)} ชั่วโมงที่แล้ว`;
+  if (s < 7 * 86400) return `${Math.floor(s / 86400)} วันที่แล้ว`;
+  return formatDay(ms);
+}
+const ACTIVITY = {
+  product: ["package", "ลงประกาศใหม่", "act-product"],
+  passed:  ["recycle", "ส่งต่อแล้ว", "act-passed"],
+  review:  ["star", "รีวิวใหม่", "act-review"],
+  report:  ["flag", "รายงานใหม่", "act-report"]
+};
+
+function greeting() {
+  const h = Number(new Date().toLocaleString("en-US", { hour: "numeric", hour12: false, timeZone: "Asia/Bangkok" })) % 24;
+  return h < 12 ? "สวัสดีตอนเช้า" : h < 17 ? "สวัสดีตอนบ่าย" : "สวัสดีตอนเย็น";
+}
+
+function renderOverview({ overview: o, dash }) {
+  const ok = dash && dash.series;
+  const series = ok ? dash.series : {};
+  const week = key => (ok ? sum(series[key].slice(-7)) : null);
   const cards = [
-    ["ประกาศทั้งหมด", o.items, "package", "products"],
-    ["ส่งต่อแล้ว", o.passed, "recycle", "products"],
-    ["ผู้ใช้", o.users, "users", "users"],
-    ["รายงานรอตรวจ", o.reportsOpen, "flag", "reports"]
+    ["ประกาศทั้งหมด", o.items, "package", "products", "products", "--chart-new"],
+    ["ส่งต่อแล้ว", o.passed, "recycle", "passed", "products", "--chart-passed"],
+    ["ผู้ใช้", o.users, "users", "users", "users", "--chart-users"],
+    ["รายงานรอตรวจ", o.reportsOpen, "flag", "reports", "reports", "--chart-reports"]
   ];
-  const tiles = [
-    ["รีวิว", o.reviews],
-    ["ผู้ดูแลระบบ", o.admins],
-    ["บัญชีที่ถูกระงับ", o.banned]
-  ];
-  if (o.chatRooms !== undefined) tiles.push(["ห้องแชต", o.chatRooms]);
+  const typeOrder = ["sell", "free", "swap"];       // ม่วง → เขียว → น้ำเงิน (ม่วงติดน้ำเงินแยกยากสำหรับคนตาบอดสี)
+  const typeTotal = sum(typeOrder.map(t => o.byType[t] || 0));
+  const cats = CATEGORIES.filter(c => c.id !== "all").map(c => [c.name, o.byCategory[c.id] || 0]);
+  const catTotal = sum(cats.map(c => c[1]));
+  const pct = (n, t) => (t ? Math.round(n / t * 100) : 0);
   const rate = o.items ? Math.round(o.passed / o.items * 100) : 0;
-  const breakdown = (title, entries) => `
-    <div class="panel">
-      <h3 class="panel-title">${title}</h3>
-      <div class="list">
-        ${entries.map(([label, n]) => `
-          <div class="list-row"><span>${label}</span><strong>${(n || 0).toLocaleString()}</strong></div>`).join("")}
-      </div>
-    </div>`;
+  const online = SUPABASE_MODE ? "เชื่อมต่อ Supabase แล้ว" : DEMO_MODE ? "โหมดสาธิต" : "เชื่อมต่อเซิร์ฟเวอร์แล้ว";
+  const notReady = `<p class="dash-empty">${esc(dash && dash.error ? "ยังโหลดข้อมูลรายวันไม่ได้ (" + dash.error + ")" : "ยังไม่มีข้อมูลรายวัน")}${SUPABASE_MODE ? " · รันไฟล์ supabase/008_admin_dashboard.sql ใน SQL Editor เพื่อแสดงกราฟ" : ""}</p>`;
 
   adminBody.innerHTML = `
-    <div class="stat-cards">
-      ${cards.map(([label, n, ic, tab]) => `
-        <button type="button" class="stat-card" data-goto="${tab}">
-          <span class="stat-card-ic stat-${ic}"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${STAT_ICONS[ic]}</svg></span>
-          <span class="stat-card-label">${label}</span>
-          <strong class="stat-card-num">${statNum(n)}</strong>
-        </button>`).join("")}
-    </div>
-    <div class="kpis kpis-sm">
-      ${tiles.map(([label, n]) => `
-        <div class="kpi"><span>${label}</span><strong>${statNum(n)}</strong></div>`).join("")}
-    </div>
-    <p class="muted kpi-note">อัตราการส่งต่อสำเร็จ <b>${rate}%</b> ของประกาศทั้งหมด</p>
-    <div class="admin-split">
-      ${breakdown("ตามหมวดหมู่", CATEGORIES.filter(c => c.id !== "all").map(c => [c.name, o.byCategory[c.id]]))}
-      ${breakdown("ตามประเภทประกาศ", Object.keys(TYPE_LABEL).map(t => [TYPE_LABEL[t], o.byType[t]]))}
+    <div class="dash">
+      <div class="dash-head">
+        <div>
+          <h2 class="dash-hello">${greeting()}, ${esc(currentUser.name)}</h2>
+          <p class="muted">${esc(document.getElementById("admin-mode").textContent)}</p>
+        </div>
+        <span class="online-pill" title="${esc(online)}"><i aria-hidden="true"></i>ระบบออนไลน์</span>
+      </div>
+
+      ${cards.map(([label, n, ic, key, tab, color]) => {
+        const w = week(key);
+        return `
+        <button type="button" class="dash-card stat-tile" data-goto="${tab}">
+          <span class="stat-tile-top">
+            <span class="stat-card-ic stat-${ic}">${dashIcon(ic)}</span>
+            <span class="stat-card-label">${label}</span>
+          </span>
+          <span class="stat-tile-mid">
+            <strong class="stat-card-num">${statNum(n)}</strong>
+            ${w === null ? "" : `<span class="delta ${w ? "up" : ""}">${w ? "+" + w.toLocaleString() : "0"} ใน 7 วัน</span>`}
+          </span>
+          ${ok ? sparkline(series[key], color) : `<span class="spark spark-empty" aria-hidden="true"></span>`}
+        </button>`;
+      }).join("")}
+
+      <section class="dash-card dash-trend" aria-labelledby="trend-title">
+        <div class="dash-card-head">
+          <h3 id="trend-title">ประกาศใหม่และการส่งต่อ 14 วันล่าสุด</h3>
+          ${ok ? `<div class="legend">
+            <span><i style="background:var(--chart-new)"></i>ประกาศใหม่ <b>${sum(series.products)}</b></span>
+            <span><i style="background:var(--chart-passed)"></i>ส่งต่อแล้ว <b>${sum(series.passed)}</b></span>
+          </div>` : ""}
+        </div>
+        ${ok ? `<div class="trend-box" id="trend-box" tabindex="0" aria-describedby="trend-help"></div>
+          <p class="sr-help visually-hidden" id="trend-help">ใช้ปุ่มลูกศรซ้ายขวาเพื่อดูแต่ละวัน</p>
+          <details class="trend-table">
+            <summary>ดูเป็นตาราง</summary>
+            <table>
+              <thead><tr><th scope="col">วันที่</th><th scope="col">ประกาศใหม่</th><th scope="col">ส่งต่อแล้ว</th></tr></thead>
+              <tbody>${series.products.map((v, i) => `<tr><th scope="row">${dayLabel(dash.start, i)}</th><td>${v}</td><td>${series.passed[i]}</td></tr>`).join("")}</tbody>
+            </table>
+          </details>` : notReady}
+      </section>
+
+      <section class="dash-card dash-types" aria-labelledby="types-title">
+        <div class="dash-card-head"><h3 id="types-title">ตามประเภทประกาศ</h3><span class="muted">${typeTotal.toLocaleString()} ประกาศ</span></div>
+        <div class="type-bar" role="img" aria-label="${typeOrder.map(t => `${TYPE_LABEL[t]} ${o.byType[t] || 0}`).join(", ")}">
+          ${typeTotal ? typeOrder.filter(t => o.byType[t]).map(t => `<span class="seg seg-${t}" style="flex:${o.byType[t]}"></span>`).join("") : `<span class="seg seg-none"></span>`}
+        </div>
+        <ul class="type-legend">
+          ${typeOrder.map(t => `<li><i class="tl-dot seg-${t}"></i><span>${TYPE_LABEL[t]}</span><b>${(o.byType[t] || 0).toLocaleString()}</b><small>${pct(o.byType[t] || 0, typeTotal)}%</small></li>`).join("")}
+        </ul>
+      </section>
+
+      <section class="dash-card dash-mini" aria-labelledby="mini-title">
+        <h3 id="mini-title" class="visually-hidden">ตัวเลขอื่น</h3>
+        <dl class="mini-stats">
+          <div><dt>รีวิว</dt><dd>${statNum(o.reviews)}</dd></div>
+          <div><dt>ผู้ดูแลระบบ</dt><dd>${statNum(o.admins)}</dd></div>
+          <div><dt>บัญชีถูกระงับ</dt><dd>${statNum(o.banned)}</dd></div>
+          <div><dt>ห้องแชต</dt><dd>${statNum(o.chatRooms)}</dd></div>
+          <div><dt>ส่งต่อสำเร็จ</dt><dd>${rate}%</dd></div>
+        </dl>
+      </section>
+
+      <section class="dash-card dash-cats" aria-labelledby="cats-title">
+        <div class="dash-card-head"><h3 id="cats-title">ตามหมวดหมู่</h3><span class="muted">${catTotal.toLocaleString()} ประกาศ</span></div>
+        <ul class="cat-bars">
+          ${cats.map(([name, n]) => `
+            <li>
+              <span class="cat-name">${esc(name)}</span>
+              <span class="cat-track" role="img" aria-label="${esc(name)} ${n} ประกาศ (${pct(n, catTotal)}%)"><span style="width:${pct(n, catTotal)}%"></span></span>
+              <b>${n.toLocaleString()}</b>
+            </li>`).join("")}
+        </ul>
+      </section>
+
+      <section class="dash-card dash-activity" aria-labelledby="act-title">
+        <div class="dash-card-head"><h3 id="act-title">กิจกรรมล่าสุด</h3></div>
+        ${ok ? (dash.activity.length ? `<ol class="activity">
+          ${dash.activity.map(a => { const [ic, text, cls] = ACTIVITY[a.kind] || ACTIVITY.product; return `
+            <li>
+              <span class="act-ic ${cls}">${dashIcon(ic)}</span>
+              <span class="act-body"><b>${esc(a.who)}</b> ${text}<span class="act-title">${esc(a.title)}</span></span>
+              <time datetime="${new Date(a.at).toISOString()}" title="${esc(new Date(a.at).toLocaleString("th-TH"))}">${timeAgo(a.at)}</time>
+            </li>`; }).join("")}
+        </ol>` : `<p class="dash-empty">ยังไม่มีกิจกรรม</p>`) : notReady}
+      </section>
     </div>`;
+
+  if (ok) {
+    const box = document.getElementById("trend-box");
+    drawTrend(box, dash);
+    /* วาดใหม่เมื่อความกว้างเปลี่ยน (หมุนจอ / ย่อหน้าต่าง) */
+    if (window.ResizeObserver) {
+      let w = box.clientWidth;
+      new ResizeObserver(() => { if (box.isConnected && Math.abs(box.clientWidth - w) > 4) { w = box.clientWidth; drawTrend(box, dash); } }).observe(box);
+    }
+  }
 }
 
 /* ---------- สินค้า ---------- */
@@ -613,6 +829,7 @@ function markAdminNav(tab) {
     b.classList.toggle("active", on);
     if (on) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
   });
+  document.body.classList.toggle("tab-overview", tab === "overview");   // แดชบอร์ดมีคำทักทายแทนหัวข้อหน้า
   const label = tab === "settings" && adminSection === "images" ? "จัดการรูป" : ADMIN_LABELS[tab] || "แดชบอร์ด";
   document.getElementById("admin-crumb").textContent = label;
   document.getElementById("admin-title").textContent = label;

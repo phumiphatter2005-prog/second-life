@@ -384,6 +384,8 @@ async function supabaseApi(path, options = {}) {
   }
 
   if (path === "/admin/overview") return rpc("admin_overview");
+  /* แดชบอร์ด: กราฟ 14 วัน + กิจกรรมล่าสุด (supabase/008_admin_dashboard.sql) */
+  if (path === "/admin/dashboard") return rpc("admin_dashboard");
   if (path === "/admin/products") return rpc("admin_products");
   if (path === "/admin/users") return rpc("admin_users");
   if (path === "/admin/reviews") return rpc("admin_reviews");

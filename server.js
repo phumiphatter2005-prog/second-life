@@ -402,6 +402,45 @@ app.get("/api/admin/overview", requireAdmin, (req, res) => {
   });
 });
 
+/* แดชบอร์ด: จำนวนต่อวัน 14 วันล่าสุด (วันตามเวลาไทย) + 8 กิจกรรมล่าสุด — ทุกค่ามาจากตารางจริง
+   (เหมือน admin_dashboard() ใน supabase/008_admin_dashboard.sql) */
+app.get("/api/admin/dashboard", requireAdmin, (req, res) => {
+  const DAY = 864e5, TZ = 7 * 3600e3;
+  const dayOf = ms => Math.floor((ms + TZ) / DAY);
+  const first = dayOf(Date.now()) - 13;
+  const since = first * DAY - TZ;
+  const buckets = stamps => {
+    const out = new Array(14).fill(0);
+    stamps.forEach(ms => { const i = dayOf(ms) - first; if (i >= 0 && i < 14) out[i]++; });
+    return out;
+  };
+  const col = (sqlText, ...args) => db.prepare(sqlText).all(...args).map(r => r.t);
+  const chatReports = db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'chat_reports'").get();
+  const activity = [
+    ...db.prepare(`SELECT 'product' AS kind, p.created_at AS at, u.name AS who, p.title FROM products p
+      LEFT JOIN users u ON u.id = p.user_id ORDER BY p.created_at DESC LIMIT 8`).all(),
+    ...db.prepare(`SELECT 'passed' AS kind, p.passed_at AS at, u.name AS who, p.title FROM products p
+      LEFT JOIN users u ON u.id = p.user_id WHERE p.passed = 1 AND p.passed_at IS NOT NULL ORDER BY p.passed_at DESC LIMIT 8`).all(),
+    ...db.prepare(`SELECT 'review' AS kind, r.created_at AS at, u.name AS who, p.title FROM reviews r
+      LEFT JOIN users u ON u.id = r.user_id JOIN products p ON p.id = r.product_id ORDER BY r.created_at DESC LIMIT 8`).all(),
+    ...(chatReports ? db.prepare(`SELECT 'report' AS kind, c.created_at AS at, u.name AS who, p.title FROM chat_reports c
+      LEFT JOIN users u ON u.id = c.reporter_id JOIN chat_rooms rm ON rm.id = c.room_id JOIN products p ON p.id = rm.product_id
+      ORDER BY c.created_at DESC LIMIT 8`).all() : [])
+  ].sort((a, b) => b.at - a.at).slice(0, 8)
+    .map(a => ({ ...a, who: a.who || (a.kind === "product" || a.kind === "passed" ? "Second Life" : "ผู้ใช้") }));
+  res.json({
+    start: since,
+    days: 14,
+    series: {
+      products: buckets(col("SELECT created_at AS t FROM products WHERE created_at >= ?", since)),
+      passed: buckets(col("SELECT passed_at AS t FROM products WHERE passed = 1 AND passed_at >= ?", since)),
+      users: buckets(col("SELECT created_at AS t FROM users WHERE created_at >= ?", since)),
+      reports: buckets(chatReports ? col("SELECT created_at AS t FROM chat_reports WHERE created_at >= ?", since) : [])
+    },
+    activity
+  });
+});
+
 app.get("/api/admin/products", requireAdmin, (req, res) => {
   const rows = db.prepare(`
     SELECT p.*, u.name AS seller_name, u.student_id AS seller_sid,
