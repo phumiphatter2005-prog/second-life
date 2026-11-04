@@ -36,7 +36,7 @@ An editorial precision interface for a university second-hand marketplace. The a
 
 ### Dark mode
 
-Three choices: สว่าง / มืด / ตามเครื่อง (default = follow `prefers-color-scheme`). Stored in localStorage `sl-theme`; a tiny script in every <head> sets `<html data-theme>` before paint (no white flash). The toggle is a sun/moon button on the top bar (desktop) and a 3-way capsule in the drawer and the profile menu (phones). Every color is a CSS variable in `:root`; dark mode only swaps the variables. Product photos are never filtered or dimmed.
+Two choices: สว่าง / มืด. Until the user picks one, the site follows `prefers-color-scheme`. Stored in localStorage `sl-theme`; a tiny script in every <head> sets `<html data-theme>` before paint (no white flash). The toggle is a sun/moon button on the top bar (desktop) and a 2-way capsule in the drawer and the profile menu (phones). Every color is a CSS variable in `:root`; dark mode only swaps the variables. Product photos are never filtered or dimmed.
 
 | Token | Light | Dark |
 |---|---|---|

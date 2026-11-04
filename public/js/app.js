@@ -2,7 +2,6 @@
 const ICONS = {
   sun:    '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
   moon:   '<path d="M20.5 14.5A8.5 8.5 0 1 1 9.5 3.5a7 7 0 0 0 11 11Z"/>',
-  monitor:'<rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/>',
   leaf:   '<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.5 19 2c1 2 2 4.2 2 8 0 5.5-4.8 10-10 10Z"/><path d="M2 21c0-3 1.9-5.4 5.1-6C9.5 14.5 12 13 13 12"/>',
   home:   '<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1Z"/>',
   grid:   '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
@@ -127,11 +126,12 @@ function productCard(p) {
     </div>`;
 }
 
-/* ---------- โหมดสว่าง / มืด / ตามเครื่อง ----------
+/* ---------- โหมดสว่าง / มืด ----------
    ค่าเลือกเก็บใน localStorage "sl-theme" (light | dark · ไม่มีค่า = ตามเครื่อง)
    สคริปต์เล็กใน <head> ของทุกหน้าตั้ง <html data-theme> ก่อนวาดหน้า จอจึงไม่กระพริบขาว */
 const THEME_KEY = "sl-theme";
-const THEME_OPTIONS = [["light", "sun", "สว่าง"], ["dark", "moon", "มืด"], ["system", "monitor", "ตามเครื่อง"]];
+/* ให้เลือก 2 แบบ: สว่าง / มืด — ยังไม่เคยเลือก ใช้ตามเครื่องไปก่อน (prefers-color-scheme) */
+const THEME_OPTIONS = [["light", "sun", "สว่าง"], ["dark", "moon", "มืด"]];
 const DARK_MQ = matchMedia("(prefers-color-scheme: dark)");
 
 function themePref() {
@@ -159,11 +159,12 @@ function themeChoices(cls = "theme-seg") {
 
 function syncThemeUI() {
   const pref = themePref();
-  document.querySelectorAll("[data-theme-pick]").forEach(b => b.setAttribute("aria-checked", b.dataset.themePick === pref));
+  const shown = themeIsDark(pref) ? "dark" : "light";     // โหมดที่เห็นอยู่จริง
+  document.querySelectorAll("[data-theme-pick]").forEach(b => b.setAttribute("aria-checked", b.dataset.themePick === shown));
   const btn = document.querySelector(".nav-theme");
   if (btn) {
-    const [, ic, label] = THEME_OPTIONS.find(o => o[0] === pref);
-    btn.innerHTML = icon(pref === "system" ? (DARK_MQ.matches ? "moon" : "sun") : ic);
+    const [, ic, label] = THEME_OPTIONS.find(o => o[0] === shown);
+    btn.innerHTML = icon(ic);
     btn.setAttribute("aria-label", `ธีมสี: ${label}`);
     btn.title = `ธีมสี: ${label}`;
   }
