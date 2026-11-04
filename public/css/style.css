@@ -1837,59 +1837,7 @@ button.admin-title { border: none; background: none; padding: 0; font-size: inhe
 .belt-card strong { display: block; font-weight: 400; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .belt-card .price { font-size: 16px; }
 
-/* ---------- หน้าเข้าสู่ระบบ / สมัครสมาชิก ---------- */
-.auth-split {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  min-height: calc(100vh - var(--nav-h));
-}
-.auth-art {
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  align-items: flex-end;
-  padding: 48px;
-  background: var(--primary);
-  color: var(--on-primary);
-}
-/* ลายจุดบนแผงม่วง */
-.auth-art::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: radial-gradient(rgba(255, 255, 255, .14) 1.2px, transparent 1.2px);
-  background-size: 20px 20px;
-}
-.auth-copy { position: relative; z-index: 2; max-width: 420px; }
-.auth-copy .overline { color: rgba(250, 250, 250, .7); }
-.auth-copy h1 { font-size: clamp(36px, 4.5vw, 56px); line-height: 1.15; letter-spacing: -.03em; }
-.auth-copy p { margin-top: 12px; color: rgba(250, 250, 250, .8); }
-
-.auth-floats { position: absolute; inset: 0; z-index: 1; }
-.auth-floats img {
-  position: absolute;
-  width: var(--s, 140px);
-  aspect-ratio: 1;
-  object-fit: cover;
-  border-radius: var(--r-lg);
-  border: 4px solid rgba(255, 255, 255, .9);
-  animation: float var(--t, 9s) ease-in-out infinite alternate;
-  animation-delay: var(--delay, 0s);
-}
-.auth-floats .f1 { --s: 168px; top: 9%;  left: 10%; --t: 9s;  --r0: -6deg; --r1: -1deg; }
-.auth-floats .f2 { --s: 148px; top: 6%;  left: 52%; --t: 11s; --r0: 5deg;  --r1: 1deg; --delay: -3s; }
-.auth-floats .f3 { --s: 128px; top: 34%; left: 72%; --t: 10s; --r0: -3deg; --r1: 4deg; --delay: -6s; }
-.auth-floats .f4 { --s: 132px; top: 36%; left: 30%; --t: 12s; --r0: 4deg;  --r1: -3deg; --delay: -2s; }
-.auth-floats .f5 { --s: 112px; top: 30%; left: 2%;  --t: 8s;  --r0: -2deg; --r1: 5deg; --delay: -5s; }
-@keyframes float {
-  from { transform: translateY(0) rotate(var(--r0, -4deg)); }
-  to { transform: translateY(-18px) rotate(var(--r1, 3deg)); }
-}
-
-.auth-panel { display: flex; align-items: center; justify-content: center; padding: 48px 24px; }
-.auth-box { width: 100%; max-width: 400px; }
-.auth-box h2 { font-size: 32px; letter-spacing: -.03em; }
-.auth-box > .muted { margin: 4px 0 24px; }
+/* ---------- หน้าเข้าสู่ระบบ / สมัครสมาชิก (โครงหน้าอยู่ท้ายไฟล์: "หน้าเข้าสู่ระบบแบบกระจกฝ้า") ---------- */
 
 /* แท็บแคปซูลเลื่อนสลับ */
 .seg {
@@ -2025,19 +1973,6 @@ button.admin-title { border: none; background: none; padding: 0; font-size: inhe
   .sk-detail { grid-template-columns: minmax(0, 1fr); gap: 20px; }
   .toasts { left: 16px; right: 16px; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); align-items: center; }
 
-  /* มือถือ: แผงม่วงย่อเหลือแถบบน ฟอร์มอยู่ล่าง */
-  .auth-split { grid-template-columns: minmax(0, 1fr); min-height: 0; }
-  .auth-art { min-height: 168px; padding: 24px 16px; align-items: center; }
-  .auth-copy { max-width: 58%; }
-  .auth-copy h1 { font-size: 26px; }
-  .auth-copy p, .auth-copy .overline { display: none; }
-  .auth-floats img { --s: 76px !important; border-width: 3px; }
-  .auth-floats img:nth-child(n+4) { display: none; }
-  .auth-floats .f1 { top: 14px; left: auto; right: 92px; }
-  .auth-floats .f2 { top: 70px; left: auto; right: 16px; }
-  .auth-floats .f3 { top: 84px; left: auto; right: 112px; }
-  .auth-panel { padding: 24px 16px 32px; align-items: flex-start; }
-  .auth-box h2 { font-size: 24px; }
 }
 
 @media (max-width: 720px) {
@@ -2762,3 +2697,174 @@ a.history-item:hover { border-color: var(--border-strong); }
 .history-when .price-sell, .history-when .price-swap, .history-when .price-free { font-weight: 600; }
 .history-cta { flex-shrink: 0; font-size: 13px; color: var(--primary); white-space: nowrap; }
 .history-item .status { flex-shrink: 0; font-size: 12px; white-space: nowrap; }
+
+/* ---------- หน้าเข้าสู่ระบบแบบกระจกฝ้า (login.html) ----------
+   พื้นหลังเต็มจอ = ภาพของมือสองจริง + ไล่สีม่วงเข้ม → ม่วงอ่อนแบบโปร่ง
+   ซ้าย: โลโก้ใหญ่ + สโลแกน · ขวา: กล่องฟอร์มกระจกฝ้า · มือถือ (< 768px): ซ่อนซ้าย เหลือโลโก้เล็ก + กล่องเต็มจอ */
+.auth-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 48px;
+  min-height: calc(100vh - var(--nav-h));
+  min-height: calc(100dvh - var(--nav-h));
+  padding: 48px max(24px, calc((100vw - 1200px) / 2));
+  background: #3A1042;              /* สีสำรองระหว่างรูปยังโหลด */
+}
+.auth-bg { position: absolute; inset: 0; z-index: -1; overflow: hidden; }
+.auth-photos {
+  position: absolute;
+  inset: -24px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: 1fr;
+  gap: 8px;
+  filter: blur(2px) saturate(.9);
+  transform: scale(1.04);
+}
+.auth-photos img { width: 100%; height: 100%; object-fit: cover; }
+/* ไล่สีม่วงเข้ม (ซ้าย ใต้ตัวหนังสือขาว) → ม่วงอ่อนแบบโปร่ง (ขวา ใต้กล่องฟอร์ม) */
+.auth-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, rgba(42, 10, 48, .94) 0%, rgba(101, 33, 111, .86) 42%, rgba(126, 42, 140, .66) 70%, rgba(201, 150, 210, .5) 100%);
+}
+/* วงกลมเส้นโค้งตกแต่ง ลอยขยับช้าๆ */
+.auth-ring {
+  position: absolute;
+  z-index: 1;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, .16);
+  border-top-color: rgba(255, 255, 255, .5);
+  border-right-color: rgba(255, 255, 255, .32);
+  pointer-events: none;
+  animation: ring-drift var(--t, 26s) ease-in-out infinite alternate;
+}
+.auth-ring.r1 { width: 520px; height: 520px; left: -140px; top: -160px; --t: 28s; }
+.auth-ring.r2 { width: 340px; height: 340px; right: 6%; bottom: -120px; --t: 22s; animation-delay: -6s; }
+.auth-ring.r3 { width: 180px; height: 180px; left: 42%; top: 12%; --t: 18s; animation-delay: -10s; border-width: 1px; }
+@keyframes ring-drift {
+  from { transform: translate(0, 0) rotate(0deg); }
+  to { transform: translate(28px, -22px) rotate(40deg); }
+}
+
+.auth-brand { position: relative; z-index: 2; color: #FFFFFF; max-width: 520px; }
+.auth-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(36px, 4.4vw, 56px);
+  letter-spacing: -.03em;
+  line-height: 1.1;
+  color: #FFFFFF;
+}
+.auth-logo .auth-logo-mark { width: 1.15em; height: 1.15em; border-radius: 16px; }
+.auth-logo .auth-logo-mark .ic { width: .62em; height: .62em; }
+.auth-logo-mark {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, .16);
+  border: 1px solid rgba(255, 255, 255, .35);
+  color: #FFFFFF;
+}
+.auth-brand h1 {
+  margin-top: 32px;
+  font-size: clamp(30px, 3.4vw, 44px);
+  line-height: 1.2;
+  letter-spacing: -.02em;
+  color: #FFFFFF;
+}
+.auth-brand p { margin-top: 12px; font-size: 17px; color: rgba(255, 255, 255, .88); max-width: 420px; }
+
+.auth-panel { position: relative; z-index: 2; display: flex; justify-content: center; }
+/* กล่องกระจกฝ้า: พื้นขาวโปร่ง 90% (ตัวหนังสือเข้มยังได้ contrast ≥ 4.5:1 ทุกพื้นหลัง) ขอบขาวบาง มุม 20px */
+.auth-box {
+  /* สีข้อความรองในกล่องเข้มขึ้น ให้อ่านชัดบนพื้นโปร่ง */
+  --text-2: #52525B;
+  --neutral: #5F5F6B;
+  width: 100%;
+  max-width: 420px;
+  padding: 36px 32px 32px;
+  background: rgba(255, 255, 255, .9);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  backdrop-filter: blur(18px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, .7);
+  border-radius: 20px;
+  box-shadow: 0 24px 60px rgba(30, 6, 36, .35);
+  color: var(--text);
+  animation: auth-rise .6s cubic-bezier(.2, .7, .2, 1) both;
+}
+@keyframes auth-rise {
+  from { opacity: 0; transform: translateY(28px); }
+  to { opacity: 1; transform: none; }
+}
+.auth-box h2 { font-size: 30px; letter-spacing: -.03em; color: var(--text); }
+.auth-box > .muted { margin: 4px 0 24px; color: var(--text-2); }
+.auth-box .seg { background: rgba(126, 42, 140, .08); }
+.auth-logo-sm { display: none; }
+
+/* ช่องกรอกทรงแคปซูล + ไอคอนนำหน้า */
+.auth-box .float-field input[type] { border-radius: var(--r-full); background: #FFFFFF; }
+.float-field.has-ic input[type] { padding-left: 48px; }
+.float-field.has-ic label { left: 49px; }
+.field-ic {
+  position: absolute;
+  left: 18px;
+  top: 16px;
+  width: 20px;
+  height: 20px;
+  color: var(--text-2);
+  pointer-events: none;
+  transition: color .2s;
+}
+.field-ic svg { width: 100%; height: 100%; }
+.float-field:focus-within .field-ic { color: var(--primary); }
+.auth-box .eye-btn { right: 8px; border-radius: var(--r-full); }
+
+/* ปุ่มเข้าสู่ระบบทรงแคปซูลเต็มความกว้าง */
+.auth-box .auth-submit { width: 100%; height: 52px; border-radius: var(--r-full); font-size: 16px; }
+
+@media (max-width: 1023px) {
+  .auth-hero { gap: 32px; }
+  .auth-box { padding: 32px 24px 28px; }
+}
+
+/* มือถือ: ซ่อนส่วนซ้าย เหลือโลโก้เล็กด้านบน + กล่องฟอร์มเต็มจอ */
+@media (max-width: 767px) {
+  .auth-hero { display: block; padding: 16px; }
+  .auth-brand { display: none; }
+  .auth-photos { grid-template-columns: repeat(2, 1fr); }
+  .auth-ring.r1 { width: 300px; height: 300px; left: -120px; top: -110px; }
+  .auth-ring.r2 { width: 220px; height: 220px; right: -80px; bottom: -60px; }
+  .auth-ring.r3 { display: none; }
+  /* เต็มจอส่วนที่เหลือ ไม่รวมแถบเมนูล่าง (body เว้นที่ไว้ 68px) */
+  .auth-hero { min-height: calc(100vh - var(--nav-h) - 68px); min-height: calc(100dvh - var(--nav-h) - 68px); }
+  .auth-panel { min-height: calc(100dvh - var(--nav-h) - 68px - 32px); align-items: stretch; }
+  .auth-box { max-width: none; padding: 24px 20px 28px; }
+  .auth-logo-sm {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 17px;
+    letter-spacing: -.02em;
+    color: var(--text);
+  }
+  .auth-logo-sm .auth-logo-mark { width: 28px; height: 28px; border-radius: var(--r-md); background: var(--primary); border: 0; }
+  .auth-logo-sm .auth-logo-mark .ic { width: 16px; height: 16px; }
+  .auth-box h2 { font-size: 24px; }
+}
+
+/* ปิดลูกเล่นเมื่อผู้ใช้ตั้งค่าลดการเคลื่อนไหว */
+@media (prefers-reduced-motion: reduce) {
+  .auth-ring, .auth-box { animation: none; }
+}

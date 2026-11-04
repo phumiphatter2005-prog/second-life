@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600&family=IBM+Plex+Sans+Thai:wght@400;600&family=JetBrains+Mono&display=swap">
-  <link rel="stylesheet" href="css/style.css?v=32">
+  <link rel="stylesheet" href="css/style.css?v=33">
 </head>
 <body>
 
@@ -26,26 +26,35 @@
     </div>
   </header>
 
-  <main class="auth-split">
-    <!-- ซ้าย (มือถือ: แถบบน): แผงม่วง รูปสินค้าจริงลอยขยับช้าๆ -->
-    <aside class="auth-art">
-      <div class="auth-floats" aria-hidden="true">
-        <img class="f1" src="images/sample-headphones.jpg" alt="">
-        <img class="f2" src="images/sample-hoodie.jpg" alt="">
-        <img class="f3" src="images/sample-cs-book.jpg" alt="">
-        <img class="f4" src="images/sample-lamp.jpg" alt="">
-        <img class="f5" src="images/sample-backpack.jpg" alt="">
+  <main class="auth-hero">
+    <!-- พื้นหลัง: ภาพของมือสองจริง ทับด้วยไล่สีม่วงเข้ม → ม่วงอ่อนแบบโปร่ง + วงโค้งตกแต่งลอยช้าๆ -->
+    <div class="auth-bg" aria-hidden="true">
+      <div class="auth-photos">
+        <img src="images/sample-cs-book.jpg" alt="">
+        <img src="images/sample-headphones.jpg" alt="">
+        <img src="images/sample-hoodie.jpg" alt="">
+        <img src="images/sample-lamp.jpg" alt="">
+        <img src="images/sample-backpack.jpg" alt="">
+        <img src="images/sample-laptop.jpg" alt="">
+        <img src="images/sample-english-book.jpg" alt="">
+        <img src="images/sample-hoodie.jpg" alt="">
       </div>
-      <div class="auth-copy">
-        <span class="overline">Second Life</span>
-        <h1>ให้ของได้มี<br>ชีวิตที่สอง</h1>
-        <p>ซื้อ ขาย แลกเปลี่ยน และแจกฟรี ภายในชุมชนมหาวิทยาลัย</p>
-      </div>
+      <span class="auth-ring r1"></span>
+      <span class="auth-ring r2"></span>
+      <span class="auth-ring r3"></span>
+    </div>
+
+    <!-- ซ้าย (คอมพิวเตอร์): โลโก้ใหญ่ + สโลแกน · มือถือซ่อน -->
+    <aside class="auth-brand">
+      <a href="index.html" class="auth-logo"><span class="auth-logo-mark"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg></span>Second Life</a>
+      <h1>ให้ของได้มี<br>ชีวิตที่สอง</h1>
+      <p>ซื้อ ขาย แลกเปลี่ยน และแจกฟรี ภายในชุมชนมหาวิทยาลัย</p>
     </aside>
 
-    <!-- ขวา (มือถือ: ด้านล่าง): ฟอร์ม -->
+    <!-- ขวา: กล่องฟอร์มกระจกฝ้า -->
     <section class="auth-panel">
       <div class="auth-box">
+        <a href="index.html" class="auth-logo-sm" aria-label="Second Life หน้าแรก"><span class="auth-logo-mark"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg></span>Second Life</a>
         <h2 id="auth-heading">ยินดีต้อนรับกลับมา</h2>
         <p class="muted" id="auth-sub">เข้าสู่ระบบด้วยรหัสนักศึกษา</p>
 
@@ -56,19 +65,22 @@
         </div>
 
         <form id="auth-form" class="auth-form" novalidate>
-          <div class="float-field">
+          <div class="float-field has-ic">
+            <span class="field-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span>
             <input id="a-sid" type="text" inputmode="numeric" maxlength="8" autocomplete="username"
               placeholder=" " aria-describedby="sid-msg">
             <label for="a-sid">รหัสนักศึกษา 8 หลัก</label>
             <p class="field-msg" id="sid-msg" aria-live="polite"></p>
           </div>
 
-          <div class="float-field" id="name-field" hidden>
+          <div class="float-field has-ic" id="name-field" hidden>
+            <span class="field-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span>
             <input id="a-name" type="text" autocomplete="nickname" maxlength="60" placeholder=" ">
             <label for="a-name">ชื่อที่จะแสดง</label>
           </div>
 
-          <div class="float-field has-eye">
+          <div class="float-field has-ic has-eye">
+            <span class="field-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>
             <input id="a-pass" type="password" autocomplete="current-password" placeholder=" ">
             <label for="a-pass">รหัสผ่าน</label>
             <button type="button" class="eye-btn" id="a-eye" aria-label="แสดงรหัสผ่าน" title="แสดงรหัสผ่าน"></button>
@@ -91,11 +103,11 @@
     </section>
   </main>
 
-  <script src="js/config.js?v=32"></script>
-  <script src="js/supabase.js?v=32"></script>
-  <script src="js/demo.js?v=32"></script>
-  <script src="js/data.js?v=32"></script>
-  <script src="js/app.js?v=32"></script>
-  <script src="js/login.js?v=32"></script>
+  <script src="js/config.js?v=33"></script>
+  <script src="js/supabase.js?v=33"></script>
+  <script src="js/demo.js?v=33"></script>
+  <script src="js/data.js?v=33"></script>
+  <script src="js/app.js?v=33"></script>
+  <script src="js/login.js?v=33"></script>
 </body>
 </html>
