@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600&family=IBM+Plex+Sans+Thai:wght@400;600&family=JetBrains+Mono&display=swap">
-  <link rel="stylesheet" href="css/style.css?v=26">
+  <link rel="stylesheet" href="css/style.css?v=27">
 </head>
 <body>
 
@@ -90,6 +90,12 @@
         <input id="p-price" type="number" inputmode="numeric" min="0" max="1000000" step="1" placeholder="เช่น 150">
         <div class="ai-price" id="ai-price" aria-live="polite" hidden></div>
 
+        <div id="swap-wish-field" hidden>
+          <label class="field-label" for="p-want-swap">อยากแลกกับอะไร (ไม่บังคับ)</label>
+          <input id="p-want-swap" type="text" maxlength="60" placeholder="เช่น หนังสือเตรียมสอบ หรือพัดลมตั้งโต๊ะ">
+          <p class="field-hint">ไม่เกิน 60 ตัวอักษร</p>
+        </div>
+
         <p class="form-error" hidden></p>
         <div class="btn-row">
           <button type="button" class="btn-primary" data-next>ถัดไป →</button>
@@ -152,12 +158,12 @@
     </div>
   </main>
 
-  <script src="js/config.js?v=26"></script>
-  <script src="js/supabase.js?v=26"></script>
-  <script src="js/demo.js?v=26"></script>
-  <script src="js/data.js?v=26"></script>
-  <script src="js/app.js?v=26"></script>
-  <script src="js/post.js?v=26"></script>
-  <script src="js/ai-listing.js?v=26"></script>
+  <script src="js/config.js?v=27"></script>
+  <script src="js/supabase.js?v=27"></script>
+  <script src="js/demo.js?v=27"></script>
+  <script src="js/data.js?v=27"></script>
+  <script src="js/app.js?v=27"></script>
+  <script src="js/post.js?v=27"></script>
+  <script src="js/ai-listing.js?v=27"></script>
 </body>
 </html>

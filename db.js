@@ -63,6 +63,10 @@ if (!userCols.includes("role")) db.exec("ALTER TABLE users ADD COLUMN role TEXT 
 if (!userCols.includes("banned")) db.exec("ALTER TABLE users ADD COLUMN banned INTEGER NOT NULL DEFAULT 0");
 if (!userCols.includes("avatar")) db.exec("ALTER TABLE users ADD COLUMN avatar TEXT");
 
+/* "อยากแลกกับอะไร" ของประกาศแลกเปลี่ยน */
+const productCols = db.prepare("PRAGMA table_info(products)").all().map(c => c.name);
+if (!productCols.includes("want_swap")) db.exec("ALTER TABLE products ADD COLUMN want_swap TEXT NOT NULL DEFAULT ''");
+
 /* ผู้ดูแลระบบจากตัวแปร ADMIN_STUDENT_IDS (คั่นด้วยจุลภาค) */
 (process.env.ADMIN_STUDENT_IDS || "").split(",").map(s => s.trim()).filter(Boolean).forEach(sid =>
   db.prepare("UPDATE users SET role = 'admin' WHERE student_id = ?").run(sid));
