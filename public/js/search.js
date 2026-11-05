@@ -85,6 +85,40 @@ function setupSheet() {
     openBtn.focus({ preventScroll: true });
   };
 
+  /* มือถือ (< 768px): ป้ายบนช่องราคาเป็น "ต่ำสุด/สูงสุด" แล้ว placeholder จึงเป็นตัวอย่างค่าแทน */
+  const SHEET_MQ = matchMedia("(max-width: 767px)");
+  const placeholders = () => {
+    $("f-min").placeholder = SHEET_MQ.matches ? "0" : "ต่ำสุด";
+    $("f-max").placeholder = SHEET_MQ.matches ? "ไม่จำกัด" : "สูงสุด";
+  };
+  placeholders();
+  SHEET_MQ.addEventListener("change", placeholders);
+
+  /* ปัดแถบจับ/หัวแผ่นลงเพื่อปิด (ลากเกิน 80px หรือปัดเร็ว) */
+  let drag = null;
+  sheet.addEventListener("pointerdown", e => {
+    if (!sheet.classList.contains("open") || !e.target.closest(".sheet-grip, .filters-head") || e.target.closest("button")) return;
+    drag = { y: e.clientY, t: Date.now(), id: e.pointerId, dy: 0 };
+    sheet.setPointerCapture(e.pointerId);
+    sheet.classList.add("dragging");
+  });
+  sheet.addEventListener("pointermove", e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    drag.dy = Math.max(0, e.clientY - drag.y);
+    sheet.style.transform = `translateY(${drag.dy}px)`;
+  });
+  const endDrag = e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const fast = drag.dy > 30 && drag.dy / Math.max(1, Date.now() - drag.t) > .5;
+    const shouldClose = drag.dy > 80 || fast;
+    sheet.classList.remove("dragging");
+    sheet.style.transform = "";
+    drag = null;
+    if (shouldClose) close();
+  };
+  sheet.addEventListener("pointerup", endDrag);
+  sheet.addEventListener("pointercancel", endDrag);
+
   openBtn.addEventListener("click", open);
   $("f-close").addEventListener("click", close);
   $("f-apply").addEventListener("click", close);
@@ -177,6 +211,7 @@ function syncPanel() {
 
   const n = panelFilterCount();
   $("f-reset").hidden = !n;
+  $("f-reset").disabled = !n;       // มือถือแสดงปุ่ม "ล้างทั้งหมด" ตลอด แต่กดได้เมื่อมีตัวกรอง
   $("f-reset-n").textContent = n;
   $("f-open-n").hidden = !n;
   $("f-open-n").textContent = n;

@@ -3639,3 +3639,101 @@ body.admin-shell-page.tab-overview .page-head { display: none; }
 .confirm-title { font-size: 18px; }
 .confirm-body { color: var(--text-2); font-size: 14px; }
 .confirm-card .btn-row { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+
+/* ---------- แผ่นตัวกรอง (search.html) บนมือถือ < 768px ----------
+   คอมพิวเตอร์ (แผงซ้าย) และ 768–860px ใช้แบบเดิม · ไม่แตะ logic การกรอง */
+.sheet-grip, .sheet-text, .f-price-cap { display: none; }
+.f-price-field { display: block; min-width: 0; }
+
+:root {
+  --sheet-bg: var(--surface);
+  --sheet-seg: #F2EFF5;
+  --sheet-seg-on-bg: #1C1426;
+  --sheet-seg-on-ink: #FFFFFF;
+  --sheet-cond-on-bg: #F5ECF7;
+  --sheet-cond-on-ink: #7E2A8C;
+}
+:root[data-theme="dark"] {
+  --sheet-bg: #1A1422; --sheet-seg: #241C2E; --sheet-seg-on-bg: #F3EEF7; --sheet-seg-on-ink: #1C1426;
+  --sheet-cond-on-bg: #2E2538; --sheet-cond-on-ink: #C487D2;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --sheet-bg: #1A1422; --sheet-seg: #241C2E; --sheet-seg-on-bg: #F3EEF7; --sheet-seg-on-ink: #1C1426;
+    --sheet-cond-on-bg: #2E2538; --sheet-cond-on-ink: #C487D2;
+  }
+}
+
+@media (max-width: 767px) {
+  .filters-backdrop { background: rgba(0, 0, 0, .5); }
+  .filters {
+    padding-top: 10px;
+    background: var(--sheet-bg);
+    border-radius: 28px 28px 0 0;
+  }
+  .filters.dragging { transition: none; }
+  /* หัวแผ่น: แถบจับ + "ตัวกรอง" + "ล้างทั้งหมด" (ไม่มีเส้นคั่น) */
+  .sheet-grip { display: block; flex-shrink: 0; width: 40px; height: 5px; margin: 0 auto; border-radius: 3px; background: var(--border-strong); touch-action: none; }
+  .filters-head { padding: 12px 20px 0; border-bottom: 0; touch-action: none; }
+  .filters-head h2 { font-size: 20px; }
+  .filters-reset, .filters-reset[hidden] { display: inline-flex !important; align-items: center; min-height: 44px; padding: 0 4px; }   /* ทับ [hidden] !important: มือถือแสดงตลอด กดไม่ได้เมื่อไม่มีตัวกรอง */
+  .filters-reset .desk-text { display: none; }
+  .filters-reset .sheet-text { display: inline; }
+  .filters-reset:disabled { color: var(--text-2); cursor: default; text-decoration: none; }
+  /* ปุ่ม ✕ ซ่อนจากสายตา (ปิดได้ด้วยการแตะพื้นหลัง ปัดลง หรือปุ่ม "แสดง N รายการ") แต่ยังกดได้ด้วยคีย์บอร์ด */
+  .filters-close { position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; clip: rect(0 0 0 0); }
+  .filters-close:focus-visible { position: static; width: 40px; height: 40px; clip: auto; overflow: visible; display: grid; }
+
+  .filters-body { padding: 0 20px 8px; }
+  .filters .f-group { margin-top: 16px; }
+  .filters .f-group legend { margin-bottom: 8px; font-size: 14px; }
+
+  /* ประเภทประกาศ: 4 ช่องเท่ากันในแคปซูลพื้นเทาอ่อน ตัวหนังสือสีตามประเภท */
+  .filters .type-seg { gap: 4px; padding: 4px; background: var(--sheet-seg); border-radius: var(--r-full); }
+  .filters .type-seg button { height: 40px; border: 0; border-radius: var(--r-full); font-size: 14px; font-weight: 600; color: var(--text); }
+  .filters .type-seg .dot { display: none; }
+  .filters .type-seg [data-value="sell"] { color: var(--type-sell-ink, var(--type-sell)); }
+  .filters .type-seg [data-value="swap"] { color: var(--type-swap); }
+  .filters .type-seg [data-value="free"] { color: var(--type-free); }
+  .filters .type-seg button[aria-pressed="true"] { background: var(--sheet-seg-on-bg); color: var(--sheet-seg-on-ink); border: 0; }
+
+  /* สภาพสินค้า: แคปซูลแถวเดียว ไม่มีคำอธิบาย ช่องที่เลือกมี ✓ */
+  .filters .f-checks { flex-direction: row; gap: 8px; }
+  .filters .f-check {
+    position: relative;
+    flex: 1 1 0;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-width: 0;
+    height: 44px;
+    margin: 0;
+    padding: 0 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-full);
+    background: var(--sheet-bg);
+    color: var(--text);
+    transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+  }
+  .filters .f-check:hover { background: var(--bg-alt); }
+  .filters .f-check input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+  .filters .f-check small { display: none; }
+  .filters .f-check b { font-size: 14px; white-space: nowrap; }
+  .filters .f-check:focus-within { outline: 2px solid var(--primary-ink); outline-offset: 2px; }
+  .filters .f-check:has(input:checked) { background: var(--sheet-cond-on-bg); border-color: var(--sheet-cond-on-ink); color: var(--sheet-cond-on-ink); }
+  .filters .f-check:has(input:checked) b { font-weight: 600; }
+  .filters .f-check:has(input:checked) b::before { content: "✓ "; }
+
+  /* ช่วงราคา: ป้าย "ต่ำสุด / สูงสุด" เหนือช่อง */
+  .filters .f-price { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .filters .f-price-dash { display: none; }
+  .filters .f-price-cap { display: block; margin-bottom: 4px; font-size: 12px; color: var(--text-2); }
+  .filters .f-price input { height: 44px; padding: 0 14px; border-radius: 12px; }
+
+  /* ปุ่มล่าง: "แสดง N รายการ" แคปซูลเต็มความกว้าง */
+  .filters-foot { padding: 12px 20px calc(16px + env(safe-area-inset-bottom)); border-top: 0; }
+  .filters-foot .btn { height: 52px; border-radius: var(--r-full); background: #7E2A8C; color: #FFFFFF; font-size: 16px; }
+  .filters-foot .btn:hover { background: #65216F; }
+  .filters-foot .desk-text { display: none; }
+  .filters-foot .sheet-text { display: inline; }
+}

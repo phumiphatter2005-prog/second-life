@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600&family=IBM+Plex+Sans+Thai:wght@400;600&family=JetBrains+Mono&display=swap">
-  <link rel="stylesheet" href="css/style.css?v=43">
+  <link rel="stylesheet" href="css/style.css?v=44">
 </head>
 <body>
 
@@ -32,9 +32,11 @@
     <!-- คอม: แผงซ้ายติดจอ · มือถือ: แผ่นเลื่อนขึ้นจากล่าง (เปิดด้วยปุ่ม "ตัวกรอง") -->
     <div class="filters-backdrop" id="filters-backdrop" hidden></div>
     <aside class="filters" id="filters" aria-labelledby="filters-title" tabindex="-1">
+      <!-- มือถือ: แถบจับสำหรับปัดลงเพื่อปิด -->
+      <span class="sheet-grip" aria-hidden="true"></span>
       <div class="filters-head">
         <h2 id="filters-title">ตัวกรอง</h2>
-        <button id="f-reset" type="button" class="filters-reset" hidden>ล้าง (<span id="f-reset-n">0</span>)</button>
+        <button id="f-reset" type="button" class="filters-reset" hidden><span class="desk-text">ล้าง (<span id="f-reset-n">0</span>)</span><span class="sheet-text">ล้างทั้งหมด</span></button>
         <button id="f-close" type="button" class="filters-close" aria-label="ปิดตัวกรอง"></button>
       </div>
 
@@ -57,15 +59,17 @@
         <fieldset class="f-group">
           <legend>ช่วงราคา (บาท)</legend>
           <div class="f-price">
-            <input id="f-min" type="number" min="0" step="1" inputmode="numeric" placeholder="ต่ำสุด" aria-label="ราคาต่ำสุด">
-            <span aria-hidden="true">–</span>
-            <input id="f-max" type="number" min="0" step="1" inputmode="numeric" placeholder="สูงสุด" aria-label="ราคาสูงสุด">
+            <label class="f-price-field"><span class="f-price-cap">ต่ำสุด</span>
+              <input id="f-min" type="number" min="0" step="1" inputmode="numeric" placeholder="ต่ำสุด" aria-label="ราคาต่ำสุด"></label>
+            <span class="f-price-dash" aria-hidden="true">–</span>
+            <label class="f-price-field"><span class="f-price-cap">สูงสุด</span>
+              <input id="f-max" type="number" min="0" step="1" inputmode="numeric" placeholder="สูงสุด" aria-label="ราคาสูงสุด"></label>
           </div>
         </fieldset>
       </div>
 
       <div class="filters-foot">
-        <button id="f-apply" type="button" class="btn btn-primary">ดูผล <span id="f-apply-n">0</span> รายการ</button>
+        <button id="f-apply" type="button" class="btn btn-primary"><span class="desk-text">ดูผล</span><span class="sheet-text">แสดง</span> <span id="f-apply-n">0</span> รายการ</button>
       </div>
     </aside>
 
@@ -94,11 +98,11 @@
     </section>
   </main>
 
-  <script src="js/config.js?v=43"></script>
-  <script src="js/supabase.js?v=43"></script>
-  <script src="js/demo.js?v=43"></script>
-  <script src="js/data.js?v=43"></script>
-  <script src="js/app.js?v=43"></script>
-  <script src="js/search.js?v=43"></script>
+  <script src="js/config.js?v=44"></script>
+  <script src="js/supabase.js?v=44"></script>
+  <script src="js/demo.js?v=44"></script>
+  <script src="js/data.js?v=44"></script>
+  <script src="js/app.js?v=44"></script>
+  <script src="js/search.js?v=44"></script>
 </body>
 </html>
