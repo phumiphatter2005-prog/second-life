@@ -1630,10 +1630,11 @@ button.admin-title { border: none; background: none; padding: 0; font-size: inhe
     --tabbar-on-bg: #F5ECF7;
     --tabbar-on-ink: #7E2A8C;       /* 7.4:1 บน #F5ECF7 */
     --tabbar-shadow: 0 8px 28px rgba(28, 20, 38, .10);
-    --tabbar-h: 64px;
-    --tabbar-fab: 60px;             /* ปุ่มกลม "ลงประกาศ" */
-    /* พื้นที่ที่ต้องเว้นใต้เนื้อหา = ความสูงแถบ + 24px + ส่วนของปุ่มกลางที่ลอยเหนือแถบ (30px) + safe-area ของ iPhone */
-    --tabbar-space: calc(var(--tabbar-h) + 24px + var(--tabbar-fab) / 2 + env(safe-area-inset-bottom, 0px));
+    --tabbar-h: 72px;               /* ไม่รวม safe-area */
+    --tabbar-fab: 64px;             /* ปุ่มกลม "ลงประกาศ" */
+    --tabbar-fab-out: 8px;          /* ส่วนของปุ่มกลมที่ยื่นพ้นขอบบนของแถบ */
+    /* พื้นที่ที่ต้องเว้นใต้เนื้อหา = ความสูงแถบ + 24px + ส่วนที่ปุ่มกลางยื่นขึ้น + safe-area ของ iPhone */
+    --tabbar-space: calc(var(--tabbar-h) + 24px + var(--tabbar-fab-out) + env(safe-area-inset-bottom, 0px));
   }
   .nav-links {
     position: fixed;
@@ -1642,11 +1643,12 @@ button.admin-title { border: none; background: none; padding: 0; font-size: inhe
     bottom: calc(12px + env(safe-area-inset-bottom, 0px));
     z-index: 30;
     display: grid;
-    grid-template-columns: repeat(var(--tabbar-n, 5), minmax(0, 1fr));
+    grid-template-columns: repeat(var(--tabbar-n, 5), 1fr);   /* 5 คอลัมน์กว้างเท่ากันเป๊ะ */
     align-items: center;
+    justify-items: center;
     gap: 0;
     height: var(--tabbar-h);
-    padding: 5px 4px;               /* ช่องกว้างพอให้ "รายการโปรด" 12px ไม่ถูกตัดที่จอ 360px */
+    padding: 0 4px;
     background: var(--tabbar-bg);
     border: 1px solid var(--tabbar-border);
     border-radius: var(--r-full);
@@ -1660,9 +1662,10 @@ button.admin-title { border: none; background: none; padding: 0; font-size: inhe
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 2px;
+    gap: 4px;
+    width: min(64px, 100%);         /* พื้นของปุ่มที่เลือก ~64×56 ไม่ล้นคอลัมน์ */
     min-width: 44px;
-    height: 52px;
+    height: 56px;
     padding: 0;
     border-radius: 16px;
     color: var(--tabbar-ink);
@@ -1674,7 +1677,8 @@ button.admin-title { border: none; background: none; padding: 0; font-size: inhe
   .nav-links > a:hover, .nav-links > a.active { background: none; color: var(--tabbar-ink); }
   .nav-links .ic { width: 22px; height: 22px; }
   .nav-ic { display: grid; place-items: center; }
-  .nav-label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: -.01em; }
+  /* ชื่อไม่ตัดเป็น "…" (ตัวหนาของปุ่มที่เลือกกว้างขึ้นได้โดยคอลัมน์อื่นไม่ขยับ เพราะคอลัมน์กว้างคงที่) */
+  .nav-label { white-space: nowrap; letter-spacing: -.01em; }
   /* ปุ่มของหน้าปัจจุบัน (aria-current="page") */
   .nav-links > a.nav-on { background: var(--tabbar-on-bg); color: var(--tabbar-on-ink); font-weight: 600; }
   .nav-links > a:focus-visible { outline: 2px solid var(--primary-ink); outline-offset: 1px; }
@@ -1687,13 +1691,14 @@ button.admin-title { border: none; background: none; padding: 0; font-size: inhe
   .nav-links > a[href="post.html"] .nav-ic {
     position: absolute;
     left: 50%;
-    top: calc(-5px - var(--tabbar-fab) / 2);   /* จุดกึ่งกลางวงอยู่ที่ขอบบนของแถบ */
+    /* ปุ่มสูง 56px อยู่กลางแถบ 72px → ขอบบนของแถบอยู่เหนือปุ่ม 8px · วงกลมยื่นพ้นขอบบนแถบ 8px */
+    top: calc((56px - var(--tabbar-h)) / 2 - var(--tabbar-fab-out));
     width: var(--tabbar-fab);
     height: var(--tabbar-fab);
     margin-left: calc(var(--tabbar-fab) / -2);
     border-radius: 50%;
     background: #7E2A8C;
-    box-shadow: 0 8px 20px rgba(126, 42, 140, .35), 0 0 0 5px var(--tabbar-bg);
+    box-shadow: 0 8px 20px rgba(126, 42, 140, .35), 0 0 0 4px var(--tabbar-bg);
     transition: transform .15s ease, background-color .15s ease;
   }
   .nav-links > a[href="post.html"] .nav-ic .ic { display: none; }
@@ -1703,9 +1708,9 @@ button.admin-title { border: none; background: none; padding: 0; font-size: inhe
     position: absolute;
     left: 50%;
     top: 50%;
-    width: 24px;
-    height: 3px;
-    margin: -1.5px 0 0 -12px;
+    width: 28px;                    /* ไอคอน + 28px เส้นหนา 2.5px */
+    height: 2.5px;
+    margin: -1.25px 0 0 -14px;
     border-radius: 2px;
     background: #FFFFFF;
   }
