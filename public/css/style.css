@@ -3737,3 +3737,165 @@ body.admin-shell-page.tab-overview .page-head { display: none; }
   .filters-foot .desk-text { display: none; }
   .filters-foot .sheet-text { display: inline; }
 }
+
+/* ---------- หน้า "หมวดหมู่" (search.html) บนคอมพิวเตอร์ ≥ 768px ----------
+   ใช้เฉพาะ body.page-search · มือถือ (แถวแคปซูล + แผ่นตัวกรอง) ไม่เปลี่ยน · ไม่แตะ logic การค้นหา/กรอง */
+.sp-title, .cat-cards, .type-tabs, .filters-drop, .card-type { display: none; }
+:root { --sp-card-bg: #FFFFFF; --sp-card-border: #E9E4EE; --sp-ring: #1C1426; --sp-tab-line: #1C1426; }
+:root[data-theme="dark"] { --sp-card-bg: #1A1422; --sp-card-border: #2E2538; --sp-ring: #FFFFFF; --sp-tab-line: #FFFFFF; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --sp-card-bg: #1A1422; --sp-card-border: #2E2538; --sp-ring: #FFFFFF; --sp-tab-line: #FFFFFF; }
+}
+
+@media (min-width: 768px) {
+  /* ซ่อนช่องค้นหาใน header เฉพาะหน้านี้ (มีช่องค้นหาในหน้าแล้ว) */
+  .page-search .nav-search-form, .page-search .nav-search { display: none !important; }
+
+  /* 1) ไม่มีแผงตัวกรองซ้าย เนื้อหาเต็มความกว้าง 1240px */
+  .page-search .search-layout { display: block; position: relative; max-width: calc(1240px + 48px); padding-top: 28px; }
+
+  /* 2) แถวบน: หัวข้อซ้าย + ช่องค้นหาแคปซูล 420px ขวา */
+  .page-search .search-bar { align-items: center; gap: 16px; margin-bottom: 20px; }
+  .page-search .sp-title { display: block; flex: 1 1 auto; min-width: 0; font-size: clamp(24px, 2.6vw, 32px); letter-spacing: -.03em; }
+  .page-search .search-field { flex: 0 1 420px; }
+  .page-search .search-field input { height: 48px; border-radius: var(--r-full); padding-left: 46px; }
+  .page-search .search-field .ic { left: 16px; }
+  .page-search .filters-open { display: none !important; }
+
+  /* 3) การ์ดหมวดหมู่ แถวเดียว */
+  .page-search .cat-pills-wrap { display: none; }
+  /* แถวเดียวเสมอ: แบ่งเท่ากันเมื่อพอ · หมวดเยอะ/จอแคบ ใบละอย่างน้อย 140px แล้วเลื่อนแนวนอน */
+  .page-search .cat-cards {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(140px, 1fr);
+    gap: 12px;
+    margin: -5px -5px 15px;
+    padding: 5px;                   /* ที่ว่างให้กรอบใบที่เลือก (ห่าง 3px) ไม่ถูกตัด */
+    overflow-x: auto;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+  }
+  .page-search .cat-cards::-webkit-scrollbar { display: none; }
+  .page-search .cat-card { scroll-snap-align: start; }
+  .cat-card {
+    position: relative;
+    height: 150px;
+    padding: 0;
+    overflow: hidden;
+    border: 0;
+    border-radius: 20px;
+    background: var(--bg-alt);
+    cursor: pointer;
+    text-align: left;
+    font: inherit;
+  }
+  .cat-card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .75; transition: opacity .2s ease, transform .4s ease; }
+  .cat-card::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0, 0, 0, .78) 0%, rgba(0, 0, 0, .35) 45%, rgba(0, 0, 0, 0) 75%); pointer-events: none; }
+  .cat-card:hover img { opacity: .9; transform: scale(1.04); }
+  .cat-card[aria-pressed="true"] { outline: 2px solid var(--sp-ring); outline-offset: 3px; }
+  .cat-card[aria-pressed="true"] img { opacity: 1; }
+  .cat-card:focus-visible { outline: 2px solid var(--primary-ink); outline-offset: 3px; }
+  .cat-card-text { position: absolute; left: 14px; right: 12px; bottom: 12px; z-index: 1; display: flex; flex-direction: column; color: #FFFFFF; text-shadow: 0 1px 2px rgba(0, 0, 0, .45); }
+  .cat-card-text strong { font-size: 16px; font-weight: 600; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cat-card-text small { font-size: 12px; opacity: .92; }
+
+  /* 4) แท็บประเภทแบบเส้นใต้ + จำนวน + สภาพ·ราคา + เรียงลำดับ */
+  .page-search .results-head { flex-wrap: wrap; gap: 8px 12px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
+  .page-search .type-tabs { display: flex; gap: 24px; flex: 1 1 auto; min-width: 0; margin-bottom: -1px; }
+  .type-tabs button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 2px;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: none;
+    color: var(--text-2);
+    font: inherit;
+    font-size: 15px;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .type-tabs button:hover { color: var(--text); }
+  .type-tabs button[aria-pressed="true"] { border-bottom-color: var(--sp-tab-line); color: var(--text); font-weight: 600; }
+  .tdot { width: 8px; height: 8px; border-radius: 50%; }
+  .tdot-sell { background: var(--type-sell); }
+  .tdot-swap { background: var(--type-swap); }
+  .tdot-free { background: var(--type-free); }
+  .page-search .result-count { margin-left: auto; white-space: nowrap; }
+  .page-search .rc-lead { display: none; }
+  .page-search .filters-drop {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 40px;
+    padding: 0 12px 0 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-full);
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+    font-size: 14px;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .page-search .filters-drop:hover, .page-search .filters-drop[aria-expanded="true"] { border-color: var(--border-strong); }
+  .page-search .filters-drop .ic { width: 16px; height: 16px; transition: transform .2s ease; }
+  .page-search .filters-drop[aria-expanded="true"] .ic { transform: rotate(180deg); }
+  .filters-drop-n { min-width: 20px; height: 20px; padding: 0 6px; display: grid; place-items: center; border-radius: var(--r-full); background: #7E2A8C; color: #FFFFFF; font-size: 11px; font-weight: 600; }
+  .filters-drop-n[hidden] { display: none; }
+  .page-search .sort-select { height: 40px; border-radius: var(--r-full); padding: 0 36px 0 16px; background-color: var(--surface); }
+  .page-search .results-head > * { margin-bottom: 8px; }
+  .page-search .type-tabs { margin-bottom: -1px; }
+
+  /* แผงตัวกรองเดิม = dropdown ใต้ปุ่ม "สภาพ · ราคา" (ซ่อนกลุ่มประเภท เพราะมีแท็บแล้ว) */
+  .page-search .filters-backdrop { display: none !important; }
+  .page-search .filters {
+    position: absolute;
+    inset: auto;
+    z-index: 40;
+    width: 340px;
+    max-height: none;
+    padding: 20px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--surface);
+    box-shadow: var(--shadow-lg);
+    transform: none;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity .15s ease, visibility 0s .15s;
+  }
+  .page-search .filters.dropped { visibility: visible; opacity: 1; transition: opacity .15s ease; }
+  .page-search .filters-head { padding: 0; border-bottom: 0; }
+  .page-search .filters-close, .page-search .filters-foot { display: none; }
+  .page-search .filters-body { margin: 0; padding: 0; overflow: visible; }
+  .page-search .filters-body > .f-group:first-child { display: none; }
+  .page-search .filters-body > .f-group:nth-child(2) { margin-top: 12px; }
+
+  /* 5) การ์ดสินค้า: 4 คอลัมน์ (แท็บเล็ต 3) พื้นการ์ด + ขอบ มุม 22px รูป 4:3 */
+  .page-search .results .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+  .page-search .card-wrap { padding: 8px; background: var(--sp-card-bg); border: 1px solid var(--sp-card-border); border-radius: 22px; }
+  .page-search .card-img { aspect-ratio: 4 / 3; border-radius: 16px; }
+  .page-search .card-tag, .page-search .card-rating { display: none; }
+  .page-search .fav-btn { top: 16px; right: 16px; }
+  .page-search .card-body { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 8px; row-gap: 2px; padding: 10px 6px 4px; }
+  .page-search .card-type, .page-search .card-body h3, .page-search .card-wish { grid-column: 1 / -1; }
+  .page-search .card-type { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; }
+  .page-search .card-type i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .card-type-sell { color: var(--type-sell); }
+  .card-type-swap { color: var(--type-swap); }
+  .card-type-free { color: var(--type-free); }
+  .page-search .card-body h3 { font-size: 15px; font-weight: 600; }
+  .page-search .card-sub { grid-column: 1; }
+  .page-search .card-meta { grid-column: 2; justify-content: flex-end; }
+  .page-search .card-meta .price { font-size: 16px; white-space: nowrap; }
+}
+@media (min-width: 768px) and (max-width: 1023px) {
+  .page-search .results .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .cat-card { height: 150px; }
+  .cat-card-text strong { font-size: 14px; }
+  .page-search .type-tabs { gap: 16px; }
+}

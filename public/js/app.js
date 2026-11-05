@@ -102,7 +102,9 @@ function categoryName(id) {
 }
 
 /* การ์ดไม่มีกรอบ: รูป 1:1 (ป้ายประเภทซ้ายบน หัวใจขวาบน) + 3 บรรทัด ชื่อ / จุดนัดรับ · สภาพ / ราคา + ดาวผู้ขาย */
-function productCard(p) {
+/* opts.typeLine = แสดง "● ประเภท" ใต้รูป (ใช้เฉพาะหน้าค้นหา · .map(productCard) ส่ง index มา จึงเช็กเป็น object) */
+function productCard(p, opts) {
+  const typeLine = !!(opts && typeof opts === "object" && opts.typeLine);
   const tag = p.passed
     ? `<span class="card-tag tag-passed">${icon("recycle")}ส่งต่อแล้ว</span>`
     : `<span class="card-tag tag-${p.type}">${TYPE_LABEL[p.type]}</span>`;
@@ -114,6 +116,7 @@ function productCard(p) {
       <a class="card" href="product.html?id=${p.id}">
         <div class="card-img">${tag}<img src="${esc(p.img)}" alt="${esc(p.title)}" loading="lazy"></div>
         <div class="card-body">
+          ${typeLine ? `<div class="card-type card-type-${p.type}"><i aria-hidden="true"></i>${TYPE_LABEL[p.type]}</div>` : ""}
           <h3>${esc(p.title)}</h3>
           ${wish ? `<div class="card-wish">อยากแลก: ${esc(wish)}</div>` : ""}
           <div class="card-sub">${sub}</div>

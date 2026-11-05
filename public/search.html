@@ -12,9 +12,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600&family=IBM+Plex+Sans+Thai:wght@400;600&family=JetBrains+Mono&display=swap">
-  <link rel="stylesheet" href="css/style.css?v=44">
+  <link rel="stylesheet" href="css/style.css?v=45">
 </head>
-<body>
+<body class="page-search">
 
   <header class="navbar">
     <div class="container">
@@ -75,6 +75,8 @@
 
     <section class="results">
       <div class="search-bar">
+        <!-- คอมพิวเตอร์: หัวข้อซ้าย + ช่องค้นหาแคปซูลขวา -->
+        <h1 class="sp-title">เลือกหมวดที่สนใจ</h1>
         <label class="search-field">
           <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
           <input id="f-q" type="search" placeholder="ค้นหาสินค้า..." aria-label="ค้นหาสินค้า">
@@ -85,8 +87,17 @@
         </button>
       </div>
       <div id="cat-pills" class="cat-pills-wrap" role="group" aria-label="หมวดหมู่"></div>
+      <!-- คอมพิวเตอร์: การ์ดหมวดหมู่ (รูปสินค้าล่าสุดในหมวด + จำนวนจริง) แทนแถวแคปซูล -->
+      <div id="cat-cards" class="cat-cards" role="group" aria-label="หมวดหมู่"></div>
       <div class="results-head">
+        <div id="type-tabs" class="type-tabs" role="group" aria-label="ประเภทประกาศ">
+          <button type="button" data-value="all" aria-pressed="true">ทั้งหมด</button>
+          <button type="button" data-value="sell" aria-pressed="false"><i class="tdot tdot-sell" aria-hidden="true"></i>ขาย</button>
+          <button type="button" data-value="swap" aria-pressed="false"><i class="tdot tdot-swap" aria-hidden="true"></i>แลกเปลี่ยน</button>
+          <button type="button" data-value="free" aria-pressed="false"><i class="tdot tdot-free" aria-hidden="true"></i>แจกฟรี</button>
+        </div>
         <p id="result-count" class="result-count" aria-live="polite"></p>
+        <button id="f-drop" type="button" class="filters-drop" aria-expanded="false" aria-controls="filters">สภาพ · ราคา<span class="filters-drop-n" id="f-drop-n" hidden></span><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
         <select id="f-sort" class="sort-select" aria-label="เรียงลำดับ">
           <option value="latest">ล่าสุด</option>
           <option value="price-asc">ราคาต่ำ-สูง</option>
@@ -98,11 +109,11 @@
     </section>
   </main>
 
-  <script src="js/config.js?v=44"></script>
-  <script src="js/supabase.js?v=44"></script>
-  <script src="js/demo.js?v=44"></script>
-  <script src="js/data.js?v=44"></script>
-  <script src="js/app.js?v=44"></script>
-  <script src="js/search.js?v=44"></script>
+  <script src="js/config.js?v=45"></script>
+  <script src="js/supabase.js?v=45"></script>
+  <script src="js/demo.js?v=45"></script>
+  <script src="js/data.js?v=45"></script>
+  <script src="js/app.js?v=45"></script>
+  <script src="js/search.js?v=45"></script>
 </body>
 </html>
