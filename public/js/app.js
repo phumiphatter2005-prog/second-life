@@ -180,47 +180,14 @@ document.addEventListener("click", e => {
   const pick = e.target.closest("[data-theme-pick]");
   if (pick) {
     setTheme(pick.dataset.themePick);
-    const pop = pick.closest(".theme-pop");
-    if (pop) closeThemePop(true);
-    return;
   }
-  if (!e.target.closest(".theme-wrap")) closeThemePop(false);
 });
 DARK_MQ.addEventListener("change", syncThemeUI);
 /* เปลี่ยนธีมในอีกแท็บ → แท็บนี้เปลี่ยนตาม */
 addEventListener("storage", e => { if (e.key === THEME_KEY) setTheme(themePref()); });
 
-function closeThemePop(focusBtn) {
-  const pop = document.querySelector(".theme-pop");
-  if (!pop || pop.hidden) return;
-  pop.hidden = true;
-  const btn = document.querySelector(".nav-theme");
-  btn.setAttribute("aria-expanded", "false");
-  if (focusBtn) btn.focus();
-}
-
-function setupThemeButton(navRight) {
-  navRight.insertAdjacentHTML("afterbegin", `
-    <div class="theme-wrap">
-      <button class="nav-theme" type="button" aria-haspopup="true" aria-expanded="false"></button>
-      <div class="theme-pop" hidden>${themeChoices("theme-list")}</div>
-    </div>`);
-  const btn = navRight.querySelector(".nav-theme");
-  const pop = navRight.querySelector(".theme-pop");
-  btn.addEventListener("click", () => {
-    const open = pop.hidden;
-    pop.hidden = !open;
-    btn.setAttribute("aria-expanded", open);
-    if (open) (pop.querySelector('[aria-checked="true"]') || pop.querySelector("button")).focus();
-  });
-  pop.addEventListener("keydown", e => {
-    const items = [...pop.querySelectorAll("button")];
-    const i = items.indexOf(document.activeElement);
-    if (e.key === "Escape") { e.preventDefault(); closeThemePop(true); }
-    if (e.key === "ArrowDown") { e.preventDefault(); items[(i + 1) % items.length].focus(); }
-    if (e.key === "ArrowUp") { e.preventDefault(); items[(i - 1 + items.length) % items.length].focus(); }
-  });
-}
+/* ตัวเลือกธีมอยู่ในเมนูโปรไฟล์ (รูปโปรไฟล์มุมขวาบน) เมนูลิ้นชักบนมือถือ หน้าโปรไฟล์ และเมนูซ้ายของหลังบ้าน
+   — ไม่มีปุ่มธีมบน header */
 
 /* ---------- แถบเมนู + ส่วนท้าย (เหมือนกันทุกหน้า) ---------- */
 const NAV_ITEMS = [
@@ -284,7 +251,6 @@ function decorateNav() {
       const q = document.getElementById("nav-q").value.trim();
       location.href = q ? "search.html?q=" + encodeURIComponent(q) : "search.html";
     });
-    setupThemeButton(document.querySelector(".nav-right"));
     syncThemeUI();
     placeNavPill();
     setupDrawer(logo);

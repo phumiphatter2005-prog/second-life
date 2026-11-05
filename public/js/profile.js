@@ -17,6 +17,9 @@ function renderProfile() {
   $p("pf-sid").textContent = currentUser.studentId;
   $p("pf-remove").hidden = !currentUser.avatarUrl;
   $p("pf-name-input").value = currentUser.name;
+  /* ตัวเลือกธีม (ปุ่มเดียวกับในเมนูโปรไฟล์ · กดแล้วระบบธีมใน app.js จัดการให้) */
+  if (!$p("pf-theme").childElementCount) $p("pf-theme").innerHTML = themeChoices();
+  syncThemeUI();
 }
 
 /* ---------- เลือกไฟล์ → ตรวจชนิด/ขนาด → เปิดหน้าต่างครอป ---------- */

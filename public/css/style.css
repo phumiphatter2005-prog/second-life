@@ -3899,3 +3899,7 @@ body.admin-shell-page.tab-overview .page-head { display: none; }
   .cat-card-text strong { font-size: 14px; }
   .page-search .type-tabs { gap: 16px; }
 }
+
+/* หน้าโปรไฟล์: การ์ดธีมสี */
+.profile-theme-hint { align-self: flex-start; margin-top: -4px; }
+.profile-theme { width: 100%; max-width: 360px; align-self: flex-start; }
