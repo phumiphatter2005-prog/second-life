@@ -206,8 +206,6 @@ const LISTING_STATUS = {
 };
 const statusOf = p => !p ? "deleted" : p.passed ? "passed" : p.reportCount > 0 ? "reported" : "live";
 
-/* สีของแต่ละหมวด (ไอคอนในกล่องสีอ่อน) */
-const CAT_TONE = { book: "purple", clothes: "pink", stationery: "amber", electronic: "blue", dorm: "green", other: "gray" };
 
 function greeting() {
   const h = Number(new Date().toLocaleString("en-US", { hour: "numeric", hour12: false, timeZone: "Asia/Bangkok" })) % 24;
@@ -239,21 +237,10 @@ function renderOverview({ overview: o, dash, products }) {
     ["อัตราส่งต่อสำเร็จ", rate + "%", "percent", "orange", delta(rateDelta, "%"), "products"]
   ];
 
-  const cats = CATEGORIES.filter(c => c.id !== "all").map(c => ({ ...c, n: o.byCategory[c.id] || 0 }));
-  const catTotal = sum(cats.map(c => c.n));
   const pct = (n, t) => (t ? Math.round(n / t * 100) : 0);
-
-  /* ประกาศตามสถานะ: นับและเลือกล่าสุด 3 ใบจาก /admin/products (เรียงใหม่ก่อนอยู่แล้ว) */
-  const byStatus = { live: [], reported: [], passed: [] };
-  products.forEach(p => { const s = statusOf(p); if (byStatus[s]) byStatus[s].push(p); });
-  const statusCol = (key, label) => `
-    <div class="status-col">
-      <div class="status-col-head"><span class="pill ${LISTING_STATUS[key][1]}">${label}</span><b>${byStatus[key].length.toLocaleString()}</b></div>
-      ${byStatus[key].length ? byStatus[key].slice(0, 3).map(p => `
-        <a class="status-item" href="admin.html?tab=products&edit=${p.id}" title="แก้ไขประกาศ ${esc(p.title)}">
-          <img src="${esc(p.img)}" alt="" loading="lazy"><span>${esc(p.title)}</span>
-        </a>`).join("") : `<p class="status-empty">ไม่มี</p>`}
-    </div>`;
+  /* ตามประเภทประกาศ: ม่วง → เขียว → น้ำเงิน (ม่วงติดน้ำเงินแยกยากสำหรับคนตาบอดสี) */
+  const typeOrder = ["sell", "free", "swap"];
+  const typeTotal = sum(typeOrder.map(t => o.byType[t] || 0));
 
   /* กิจกรรมล่าสุด: สถานะจาก productId (010) หรือจับคู่ชื่อประกาศ (ก่อนรัน 010) */
   const byId = new Map(products.map(p => [String(p.id), p]));
@@ -296,25 +283,25 @@ function renderOverview({ overview: o, dash, products }) {
           <details class="trend-table"><summary>ดูเป็นตาราง</summary><div id="daily-table"></div></details>`}
       </section>
 
-      <section class="dash-card dash-cats" aria-labelledby="cats-title">
-        <div class="dash-card-head"><h3 id="cats-title">สัดส่วนตามหมวด</h3><span class="muted">${catTotal.toLocaleString()} ประกาศ</span></div>
-        <ul class="cat-list">
-          ${cats.map(c => `
-            <li>
-              <span class="cat-ic tone-${CAT_TONE[c.id] || "gray"}">${icon(c.icon)}</span>
-              <span class="cat-main">
-                <span class="cat-row"><span class="cat-name">${esc(c.name)}</span><b>${c.n.toLocaleString()}</b></span>
-                <span class="cat-track" role="img" aria-label="${esc(c.name)} ${c.n} ประกาศ (${pct(c.n, catTotal)}%)"><span class="tone-bar-${CAT_TONE[c.id] || "gray"}" style="width:${pct(c.n, catTotal)}%"></span></span>
-              </span>
-            </li>`).join("")}
+      <section class="dash-card dash-types" aria-labelledby="types-title">
+        <div class="dash-card-head"><h3 id="types-title">ตามประเภทประกาศ</h3><span class="muted">${typeTotal.toLocaleString()} ประกาศ</span></div>
+        <div class="type-bar" role="img" aria-label="${typeOrder.map(t => `${TYPE_LABEL[t]} ${o.byType[t] || 0}`).join(", ")}">
+          ${typeTotal ? typeOrder.filter(t => o.byType[t]).map(t => `<span class="seg seg-${t}" style="flex:${o.byType[t]}"></span>`).join("") : `<span class="seg seg-none"></span>`}
+        </div>
+        <ul class="type-legend">
+          ${typeOrder.map(t => `<li><i class="tl-dot seg-${t}"></i><span>${TYPE_LABEL[t]}</span><b>${(o.byType[t] || 0).toLocaleString()}</b><small>${pct(o.byType[t] || 0, typeTotal)}%</small></li>`).join("")}
         </ul>
       </section>
 
-      <section class="dash-card dash-status" aria-labelledby="status-title">
-        <div class="dash-card-head"><h3 id="status-title">ประกาศตามสถานะ</h3></div>
-        ${products.error ? noDaily : `<div class="status-cols">
-          ${statusCol("live", "เผยแพร่")}${statusCol("reported", "ถูกรายงาน")}${statusCol("passed", "ส่งต่อแล้ว")}
-        </div>`}
+      <section class="dash-card dash-mini" aria-labelledby="mini-title">
+        <h3 id="mini-title" class="visually-hidden">ตัวเลขอื่น</h3>
+        <dl class="mini-stats mini-4">
+          <div><dt>รีวิว</dt><dd>${statNum(o.reviews)}</dd></div>
+          <div><dt>ผู้ดูแลระบบ</dt><dd>${statNum(o.admins)}</dd></div>
+          <div><dt>บัญชีถูกระงับ</dt><dd>${statNum(o.banned)}</dd></div>
+          <div><dt>ห้องแชต</dt><dd>${statNum(o.chatRooms)}</dd></div>
+        </dl>
+        <p class="mini-foot">ส่งต่อสำเร็จ <b>${rate}%</b></p>
       </section>
 
       <section class="dash-card dash-activity" aria-labelledby="act-title">
