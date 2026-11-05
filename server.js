@@ -417,13 +417,13 @@ app.get("/api/admin/dashboard", requireAdmin, (req, res) => {
   const col = (sqlText, ...args) => db.prepare(sqlText).all(...args).map(r => r.t);
   const chatReports = db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'chat_reports'").get();
   const activity = [
-    ...db.prepare(`SELECT 'product' AS kind, p.created_at AS at, u.name AS who, p.title FROM products p
+    ...db.prepare(`SELECT 'product' AS kind, p.created_at AS at, u.name AS who, p.title, p.id AS productId, u.avatar FROM products p
       LEFT JOIN users u ON u.id = p.user_id ORDER BY p.created_at DESC LIMIT 8`).all(),
-    ...db.prepare(`SELECT 'passed' AS kind, p.passed_at AS at, u.name AS who, p.title FROM products p
+    ...db.prepare(`SELECT 'passed' AS kind, p.passed_at AS at, u.name AS who, p.title, p.id AS productId, u.avatar FROM products p
       LEFT JOIN users u ON u.id = p.user_id WHERE p.passed = 1 AND p.passed_at IS NOT NULL ORDER BY p.passed_at DESC LIMIT 8`).all(),
-    ...db.prepare(`SELECT 'review' AS kind, r.created_at AS at, u.name AS who, p.title FROM reviews r
+    ...db.prepare(`SELECT 'review' AS kind, r.created_at AS at, u.name AS who, p.title, p.id AS productId, u.avatar FROM reviews r
       LEFT JOIN users u ON u.id = r.user_id JOIN products p ON p.id = r.product_id ORDER BY r.created_at DESC LIMIT 8`).all(),
-    ...(chatReports ? db.prepare(`SELECT 'report' AS kind, c.created_at AS at, u.name AS who, p.title FROM chat_reports c
+    ...(chatReports ? db.prepare(`SELECT 'report' AS kind, c.created_at AS at, u.name AS who, p.title, p.id AS productId, u.avatar FROM chat_reports c
       LEFT JOIN users u ON u.id = c.reporter_id JOIN chat_rooms rm ON rm.id = c.room_id JOIN products p ON p.id = rm.product_id
       ORDER BY c.created_at DESC LIMIT 8`).all() : [])
   ].sort((a, b) => b.at - a.at).slice(0, 8)

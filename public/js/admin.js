@@ -55,15 +55,19 @@ function confirmed(btn, text) {
 }
 
 /* ---------- ภาพรวม ---------- */
-/* ---------- แดชบอร์ด ----------
-   ตัวเลขทั้งหมดมาจากฐานข้อมูลจริง: /admin/overview (ยอดรวม) + /admin/dashboard (รายวัน 14 วัน + กิจกรรมล่าสุด)
-   /admin/dashboard ยังไม่พร้อม (ยังไม่ได้รัน 008) → การ์ดยังแสดงยอดรวม ส่วนกราฟแสดงคำแนะนำแทน ไม่พัง */
+/* ---------- แดชบอร์ด (โทนสว่าง) ----------
+   ตัวเลขทั้งหมดมาจากฐานข้อมูลจริง ไม่มีค่าสมมติ:
+     /admin/overview  → ยอดรวม หมวดหมู่ · /admin/dashboard → รายวัน 14 วัน + กิจกรรมล่าสุด (008/010)
+     /admin/products  → ประกาศใหม่รายวัน 14/30 วัน และคอลัมน์ "ประกาศตามสถานะ" (คำนวณจาก createdAt / passed / reportCount)
+   ส่วนไหนโหลดไม่ได้ ส่วนนั้นแสดงข้อความแทน หน้าไม่พัง */
 async function loadDashboard() {
-  const [overview, dash] = await Promise.all([
+  const soft = (p, fallback) => p.catch(e => ({ error: e.message || "โหลดไม่สำเร็จ", ...fallback }));
+  const [overview, dash, products] = await Promise.all([
     api("/admin/overview"),
-    api("/admin/dashboard").catch(e => ({ error: e.message || "โหลดข้อมูลกราฟไม่สำเร็จ" }))
+    soft(api("/admin/dashboard")),
+    soft(api("/admin/products"), { list: [] })
   ]);
-  return { overview, dash };
+  return { overview, dash, products: Array.isArray(products) ? products : Object.assign([], { error: products.error }) };
 }
 
 const DASH_ICONS = {
@@ -71,7 +75,8 @@ const DASH_ICONS = {
   recycle: '<path d="M7 19H4.8a1.8 1.8 0 0 1-1.6-2.7L7.2 9.7"/><path d="m11 19 3 3 3-3"/><path d="M14 22v-7"/><path d="M12.6 3.8a1.8 1.8 0 0 1 3 0l3.6 6.2"/><path d="m21 6-.8 4.4-4.3-1"/><path d="M19.6 13.5 21 16.3a1.8 1.8 0 0 1-1.6 2.7H17"/><path d="M8.8 2.9 5.6 8.2"/><path d="m2.4 7.2 3.2 1 1.2-4.3"/>',
   users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
   flag: '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/>',
-  star: '<path d="M11.5 2.3a.6.6 0 0 1 1 0l2.6 5.3 5.8.8a.6.6 0 0 1 .3 1l-4.2 4.1 1 5.8a.6.6 0 0 1-.9.6L12 17.2l-5.2 2.7a.6.6 0 0 1-.9-.6l1-5.8L2.7 9.4a.6.6 0 0 1 .3-1l5.8-.8z"/>'
+  star: '<path d="M11.5 2.3a.6.6 0 0 1 1 0l2.6 5.3 5.8.8a.6.6 0 0 1 .3 1l-4.2 4.1 1 5.8a.6.6 0 0 1-.9.6L12 17.2l-5.2 2.7a.6.6 0 0 1-.9-.6l1-5.8L2.7 9.4a.6.6 0 0 1 .3-1l5.8-.8z"/>',
+  percent: '<path d="M19 5 5 19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/>'
 };
 const dashIcon = name => `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${DASH_ICONS[name]}</svg>`;
 const statNum = n => (typeof n === "number" ? n.toLocaleString() : "–");
@@ -96,75 +101,71 @@ function smoothPath(pts) {
   }
   return d;
 }
-/* ค่าสูงสุดของแกน: ปัดขึ้นให้หาร 4 ลงตัว อย่างน้อย 4 (ข้อมูลเป็น 0 ทั้งหมดก็ยังวาดได้) */
 const niceMax = v => Math.max(4, Math.ceil(v / 4) * 4);
-
 let dashUid = 0;
-function sparkline(values, color) {
-  const W = 120, H = 36, pad = 3, max = Math.max(1, ...values);
-  const pts = values.map((v, i) => [pad + i * (W - pad * 2) / (values.length - 1), H - pad - v / max * (H - pad * 2)]);
-  const line = smoothPath(pts), id = "sg" + (++dashUid), last = pts[pts.length - 1];
-  return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
-    <defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" style="stop-color:var(${color});stop-opacity:.28"/><stop offset="1" style="stop-color:var(${color});stop-opacity:0"/></linearGradient></defs>
-    <path d="${line} L${last[0]},${H} L${pts[0][0]},${H} Z" fill="url(#${id})"/>
-    <path d="${line}" fill="none" style="stroke:var(${color})" stroke-width="2" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
-  </svg>`;
+
+/* วันตามเวลาไทย (Asia/Bangkok = UTC+7 ไม่มีเวลาออมแสง) */
+const DAY_MS = 864e5, TH_MS = 7 * 3600e3;
+const thDay = ms => Math.floor((ms + TH_MS) / DAY_MS);
+const dayLabel = (dayNo, opts = { day: "numeric", month: "short" }) =>
+  new Date(dayNo * DAY_MS - TH_MS + 12 * 3600e3).toLocaleDateString("th-TH", { ...opts, timeZone: "Asia/Bangkok" });
+
+/* ประกาศใหม่รายวันจาก createdAt ของทุกประกาศ (ไม่รวมที่ถูกลบไปแล้ว) */
+function dailyListings(products, days) {
+  const last = thDay(Date.now()), first = last - days + 1;
+  const counts = new Array(days).fill(0);
+  products.forEach(p => { const i = thDay(Number(p.createdAt)) - first; if (i >= 0 && i < days) counts[i]++; });
+  return { first, counts };
 }
 
-const dayLabel = (start, i, opts = { day: "numeric", month: "short" }) =>
-  new Date(start + i * 864e5 + 12 * 3600e3).toLocaleDateString("th-TH", { ...opts, timeZone: "Asia/Bangkok" });
-
-/* กราฟใหญ่: ประกาศใหม่ + ส่งต่อแล้ว 14 วัน (SVG เขียนเอง · crosshair + tooltip · ปุ่มลูกศรเลื่อนวันได้) */
-function drawTrend(box, dash) {
-  const S = [
-    { key: "products", label: "ประกาศใหม่", color: "--chart-new" },
-    { key: "passed", label: "ส่งต่อแล้ว", color: "--chart-passed" }
-  ];
-  const days = dash.series.products.length;
-  const W = Math.max(280, box.clientWidth), H = W < 520 ? 220 : 280;
-  const L = 32, R = 16, T = 16, B = 30;
-  const max = niceMax(Math.max(...S.flatMap(s => dash.series[s.key])));
+/* กราฟพื้นที่ "ประกาศใหม่รายวัน": เส้นม่วง พื้นไล่สีจาง จุด + ตัวเลขบนจุดสูงสุด · ชี้/ลูกศรเลื่อนดูรายวัน */
+function drawDaily(box, series) {
+  const { first, counts } = series, days = counts.length;
+  const W = Math.max(260, box.clientWidth), H = W < 480 ? 200 : 240;
+  const L = 28, R = 12, T = 26, B = 28;
+  const max = niceMax(Math.max(...counts));
   const x = i => L + i * (W - L - R) / (days - 1);
   const y = v => T + (1 - v / max) * (H - T - B);
-  const every = W < 520 ? 3 : 2;
+  const every = Math.ceil(days / (W < 480 ? 4 : 7));
   const grid = [0, 1, 2, 3, 4].map(k => {
     const v = max * k / 4, yy = y(v).toFixed(1);
     return `<line x1="${L}" x2="${W - R}" y1="${yy}" y2="${yy}" class="grid-line"/>
       <text x="${L - 8}" y="${yy}" class="axis-text" text-anchor="end" dominant-baseline="middle">${v}</text>`;
   }).join("");
-  const xs = Array.from({ length: days }, (_, i) => i)
-    .filter(i => (days - 1 - i) % every === 0)
-    .map(i => `<text x="${x(i).toFixed(1)}" y="${H - 8}" class="axis-text" text-anchor="middle">${dayLabel(dash.start, i)}</text>`).join("");
-  const series = S.map((s, k) => {
-    const pts = dash.series[s.key].map((v, i) => [x(i), y(v)]);
-    const line = smoothPath(pts), id = "tg" + k + (++dashUid);
-    return `<defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" style="stop-color:var(${s.color});stop-opacity:.22"/><stop offset="1" style="stop-color:var(${s.color});stop-opacity:0"/></linearGradient></defs>
-      <path d="${line} L${x(days - 1)},${y(0)} L${x(0)},${y(0)} Z" fill="url(#${id})"/>
-      <path d="${line}" fill="none" style="stroke:var(${s.color})" stroke-width="2" stroke-linecap="round"/>`;
-  }).join("");
+  const xs = counts.map((_, i) => i).filter(i => (days - 1 - i) % every === 0)
+    .map(i => `<text x="${x(i).toFixed(1)}" y="${H - 8}" class="axis-text" text-anchor="middle">${dayLabel(first + i)}</text>`).join("");
+  const pts = counts.map((v, i) => [x(i), y(v)]);
+  const line = smoothPath(pts), id = "dg" + (++dashUid);
+  const peak = counts.indexOf(Math.max(...counts));
+  const peakMark = counts[peak] > 0 ? `
+    <circle cx="${x(peak).toFixed(1)}" cy="${y(counts[peak]).toFixed(1)}" r="5" class="peak-dot"/>
+    <text x="${Math.min(Math.max(x(peak), L + 14), W - R - 14).toFixed(1)}" y="${(y(counts[peak]) - 12).toFixed(1)}" class="peak-label" text-anchor="middle">${counts[peak]}</text>` : "";
   box.innerHTML = `
     <svg class="trend-svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img"
-      aria-label="กราฟเส้น ประกาศใหม่และการส่งต่อ 14 วันล่าสุด ดูตัวเลขรายวันได้ในตารางด้านล่าง">
-      ${grid}${xs}${series}
+      aria-label="กราฟพื้นที่ ประกาศใหม่รายวัน ${days} วันล่าสุด รวม ${sum(counts)} ประกาศ ดูตัวเลขรายวันได้ในตารางด้านล่าง">
+      <defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" style="stop-color:var(--chart-new);stop-opacity:.26"/><stop offset="1" style="stop-color:var(--chart-new);stop-opacity:0"/></linearGradient></defs>
+      ${grid}${xs}
+      <path d="${line} L${x(days - 1)},${y(0)} L${x(0)},${y(0)} Z" fill="url(#${id})"/>
+      <path d="${line}" fill="none" style="stroke:var(--chart-new)" stroke-width="2.5" stroke-linecap="round"/>
+      ${peakMark}
       <line class="cross" x1="0" x2="0" y1="${T}" y2="${H - B}" visibility="hidden"/>
-      ${S.map((s, k) => `<circle class="cross-dot" data-k="${k}" r="5" style="fill:var(${s.color})" visibility="hidden"/>`).join("")}
+      <circle class="cross-dot" r="5" style="fill:var(--chart-new)" visibility="hidden"/>
     </svg>
     <div class="trend-tip" hidden></div>`;
   const svg = box.querySelector("svg"), tip = box.querySelector(".trend-tip");
-  const cross = svg.querySelector(".cross"), dots = svg.querySelectorAll(".cross-dot");
+  const cross = svg.querySelector(".cross"), dot = svg.querySelector(".cross-dot");
   const show = i => {
     cross.setAttribute("x1", x(i)); cross.setAttribute("x2", x(i)); cross.setAttribute("visibility", "visible");
-    dots.forEach((d, k) => { d.setAttribute("cx", x(i)); d.setAttribute("cy", y(dash.series[S[k].key][i])); d.setAttribute("visibility", "visible"); });
-    tip.innerHTML = `<strong>${dayLabel(dash.start, i, { weekday: "short", day: "numeric", month: "short" })}</strong>
-      ${S.map(s => `<span><i style="background:var(${s.color})"></i>${s.label}<b>${dash.series[s.key][i]}</b></span>`).join("")}`;
+    dot.setAttribute("cx", x(i)); dot.setAttribute("cy", y(counts[i])); dot.setAttribute("visibility", "visible");
+    tip.innerHTML = `<strong>${dayLabel(first + i, { weekday: "short", day: "numeric", month: "short" })}</strong>
+      <span><i style="background:var(--chart-new)"></i>ประกาศใหม่<b>${counts[i]}</b></span>`;
     tip.hidden = false;
     const px = x(i) / W * box.clientWidth;
     tip.style.left = Math.min(Math.max(px, tip.offsetWidth / 2 + 4), box.clientWidth - tip.offsetWidth / 2 - 4) + "px";
     box.dataset.i = i;
   };
-  const hide = () => { cross.setAttribute("visibility", "hidden"); dots.forEach(d => d.setAttribute("visibility", "hidden")); tip.hidden = true; };
+  const hide = () => { cross.setAttribute("visibility", "hidden"); dot.setAttribute("visibility", "hidden"); tip.hidden = true; };
   const nearest = e => {
     const r = svg.getBoundingClientRect(), px = (e.clientX - r.left) / r.width * W;
     return Math.round(Math.min(Math.max((px - L) / (W - L - R) * (days - 1), 0), days - 1));
@@ -194,131 +195,175 @@ const ACTIVITY = {
   product: ["package", "ลงประกาศใหม่", "act-product"],
   passed:  ["recycle", "ส่งต่อแล้ว", "act-passed"],
   review:  ["star", "รีวิวใหม่", "act-review"],
-  report:  ["flag", "รายงานใหม่", "act-report"]
+  report:  ["flag", "รายงานประกาศ", "act-report"]
 };
+/* สถานะปัจจุบันของประกาศ (จาก /admin/products) */
+const LISTING_STATUS = {
+  live:     ["เผยแพร่", "pill-live"],
+  passed:   ["ส่งต่อแล้ว", "pill-passed"],
+  reported: ["ถูกรายงาน", "pill-reported"],
+  deleted:  ["ถูกลบ", "pill-deleted"]
+};
+const statusOf = p => !p ? "deleted" : p.passed ? "passed" : p.reportCount > 0 ? "reported" : "live";
+
+/* สีของแต่ละหมวด (ไอคอนในกล่องสีอ่อน) */
+const CAT_TONE = { book: "purple", clothes: "pink", stationery: "amber", electronic: "blue", dorm: "green", other: "gray" };
 
 function greeting() {
   const h = Number(new Date().toLocaleString("en-US", { hour: "numeric", hour12: false, timeZone: "Asia/Bangkok" })) % 24;
   return h < 12 ? "สวัสดีตอนเช้า" : h < 17 ? "สวัสดีตอนบ่าย" : "สวัสดีตอนเย็น";
 }
 
-function renderOverview({ overview: o, dash }) {
+let dashRange = 14;
+
+function renderOverview({ overview: o, dash, products }) {
   const ok = dash && dash.series;
   const series = ok ? dash.series : {};
   const week = key => (ok ? sum(series[key].slice(-7)) : null);
-  const cards = [
-    ["ประกาศทั้งหมด", o.items, "package", "products", "products", "--chart-new"],
-    ["ส่งต่อแล้ว", o.passed, "recycle", "passed", "products", "--chart-passed"],
-    ["ผู้ใช้", o.users, "users", "users", "users", "--chart-users"],
-    ["รายงานรอตรวจ", o.reportsOpen, "flag", "reports", "reports", "--chart-reports"]
-  ];
-  const typeOrder = ["sell", "free", "swap"];       // ม่วง → เขียว → น้ำเงิน (ม่วงติดน้ำเงินแยกยากสำหรับคนตาบอดสี)
-  const typeTotal = sum(typeOrder.map(t => o.byType[t] || 0));
-  const cats = CATEGORIES.filter(c => c.id !== "all").map(c => [c.name, o.byCategory[c.id] || 0]);
-  const catTotal = sum(cats.map(c => c[1]));
-  const pct = (n, t) => (t ? Math.round(n / t * 100) : 0);
+  const haveProducts = !products.error;
+  const weekProducts = haveProducts ? dailyListings(products, 7).counts.reduce((t, n) => t + n, 0) : week("products");
   const rate = o.items ? Math.round(o.passed / o.items * 100) : 0;
-  const online = SUPABASE_MODE ? "เชื่อมต่อ Supabase แล้ว" : DEMO_MODE ? "โหมดสาธิต" : "เชื่อมต่อเซิร์ฟเวอร์แล้ว";
-  const notReady = `<p class="dash-empty">${esc(dash && dash.error ? "ยังโหลดข้อมูลรายวันไม่ได้ (" + dash.error + ")" : "ยังไม่มีข้อมูลรายวัน")}${SUPABASE_MODE ? " · รันไฟล์ supabase/008_admin_dashboard.sql ใน SQL Editor เพื่อแสดงกราฟ" : ""}</p>`;
+  /* อัตราส่งต่อ 7 วันก่อน = (ส่งต่อแล้ว − ส่งต่อใน 7 วัน) ÷ (ประกาศ − ประกาศใหม่ใน 7 วัน) */
+  let rateDelta = null;
+  if (ok && typeof weekProducts === "number") {
+    const oldItems = o.items - weekProducts, oldPassed = o.passed - week("passed");
+    const oldRate = oldItems > 0 ? Math.round(Math.max(0, oldPassed) / oldItems * 100) : 0;
+    rateDelta = rate - oldRate;
+  }
+  const delta = (n, unit = "") => n === null || n === undefined ? "" :
+    `<span class="delta ${n > 0 ? "up" : n < 0 ? "down" : ""}">${n > 0 ? "+" : ""}${n.toLocaleString()}${unit} ใน 7 วัน</span>`;
+  const cards = [
+    ["ประกาศทั้งหมด", statNum(o.items), "package", "purple", delta(weekProducts), "products"],
+    ["ส่งต่อแล้ว", statNum(o.passed), "recycle", "green", delta(week("passed")), "products"],
+    ["ผู้ใช้", statNum(o.users), "users", "blue", delta(week("users")), "users"],
+    ["อัตราส่งต่อสำเร็จ", rate + "%", "percent", "orange", delta(rateDelta, "%"), "products"]
+  ];
+
+  const cats = CATEGORIES.filter(c => c.id !== "all").map(c => ({ ...c, n: o.byCategory[c.id] || 0 }));
+  const catTotal = sum(cats.map(c => c.n));
+  const pct = (n, t) => (t ? Math.round(n / t * 100) : 0);
+
+  /* ประกาศตามสถานะ: นับและเลือกล่าสุด 3 ใบจาก /admin/products (เรียงใหม่ก่อนอยู่แล้ว) */
+  const byStatus = { live: [], reported: [], passed: [] };
+  products.forEach(p => { const s = statusOf(p); if (byStatus[s]) byStatus[s].push(p); });
+  const statusCol = (key, label) => `
+    <div class="status-col">
+      <div class="status-col-head"><span class="pill ${LISTING_STATUS[key][1]}">${label}</span><b>${byStatus[key].length.toLocaleString()}</b></div>
+      ${byStatus[key].length ? byStatus[key].slice(0, 3).map(p => `
+        <a class="status-item" href="admin.html?tab=products&edit=${p.id}" title="แก้ไขประกาศ ${esc(p.title)}">
+          <img src="${esc(p.img)}" alt="" loading="lazy"><span>${esc(p.title)}</span>
+        </a>`).join("") : `<p class="status-empty">ไม่มี</p>`}
+    </div>`;
+
+  /* กิจกรรมล่าสุด: สถานะจาก productId (010) หรือจับคู่ชื่อประกาศ (ก่อนรัน 010) */
+  const byId = new Map(products.map(p => [String(p.id), p]));
+  const activityStatus = a => {
+    if (products.error) return null;
+    if (a.productId !== undefined && a.productId !== null) return statusOf(byId.get(String(a.productId)));
+    const same = products.filter(p => p.title === a.title);
+    return same.length === 1 ? statusOf(same[0]) : null;
+  };
+  const activityRows = ok && dash.activity ? dash.activity : [];
+
+  const noDaily = `<p class="dash-empty">${esc(products.error ? "โหลดรายการประกาศไม่ได้ (" + products.error + ")" : "ยังไม่มีข้อมูล")}</p>`;
+  const noActivity = `<p class="dash-empty">${esc(dash && dash.error ? "ยังโหลดกิจกรรมไม่ได้ (" + dash.error + ")" : "ยังไม่มีกิจกรรม")}${SUPABASE_MODE && dash && dash.error ? " · รันไฟล์ supabase/008_admin_dashboard.sql ใน SQL Editor" : ""}</p>`;
+
+  /* หัวหน้า: คำทักทาย + ป้ายระบบออนไลน์ (อยู่ในหัวข้อหน้า เหนือแท็บ) */
+  document.getElementById("admin-title").textContent = `${greeting()}, ${currentUser.name}`;
+  document.getElementById("admin-head-extra").innerHTML = `<span class="online-pill" title="${SUPABASE_MODE ? "เชื่อมต่อ Supabase แล้ว" : "เชื่อมต่อเซิร์ฟเวอร์แล้ว"}"><i aria-hidden="true"></i>ระบบออนไลน์</span>`;
 
   adminBody.innerHTML = `
     <div class="dash">
-      <div class="dash-head">
-        <div>
-          <h2 class="dash-hello">${greeting()}, ${esc(currentUser.name)}</h2>
-          <p class="muted">${esc(document.getElementById("admin-mode").textContent)}</p>
-        </div>
-        <span class="online-pill" title="${esc(online)}"><i aria-hidden="true"></i>ระบบออนไลน์</span>
-      </div>
-
-      ${cards.map(([label, n, ic, key, tab, color]) => {
-        const w = week(key);
-        return `
+      ${cards.map(([label, num, ic, tone, d, tab]) => `
         <button type="button" class="dash-card stat-tile" data-goto="${tab}">
-          <span class="stat-tile-top">
-            <span class="stat-card-ic stat-${ic}">${dashIcon(ic)}</span>
-            <span class="stat-card-label">${label}</span>
-          </span>
-          <span class="stat-tile-mid">
-            <strong class="stat-card-num">${statNum(n)}</strong>
-            ${w === null ? "" : `<span class="delta ${w ? "up" : ""}">${w ? "+" + w.toLocaleString() : "0"} ใน 7 วัน</span>`}
-          </span>
-          ${ok ? sparkline(series[key], color) : `<span class="spark spark-empty" aria-hidden="true"></span>`}
-        </button>`;
-      }).join("")}
+          <span class="stat-ic tone-${tone}">${dashIcon(ic)}</span>
+          <span class="stat-label">${label}</span>
+          <strong class="stat-num">${num}</strong>
+          ${d}
+        </button>`).join("")}
 
-      <section class="dash-card dash-trend" aria-labelledby="trend-title">
+      <section class="dash-card dash-daily" aria-labelledby="daily-title">
         <div class="dash-card-head">
-          <h3 id="trend-title">ประกาศใหม่และการส่งต่อ 14 วันล่าสุด</h3>
-          ${ok ? `<div class="legend">
-            <span><i style="background:var(--chart-new)"></i>ประกาศใหม่ <b>${sum(series.products)}</b></span>
-            <span><i style="background:var(--chart-passed)"></i>ส่งต่อแล้ว <b>${sum(series.passed)}</b></span>
-          </div>` : ""}
+          <h3 id="daily-title">ประกาศใหม่รายวัน</h3>
+          <div class="range-seg" role="group" aria-label="ช่วงเวลา">
+            ${[14, 30].map(d => `<button type="button" data-range="${d}" aria-pressed="${d === dashRange}">${d} วัน</button>`).join("")}
+          </div>
         </div>
-        ${ok ? `<div class="trend-box" id="trend-box" tabindex="0" aria-describedby="trend-help"></div>
-          <p class="sr-help visually-hidden" id="trend-help">ใช้ปุ่มลูกศรซ้ายขวาเพื่อดูแต่ละวัน</p>
-          <details class="trend-table">
-            <summary>ดูเป็นตาราง</summary>
-            <table>
-              <thead><tr><th scope="col">วันที่</th><th scope="col">ประกาศใหม่</th><th scope="col">ส่งต่อแล้ว</th></tr></thead>
-              <tbody>${series.products.map((v, i) => `<tr><th scope="row">${dayLabel(dash.start, i)}</th><td>${v}</td><td>${series.passed[i]}</td></tr>`).join("")}</tbody>
-            </table>
-          </details>` : notReady}
-      </section>
-
-      <section class="dash-card dash-types" aria-labelledby="types-title">
-        <div class="dash-card-head"><h3 id="types-title">ตามประเภทประกาศ</h3><span class="muted">${typeTotal.toLocaleString()} ประกาศ</span></div>
-        <div class="type-bar" role="img" aria-label="${typeOrder.map(t => `${TYPE_LABEL[t]} ${o.byType[t] || 0}`).join(", ")}">
-          ${typeTotal ? typeOrder.filter(t => o.byType[t]).map(t => `<span class="seg seg-${t}" style="flex:${o.byType[t]}"></span>`).join("") : `<span class="seg seg-none"></span>`}
-        </div>
-        <ul class="type-legend">
-          ${typeOrder.map(t => `<li><i class="tl-dot seg-${t}"></i><span>${TYPE_LABEL[t]}</span><b>${(o.byType[t] || 0).toLocaleString()}</b><small>${pct(o.byType[t] || 0, typeTotal)}%</small></li>`).join("")}
-        </ul>
-      </section>
-
-      <section class="dash-card dash-mini" aria-labelledby="mini-title">
-        <h3 id="mini-title" class="visually-hidden">ตัวเลขอื่น</h3>
-        <dl class="mini-stats">
-          <div><dt>รีวิว</dt><dd>${statNum(o.reviews)}</dd></div>
-          <div><dt>ผู้ดูแลระบบ</dt><dd>${statNum(o.admins)}</dd></div>
-          <div><dt>บัญชีถูกระงับ</dt><dd>${statNum(o.banned)}</dd></div>
-          <div><dt>ห้องแชต</dt><dd>${statNum(o.chatRooms)}</dd></div>
-          <div><dt>ส่งต่อสำเร็จ</dt><dd>${rate}%</dd></div>
-        </dl>
+        ${products.error ? noDaily : `
+          <p class="daily-total"><b id="daily-sum"></b> ประกาศใน <span id="daily-days"></span> วัน</p>
+          <div class="trend-box" id="daily-box" tabindex="0" aria-describedby="daily-help"></div>
+          <p class="visually-hidden" id="daily-help">ใช้ปุ่มลูกศรซ้ายขวาเพื่อดูแต่ละวัน</p>
+          <details class="trend-table"><summary>ดูเป็นตาราง</summary><div id="daily-table"></div></details>`}
       </section>
 
       <section class="dash-card dash-cats" aria-labelledby="cats-title">
-        <div class="dash-card-head"><h3 id="cats-title">ตามหมวดหมู่</h3><span class="muted">${catTotal.toLocaleString()} ประกาศ</span></div>
-        <ul class="cat-bars">
-          ${cats.map(([name, n]) => `
+        <div class="dash-card-head"><h3 id="cats-title">สัดส่วนตามหมวด</h3><span class="muted">${catTotal.toLocaleString()} ประกาศ</span></div>
+        <ul class="cat-list">
+          ${cats.map(c => `
             <li>
-              <span class="cat-name">${esc(name)}</span>
-              <span class="cat-track" role="img" aria-label="${esc(name)} ${n} ประกาศ (${pct(n, catTotal)}%)"><span style="width:${pct(n, catTotal)}%"></span></span>
-              <b>${n.toLocaleString()}</b>
+              <span class="cat-ic tone-${CAT_TONE[c.id] || "gray"}">${icon(c.icon)}</span>
+              <span class="cat-main">
+                <span class="cat-row"><span class="cat-name">${esc(c.name)}</span><b>${c.n.toLocaleString()}</b></span>
+                <span class="cat-track" role="img" aria-label="${esc(c.name)} ${c.n} ประกาศ (${pct(c.n, catTotal)}%)"><span class="tone-bar-${CAT_TONE[c.id] || "gray"}" style="width:${pct(c.n, catTotal)}%"></span></span>
+              </span>
             </li>`).join("")}
         </ul>
       </section>
 
+      <section class="dash-card dash-status" aria-labelledby="status-title">
+        <div class="dash-card-head"><h3 id="status-title">ประกาศตามสถานะ</h3></div>
+        ${products.error ? noDaily : `<div class="status-cols">
+          ${statusCol("live", "เผยแพร่")}${statusCol("reported", "ถูกรายงาน")}${statusCol("passed", "ส่งต่อแล้ว")}
+        </div>`}
+      </section>
+
       <section class="dash-card dash-activity" aria-labelledby="act-title">
-        <div class="dash-card-head"><h3 id="act-title">กิจกรรมล่าสุด</h3></div>
-        ${ok ? (dash.activity.length ? `<ol class="activity">
-          ${dash.activity.map(a => { const [ic, text, cls] = ACTIVITY[a.kind] || ACTIVITY.product; return `
-            <li>
-              <span class="act-ic ${cls}">${dashIcon(ic)}</span>
-              <span class="act-body"><b>${esc(a.who)}</b> ${text}<span class="act-title">${esc(a.title)}</span></span>
-              <time datetime="${new Date(a.at).toISOString()}" title="${esc(new Date(a.at).toLocaleString("th-TH"))}">${timeAgo(a.at)}</time>
-            </li>`; }).join("")}
-        </ol>` : `<p class="dash-empty">ยังไม่มีกิจกรรม</p>`) : notReady}
+        <div class="dash-card-head">
+          <h3 id="act-title">กิจกรรมล่าสุด</h3>
+          <a class="see-all" href="admin.html?tab=products">ดูทั้งหมด</a>
+        </div>
+        ${activityRows.length ? `
+          <div class="table-scroll" tabindex="0" aria-label="ตารางกิจกรรมล่าสุด (เลื่อนซ้ายขวาได้)">
+            <table class="act-table">
+              <thead><tr><th scope="col">กิจกรรม</th><th scope="col">ประกาศ</th><th scope="col">ผู้ใช้</th><th scope="col">เวลา</th><th scope="col">สถานะ</th></tr></thead>
+              <tbody>
+                ${activityRows.map(a => {
+                  const [ic, text, cls] = ACTIVITY[a.kind] || ACTIVITY.product;
+                  const st = activityStatus(a);
+                  return `<tr>
+                    <td><span class="act-cell"><span class="act-ic ${cls}">${dashIcon(ic)}</span>${text}</span></td>
+                    <td class="act-listing">${esc(a.title)}</td>
+                    <td><span class="act-user">${avatarHtml(a.who, a.avatar || null, "avatar-xs")}${esc(a.who)}</span></td>
+                    <td class="act-time"><time datetime="${new Date(a.at).toISOString()}" title="${esc(new Date(a.at).toLocaleString("th-TH"))}">${timeAgo(a.at)}</time></td>
+                    <td>${st ? `<span class="pill ${LISTING_STATUS[st][1]}">${LISTING_STATUS[st][0]}</span>` : `<span class="muted">–</span>`}</td>
+                  </tr>`;
+                }).join("")}
+              </tbody>
+            </table>
+          </div>` : noActivity}
       </section>
     </div>`;
 
-  if (ok) {
-    const box = document.getElementById("trend-box");
-    drawTrend(box, dash);
-    /* วาดใหม่เมื่อความกว้างเปลี่ยน (หมุนจอ / ย่อหน้าต่าง) */
+  if (!products.error) {
+    const box = document.getElementById("daily-box");
+    const draw = () => {
+      const s = dailyListings(products, dashRange);
+      document.getElementById("daily-sum").textContent = sum(s.counts).toLocaleString();
+      document.getElementById("daily-days").textContent = dashRange;
+      drawDaily(box, s);
+      document.getElementById("daily-table").innerHTML = `<table>
+        <thead><tr><th scope="col">วันที่</th><th scope="col">ประกาศใหม่</th></tr></thead>
+        <tbody>${s.counts.map((v, i) => `<tr><th scope="row">${dayLabel(s.first + i)}</th><td>${v}</td></tr>`).join("")}</tbody></table>`;
+    };
+    draw();
+    adminBody.querySelectorAll("[data-range]").forEach(b => b.addEventListener("click", () => {
+      dashRange = Number(b.dataset.range);
+      adminBody.querySelectorAll("[data-range]").forEach(x => x.setAttribute("aria-pressed", x === b));
+      draw();
+    }));
     if (window.ResizeObserver) {
       let w = box.clientWidth;
-      new ResizeObserver(() => { if (box.isConnected && Math.abs(box.clientWidth - w) > 4) { w = box.clientWidth; drawTrend(box, dash); } }).observe(box);
+      new ResizeObserver(() => { if (box.isConnected && Math.abs(box.clientWidth - w) > 4) { w = box.clientWidth; draw(); } }).observe(box);
     }
   }
 }
@@ -829,7 +874,12 @@ function markAdminNav(tab) {
     b.classList.toggle("active", on);
     if (on) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
   });
-  document.body.classList.toggle("tab-overview", tab === "overview");   // แดชบอร์ดมีคำทักทายแทนหัวข้อหน้า
+  document.body.classList.toggle("tab-overview", tab === "overview");
+  document.getElementById("admin-head-extra").innerHTML = "";          // ป้าย "ระบบออนไลน์" เฉพาะแดชบอร์ด
+  /* แท็บเส้นใต้ใต้หัวข้อ: ภาพรวม / ประกาศ / ผู้ใช้ / รายงาน */
+  document.querySelectorAll("#admin-tabs-line [data-tab]").forEach(b => {
+    if (b.dataset.tab === tab) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
+  });
   const label = tab === "settings" && adminSection === "images" ? "จัดการรูป" : ADMIN_LABELS[tab] || "แดชบอร์ด";
   document.getElementById("admin-crumb").textContent = label;
   document.getElementById("admin-title").textContent = label;
@@ -846,7 +896,7 @@ function goAdminTab(tab, section = "", keepQuery = false) {
   loadTab();
 }
 
-document.querySelectorAll("#admin-tabs [data-tab]").forEach(btn => {
+document.querySelectorAll("#admin-tabs [data-tab], #admin-tabs-line [data-tab]").forEach(btn => {
   btn.addEventListener("click", () => goAdminTab(btn.dataset.tab, btn.dataset.section || ""));
 });
 
