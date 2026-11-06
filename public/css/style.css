@@ -1966,8 +1966,16 @@ button.admin-title { border: none; background: none; padding: 0; font-size: inhe
   transition: transform .2s, box-shadow .2s;
 }
 .belt-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
-.belt-card img { display: block; width: 100%; height: 140px; box-sizing: border-box; padding: 8px; object-fit: contain; object-position: center; background: var(--img-well, #F6F4F8); transition: transform .5s cubic-bezier(.2, .7, .2, 1); }
-.belt-card:hover img { transform: scale(1.06); }
+/* กล่องรูป: รูปจริงแสดงครบ (contain) · ช่องว่างรอบรูปเติมด้วยรูปเดียวกันขยายเบลอ + ทับสีขาวโปร่ง */
+.belt-media { position: relative; display: block; height: 140px; overflow: hidden; isolation: isolate; background: var(--img-well, #F6F4F8); }
+.belt-media::after { content: ""; position: absolute; inset: 0; z-index: 1; background: var(--belt-veil, rgba(255, 255, 255, .35)); pointer-events: none; }
+.belt-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scale(1.15); filter: blur(24px); }
+.belt-img { position: relative; z-index: 2; display: block; width: 100%; height: 100%; object-fit: contain; object-position: center; transition: transform .5s cubic-bezier(.2, .7, .2, 1); }
+.belt-card:hover .belt-img { transform: scale(1.06); }
+:root[data-theme="dark"] { --belt-veil: rgba(0, 0, 0, .35); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --belt-veil: rgba(0, 0, 0, .35); }
+}
 .belt-card div { padding: 8px 12px 12px; }
 .belt-card strong { display: block; font-weight: 400; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .belt-card .price { font-size: 16px; }
@@ -2124,7 +2132,7 @@ button.admin-title { border: none; background: none; padding: 0; font-size: inhe
 
 @media (max-width: 720px) {
   .belt-card { flex-basis: 160px; }
-  .belt-card img { height: 120px; }
+  .belt-media { height: 120px; }
 }
 
 /* =====================================================================
@@ -2745,7 +2753,7 @@ body.drawer-open .drawer-backdrop { opacity: 1; }
   .reveal { opacity: 1; transform: none; }
   .conveyor { overflow-x: auto; }
   .belt-card:hover { transform: none; }
-  .card-wrap:hover .card-img img, .belt-card:hover img { transform: none; }
+  .card-wrap:hover .card-img img, .belt-card:hover .belt-img { transform: none; }
   .leaf-burst { display: none; }
 }
 

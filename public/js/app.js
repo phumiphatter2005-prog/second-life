@@ -816,7 +816,10 @@ function renderConveyor(list) {
   if (items.length < 3) { section.hidden = true; return; }
   const card = (p, hidden) => `
     <a class="belt-card" href="product.html?id=${p.id}" ${hidden ? 'aria-hidden="true" tabindex="-1"' : ""}>
-      <img src="${esc(p.img)}" alt="${hidden ? "" : esc(p.title)}" loading="lazy">
+      <span class="belt-media">
+        <img class="belt-bg" src="${esc(p.img)}" alt="" aria-hidden="true" loading="lazy">
+        <img class="belt-img" src="${esc(p.img)}" alt="${hidden ? "" : esc(p.title)}" loading="lazy">
+      </span>
       <div><strong>${esc(p.title)}</strong><span class="price price-${p.type}">${formatPrice(p)}</span></div>
     </a>`;
   /* ต่อรายการให้ยาวพอเต็มจอ แล้วซ้ำอีกชุดเพื่อให้วนต่อเนื่องไม่สะดุด */
