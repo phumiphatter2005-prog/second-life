@@ -133,7 +133,9 @@ function roomHead() {
         ${sellerTools && r.productType === "free" ? `
           <button type="button" class="btn btn-sm btn-secondary" data-act="requesters">คนที่ขอ (${r.requesters})</button>` : ""}
         ${sellerTools && !r.productPassed ? `
-          <button type="button" class="btn btn-sm btn-secondary" data-act="passed" title="ยืนยันว่าส่งต่อแล้ว" aria-label="ยืนยันว่าส่งต่อแล้ว">${icon("recycle")}<span>ส่งต่อแล้ว</span></button>` : ""}
+          <button type="button" class="btn btn-pass" data-act="passed" title="ยืนยันว่าส่งต่อแล้ว" aria-label="ยืนยันว่าส่งต่อแล้ว">${icon("recycle")}<span>ส่งต่อแล้ว</span></button>` : ""}
+        ${sellerTools && r.productPassed ? `
+          <span class="room-pass-done" role="status">✓ ส่งต่อแล้ว</span>` : ""}
         ${r.adminView ? "" : `
           <div class="room-menu-wrap">
             <button type="button" class="btn btn-ghost btn-sm room-menu-btn" data-act="menu" aria-haspopup="menu" aria-label="ตัวเลือกเพิ่มเติม" title="ตัวเลือกเพิ่มเติม">⋯</button>
