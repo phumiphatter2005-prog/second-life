@@ -1936,6 +1936,8 @@ button.admin-title { border: none; background: none; padding: 0; font-size: inhe
 
 /* ---------- สายพานส่งต่อ (หน้าแรก) ---------- */
 .conveyor-section { margin-bottom: 64px; }
+/* ไม่มีหัวข้อแล้ว: ข้อความ "ชี้เพื่อหยุด" ยังชิดขวา ไม่เว้นที่ว่างแทนหัวข้อ */
+.conveyor-section .section-head { justify-content: flex-end; margin-bottom: 12px; }
 .conveyor {
   overflow: hidden;
   margin: 0 -24px;
