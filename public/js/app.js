@@ -688,12 +688,14 @@ function renderCategories() {
 }
 
 /* ---------- แถวสินค้าตามหัวข้อ เลื่อนซ้ายขวาได้ (แถวที่ไม่มีสินค้าจะไม่แสดง) ---------- */
+/* ประกาศล่าสุดอยู่บนสุดเสมอ · ชั้นตามประเภทเรียงตามจำนวนจากมากไปน้อย (เท่ากัน → ลำดับในอาร์เรย์นี้) */
 const SHELVES = [
   { title: "ประกาศล่าสุด", href: "search.html",           pick: () => true },
-  { title: "แจกฟรี",       href: "search.html?type=free", pick: p => p.type === "free" },
-  { title: "แลกเปลี่ยน",   href: "search.html?type=swap", pick: p => p.type === "swap" }
+  { title: "ขาย",          href: "search.html?type=sell", pick: p => p.type === "sell", counted: true },
+  { title: "แลกเปลี่ยน",   href: "search.html?type=swap", pick: p => p.type === "swap", counted: true },
+  { title: "แจกฟรี",       href: "search.html?type=free", pick: p => p.type === "free", counted: true }
 ];
-const SHELF_MAX = 15;
+const SHELF_MAX = 10;
 let homeCat = "all";   // หมวดที่เลือกในหน้าแรก
 let homeList = null;   // สินค้าที่ยังไม่ส่งต่อ (โหลดครั้งเดียว ใช้กรองซ้ำ)
 
@@ -703,11 +705,11 @@ function shelfHref(shelf) {
   return shelf.href + (shelf.href.includes("?") ? "&" : "?") + "cat=" + encodeURIComponent(homeCat);
 }
 
-function shelfHtml(shelf, cards, i) {
+function shelfHtml(shelf, cards, i, count) {
   return `
     <section class="shelf" aria-labelledby="shelf-title-${i}">
       <div class="section-head">
-        <h2 id="shelf-title-${i}">${shelf.title}</h2>
+        <h2 id="shelf-title-${i}">${shelf.title}${count != null ? `<span class="shelf-count"> · ${count} รายการ</span>` : ""}</h2>
         <div class="shelf-actions">
           <a href="${shelfHref(shelf)}">ดูทั้งหมด →</a>
           <span class="shelf-nav" hidden>
@@ -745,9 +747,12 @@ function setupShelves(root) {
 function renderShelves() {
   const el = document.getElementById("shelves");
   const list = homeList.filter(p => homeCat === "all" || p.category === homeCat);
-  const rows = SHELVES.map((s, i) => {
-    const items = list.filter(s.pick).slice(0, SHELF_MAX);
-    return items.length ? shelfHtml(s, items.map(productCard).join(""), i) : "";
+  const groups = SHELVES.map((s, i) => ({ s, i, all: list.filter(s.pick) }));
+  const [latest, ...typed] = groups;
+  typed.sort((a, b) => b.all.length - a.all.length || a.i - b.i);
+  const rows = [latest, ...typed].map(({ s, i, all }) => {
+    const items = all.slice(0, SHELF_MAX);
+    return items.length ? shelfHtml(s, items.map(productCard).join(""), i, s.counted ? all.length : null) : "";
   }).join("");
   el.innerHTML = rows || (homeCat === "all"
     ? `<div class="section-head"><h2>ประกาศล่าสุด</h2></div>

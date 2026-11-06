@@ -694,6 +694,7 @@ code, kbd {
 .shelf { margin-bottom: 48px; }
 .shelf .section-head { align-items: center; }
 .shelf-actions { display: flex; align-items: center; gap: 12px; }
+.shelf-count { font-family: var(--font-body, inherit); font-size: 14px; font-weight: 400; letter-spacing: 0; color: var(--text-2); white-space: nowrap; }
 .shelf-nav { display: inline-flex; gap: 8px; }
 .shelf-nav[hidden] { display: none; }
 .shelf-btn {
