@@ -1074,7 +1074,10 @@ input[type="checkbox"]:checked::after { opacity: 1; }
   margin-bottom: 32px;
 }
 .detail-media { align-self: start; display: flex; flex-direction: column; gap: 8px; }
-.detail-img { width: 100%; display: block; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--r-md); border: 1px solid var(--border); background: var(--bg-alt); }
+/* รูปหลัก: แสดงครบทั้งรูปในกล่องจัตุรัส (ไม่เกิน 560px) · กดเพื่อดูเต็มจอ */
+.detail-zoom { display: block; width: 100%; max-width: 560px; padding: 0; border: 0; background: none; border-radius: 16px; cursor: zoom-in; }
+.detail-zoom:focus-visible { outline: none; box-shadow: var(--ring); }
+.detail-img { width: 100%; display: block; aspect-ratio: 1 / 1; max-height: 560px; object-fit: contain; object-position: center; border-radius: 16px; border: 1px solid var(--border); background: var(--img-well, #F6F4F8); }
 .thumbs { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
 .thumbs button {
   flex: 0 0 64px;
@@ -1963,7 +1966,7 @@ button.admin-title { border: none; background: none; padding: 0; font-size: inhe
   transition: transform .2s, box-shadow .2s;
 }
 .belt-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
-.belt-card img { display: block; width: 100%; height: 140px; object-fit: cover; transition: transform .5s cubic-bezier(.2, .7, .2, 1); }
+.belt-card img { display: block; width: 100%; height: 140px; box-sizing: border-box; padding: 8px; object-fit: contain; object-position: center; background: var(--img-well, #F6F4F8); transition: transform .5s cubic-bezier(.2, .7, .2, 1); }
 .belt-card:hover img { transform: scale(1.06); }
 .belt-card div { padding: 8px 12px 12px; }
 .belt-card strong { display: block; font-weight: 400; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -3945,3 +3948,33 @@ body.admin-shell-page.tab-overview .page-head { display: none; }
   .room-actions .btn-pass span { display: inline; }
   .room-pass-done { height: 44px; padding: 0 12px; }
 }
+
+/* ---------- พื้นกล่องรูปที่แสดงครบทั้งรูป (รูปหลักหน้าสินค้า + สายพาน) ---------- */
+:root { --img-well: #F6F4F8; }
+:root[data-theme="dark"] { --img-well: #241C2E; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --img-well: #241C2E; }
+}
+
+/* ---------- ดูรูปสินค้าเต็มจอ ---------- */
+.lightbox {
+  position: fixed; inset: 0; z-index: 90;
+  display: grid; place-items: center; padding: 56px 16px 24px;
+  background: rgba(10, 6, 14, .88); cursor: zoom-out;
+  animation: lightbox-in .18s ease-out;
+}
+/* ขยายให้พอดีจอตามสัดส่วนจริงของรูป (--ar = กว้าง/สูง ตั้งใน product.js) */
+.lightbox img {
+  width: min(100%, 1200px, calc((100dvh - 80px) * var(--ar, 1)));
+  height: auto; max-height: calc(100dvh - 80px);
+  object-fit: contain; border-radius: 8px; cursor: default;
+}
+.lightbox-close {
+  position: absolute; top: 12px; right: 12px;
+  width: 44px; height: 44px; border: 0; border-radius: 50%;
+  background: rgba(255, 255, 255, .14); color: #FFFFFF; font-size: 20px; line-height: 1; cursor: pointer;
+}
+.lightbox-close:hover { background: rgba(255, 255, 255, .26); }
+.lightbox-close:focus-visible { outline: 2px solid #FFFFFF; outline-offset: 2px; }
+@keyframes lightbox-in { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .lightbox { animation: none; } }

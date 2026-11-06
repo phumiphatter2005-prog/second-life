@@ -51,6 +51,34 @@ function passedLine(p) {
   return `<p class="passed-line">${icon("recycle")}<span>${text}</span></p>`;
 }
 
+/* ดูรูปเต็มจอ: กด ✕ กดพื้นหลัง หรือกด Esc เพื่อปิด แล้วโฟกัสกลับไปที่รูปหลัก */
+function openLightbox(img, opener) {
+  const box = document.createElement("div");
+  box.className = "lightbox";
+  box.setAttribute("role", "dialog");
+  box.setAttribute("aria-modal", "true");
+  box.setAttribute("aria-label", img.alt || "รูปสินค้า");
+  box.innerHTML = `
+    <button type="button" class="lightbox-close" aria-label="ปิดรูปเต็มจอ" title="ปิด">✕</button>
+    <img src="${esc(img.currentSrc || img.src)}" alt="${esc(img.alt)}">`;
+  if (img.naturalWidth && img.naturalHeight) box.style.setProperty("--ar", img.naturalWidth / img.naturalHeight);
+  const close = () => {
+    box.remove();
+    document.removeEventListener("keydown", onKey);
+    document.body.style.overflow = "";
+    opener.focus();
+  };
+  const onKey = e => {
+    if (e.key === "Escape") close();
+    if (e.key === "Tab") { e.preventDefault(); box.querySelector(".lightbox-close").focus(); }
+  };
+  box.addEventListener("click", e => { if (e.target.tagName !== "IMG") close(); });
+  document.addEventListener("keydown", onKey);
+  document.body.style.overflow = "hidden";
+  document.body.appendChild(box);
+  box.querySelector(".lightbox-close").focus();
+}
+
 function render(p) {
   if (p.restricted) return renderRestricted();
   document.title = p.title + " | Second Life";
@@ -59,7 +87,9 @@ function render(p) {
   detail.innerHTML = `
     <div class="detail">
       <div class="detail-media">
-        <img class="detail-img" id="detail-img" src="${esc(p.img)}" alt="${esc(p.title)}">
+        <button type="button" class="detail-zoom" id="detail-zoom" aria-label="ดูรูปเต็มจอ" title="กดเพื่อดูรูปเต็มจอ">
+          <img class="detail-img" id="detail-img" src="${esc(p.img)}" alt="${esc(p.title)}">
+        </button>
         ${gallery.length > 1 ? `
           <div class="thumbs" role="list" aria-label="รูปทั้งหมด">
             ${gallery.map((src, i) => `
@@ -148,6 +178,9 @@ function render(p) {
       detail.querySelectorAll(".thumbs button").forEach(b => b.classList.toggle("active", b === btn));
     });
   });
+
+  const zoomBtn = document.getElementById("detail-zoom");
+  zoomBtn.addEventListener("click", () => openLightbox(document.getElementById("detail-img"), zoomBtn));
 
   const showError = msg => {
     const el = document.getElementById("action-error");
